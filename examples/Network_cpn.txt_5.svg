@@ -1,0 +1,2877 @@
+<?xml version="1.0"?>
+<svg version="1.1" id="cont" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+ onload="init()" xml:space="preserve"
+ viewBox="-936.0419954545454 -191.81576175 2165.7479209090907 1191.1613565">
+
+<script>
+<![CDATA[
+	// document variables
+	var svgDocument = document.getElementById("cont");
+	var origViewBox = svgDocument.getAttribute("viewBox");
+	var newViewBox = svgDocument.getAttribute("viewBox");
+	
+	// variables for zooming
+	var zoomRect = document.getElementById("zoomRect");
+	var zoomAction = false;
+	var zoomX1 = 0;
+	var zoomY1 = 0;
+	var zoomX2 = 0;
+	var zoomY2 = 0;
+	var zoomWidth = 0;
+	var zoomHeight = 0;
+	
+	// variables for panning
+	var panStart = true;
+	var panAction = false;
+	var panViewBoxX = 0;
+	var panViewBoxY = 0;
+	var panViewBoxWidth = 0;
+	var panViewBoxHeight = 0;
+	var panOldX = 0;
+	var panOldY = 0;
+	var panNewX = 0;
+	var panNewY = 0;
+	var newViewBoxX = 0;
+	var newViewBoxY = 0;
+	
+	// variables for moving text
+	var GeneralText = "General Text";
+	var InstructionText = "Instruction Text";
+	var origTextScale = 0;
+	var GeneralBB = "General Bounding Box";
+	var InstructionBB = "Instruction Bounding Box";
+	var BoundingBox;
+	var madeBB = false;
+	var textflag=false;
+	
+	// variables for cursor events
+	var event;
+	
+	// variable for refreshing screen
+	var refresh = true;
+	// variables from SVGLibrary
+	var generalRows = 3;
+	var instructionRows = 3;
+	
+	
+	function init(evt) {
+		if(svgDocument) {
+			
+	 		// set mouse event variable
+			event = evt;
+	 		// event listeners
+			svgDocument.addEventListener("mousedown", zoomMouseDown, false);
+			svgDocument.addEventListener("mousemove", zoomMouseMove, false);
+			svgDocument.addEventListener("mouseup", zoomMouseUp, false);
+			svgDocument.addEventListener("mousedown", mouseDown, false);
+			svgDocument.addEventListener("mousemove", mouseMove, false);
+			svgDocument.addEventListener("mouseup", mouseUp, false);
+			svgDocument.addEventListener("keydown",panBegin, false);
+			svgDocument.addEventListener("mousemove", panMove, false);
+			svgDocument.addEventListener("keyup",panEnd, false);
+			svgDocument.addEventListener("keyup",zoomOut, false);
+			svgDocument.addEventListener("keyup",zoomOriginal, false);
+			
+			// code to get the texts' original sizes; this is then used to scale later when viewbox changes
+			svgDocument = document.getElementById("cont");
+			var m = svgDocument.getScreenCTM();
+			var p = document.documentElement.createSVGPoint();
+			p.y = getHeight();
+			
+			var q = document.documentElement.createSVGPoint();
+			q.y = 0;
+			
+			p = p.matrixTransform(m.inverse());
+			q = q.matrixTransform(m.inverse());
+			
+			origTextScale = (16/screen.height)*(p.y - q.y); // roughly font size 12 at fullscreen
+			
+			disableSelection();
+			textMove(GeneralText);
+			textMove(InstructionText);
+			textMove("System Info Box");
+			drawBoundingBox(GeneralText);
+			drawBoundingBox(InstructionText);
+			drawBoundingBox("System Info Box");
+			drawInfoBox();
+		}
+	}
+	
+	/* Zoom Functions */
+	// click and drag to zoom in
+	// click to zoom out
+	function zoomMouseDown(evt) {
+		zoomRect = document.getElementById("zoomRect");
+		
+	//if the left click is down and the control key is NOT depressed, sets top left of zoombox and flag
+		if(zoomRect && !evt.ctrlKey) { // zoom 
+			zoomAction = true;
+			var p = document.documentElement.createSVGPoint();
+			p.x = evt.clientX;
+			p.y = evt.clientY;
+			
+			var m = zoomRect.getScreenCTM();
+			p = p.matrixTransform(m.inverse());
+			zoomRect.setAttribute("x", p.x);
+			zoomRect.setAttribute("y", p.y);
+			zoomX1 = p.x;
+			zoomY1 = p.y;
+		}
+	}
+	
+	// blue zoombox drawn as mouse is moved across screen
+	function zoomMouseMove(evt) { 
+		if(zoomAction) {
+			var p = document.documentElement.createSVGPoint();
+			p.x = evt.clientX;
+			p.y = evt.clientY;
+			zoomRect = document.getElementById("zoomRect");
+			
+			if(zoomRect) {
+				var m = zoomRect.getScreenCTM();
+				p = p.matrixTransform(m.inverse());
+				
+				zoomX2 = p.x;
+				zoomY2 = p.y;
+				zoomWidth=Math.abs(zoomX2 - zoomX1)
+				zoomHeight=Math.abs(zoomY2 - zoomY1)
+				if(zoomX1 < zoomX2) {
+					zoomRect.setAttribute("x", zoomX1);
+					zoomRect.setAttribute("width", zoomWidth);
+				} else {
+					zoomRect.setAttribute("x", zoomX2);
+					zoomRect.setAttribute("width", zoomWidth);
+				}
+				
+				if(zoomY1 < zoomY2){
+					zoomRect.setAttribute("y", zoomY1);
+					zoomRect.setAttribute("height", zoomHeight);
+				} else{
+					zoomRect.setAttribute("y", zoomY2);
+					zoomRect.setAttribute("height", zoomHeight);
+				}
+			}
+		}
+	}
+	
+	// function that completes zoombox, then zooms view to zoombox
+	function zoomMouseUp(evt) {
+		zoomRect = document.getElementById("zoomRect");
+		var h = zoomRect.getAttribute("height");
+		var w = zoomRect.getAttribute("width");
+		
+	// the viewbox width and height is changed when the button is up
+		if(zoomAction){
+			if((parseFloat(h)*parseFloat(w))<40){
+				//var format =  origViewBox;
+			} else {
+				var format =  parseFloat(zoomRect.getAttribute("x")) + ' ' + parseFloat(zoomRect.getAttribute("y")) + ' ' + parseFloat(w) + ' ' + parseFloat(h);
+				
+				svgDocument = document.getElementById("cont");
+				svgDocument.setAttribute('viewBox', format)
+			}
+		}
+		zoomX1 = 0;
+		zoomY1 = 0;
+		zoomRect.setAttribute("width", 0);
+		zoomRect.setAttribute("height", 0);
+		zoomAction = false;
+		
+	}
+	
+	
+	function zoomOut(evt){
+		if(evt.type == "keyup"){
+			if (evt.charCode) {
+				var charCode = evt.charCode;
+			} else {
+				var charCode = evt.keyCode;
+			}
+			
+			// alt key 
+			if (charCode == 18) {
+				//alert("escape");
+				//panStart = true;
+				//panAction = true;
+				//svgDocument.style.cursor='move';
+				
+				
+				svgDocument = document.getElementById("cont");
+				newViewBox = svgDocument.getAttribute("viewBox");
+				
+				var tokens = newViewBox;
+				var token = tokens.split(" ");
+				var viewBoxX = parseFloat(token[0]);
+				var viewBoxY = parseFloat(token[1]);
+				var viewBoxWidth = parseFloat(token[2]);
+				var viewBoxHeight = parseFloat(token[3]);
+				
+				var newViewBoxX = viewBoxX - 0.1*viewBoxWidth;
+				var newViewBoxY = viewBoxY - 0.1*viewBoxHeight;
+				var newViewBoxWidth = viewBoxWidth*1.2;
+				var newViewBoxHeight = viewBoxHeight*1.2;
+				
+				var format =  parseFloat(newViewBoxX) + ' ' + parseFloat(newViewBoxY) + ' ' + parseFloat(newViewBoxWidth) + ' ' + parseFloat(newViewBoxHeight);
+				
+				svgDocument.setAttribute('viewBox', format);
+				
+				
+				textMove(GeneralText);
+				textMove(InstructionText);
+				textMove("System Info Box");
+				drawBoundingBox(GeneralText);
+				drawBoundingBox(InstructionText);
+				drawBoundingBox("System Info Box");
+				drawInfoBox();
+				refresh = true;
+			}
+		}
+	}	
+	
+	
+	function zoomOriginal(evt){
+		if(evt.type == "keyup"){
+			if (evt.charCode) {
+				var charCode = evt.charCode;
+			} else {
+				var charCode = evt.keyCode;
+			}
+			
+			// escape
+			if (charCode == 27) {
+				var format =  origViewBox;
+			
+				svgDocument = document.getElementById("cont");
+				svgDocument.setAttribute('viewBox', format);
+			
+				textMove(GeneralText);
+				textMove(InstructionText);
+				textMove("System Info Box");
+				drawBoundingBox(GeneralText);
+				drawBoundingBox(InstructionText);
+				drawBoundingBox("System Info Box");
+				drawInfoBox();
+				refresh = true;
+			}
+		}
+	}	
+	
+	function panBegin(evt){
+		if(evt.type == "keydown"){
+			if (evt.charCode) {
+				var charCode = evt.charCode;
+			} else {
+				var charCode = evt.keyCode;
+			}
+
+			// spacebar
+			if (charCode == 32 && panStart == true) {
+				//alert("start");
+				panStart = true;
+				panAction = true;
+				svgDocument.style.cursor='move';
+			}
+		}
+	}
+	
+	
+	function panMove(evt) {
+		if(panStart && panAction){
+			panAction = true;
+			panStart = false;
+			var p = document.documentElement.createSVGPoint();
+			p.x = evt.clientX;
+			p.y = evt.clientY;
+			var m = svgDocument.getScreenCTM();
+			p = p.matrixTransform(m.inverse());
+			
+			panOldX = p.x;
+			panOldY = p.y;
+			
+			svgDocument = document.getElementById("cont");
+			newViewBox = svgDocument.getAttribute("viewBox");
+			
+			var tokens = newViewBox;
+			var token = tokens.split(" ");
+			panViewBoxX = parseFloat(token[0]);
+			panViewBoxY = parseFloat(token[1]);
+			panViewBoxWidth = parseFloat(token[2]);
+			panViewBoxHeight = parseFloat(token[3]);
+			//alert("t1:"+ panViewBoxX+" t2:"+ panViewBoxY+" t1:"+ panViewBoxWidth +" t1:"+ panViewBoxHeight);
+			
+			//svgDocument.style.cursor='move';
+		}
+		if(panAction && !panStart) {
+			var p = document.documentElement.createSVGPoint();
+			p.x = evt.clientX;
+			p.y = evt.clientY;
+			var m = svgDocument.getScreenCTM();
+			p = p.matrixTransform(m.inverse());
+			
+			panNewX = p.x;
+			panNewY = p.y;
+			
+			svgDocument = document.getElementById("cont");
+			newViewBox = svgDocument.getAttribute("viewBox");
+			
+			var tokens = newViewBox;
+			var token = tokens.split(" ");
+			panViewBoxX = parseFloat(token[0]);
+			panViewBoxY = parseFloat(token[1]);
+			panViewBoxWidth = parseFloat(token[2]);
+			panViewBoxHeight = parseFloat(token[3]);
+			
+			newViewBoxX = parseFloat(panViewBoxX - (panNewX - panOldX));
+			newViewBoxY = parseFloat(panViewBoxY - (panNewY - panOldY));
+
+
+			
+			var format =  parseFloat(newViewBoxX) + ' ' + parseFloat(newViewBoxY) + ' ' + parseFloat(panViewBoxWidth) + ' ' + parseFloat(panViewBoxHeight);
+			
+			svgDocument.setAttribute('viewBox', format);
+		}
+	}
+
+
+	function panEnd(evt){
+		if(evt.type == "keyup"){
+			if (evt.charCode) {
+				var charCode = evt.charCode;
+			} else {
+				var charCode = evt.keyCode;
+			}
+
+			// spacebar
+			if (charCode == 32) {
+				panStart = true;
+				panAction = false;
+				var panViewBoxX = 0;
+				var panViewBoxY = 0;
+				var panViewBoxWidth = 0;
+				var panViewBoxHeight = 0;
+				var panOldX = 0;
+				var panOldY = 0;
+				var panNewX = 0;
+				var panNewY = 0;
+				var newViewBoxX = 0;
+				var newViewBoxY = 0;
+				
+				svgDocument.style.cursor = 'default';
+			}
+			
+			textMove(GeneralText);
+			textMove(InstructionText);
+			textMove("System Info Box");
+			drawBoundingBox(GeneralText);
+			drawBoundingBox(InstructionText);
+			drawBoundingBox("System Info Box");
+			drawInfoBox();
+			refresh = true;
+		
+		}
+	}
+	
+	// function to move the texts so they always stay in the corner and at a proper scale
+	
+	function textMove(textID){
+		svgDocument = document.getElementById("cont");
+		var m = svgDocument.getScreenCTM();
+		
+		var textGroup = document.getElementById(textID);
+		var textGroupTransform = textGroup.getAttribute("transform");
+		var tokens = textGroupTransform;
+		var token = tokens.split(" ");
+		var translate1 = token[0];
+		var scale = token[1];
+		var translate2 = token[2];
+		
+		var p = document.documentElement.createSVGPoint();
+		p.y = getHeight();
+		
+		var q = document.documentElement.createSVGPoint();
+		q.y = 0;
+		
+		var textScaleA = (16/screen.height)*(p.y - q.y); // roughly font size 12 at fullscreen
+		
+		p = p.matrixTransform(m.inverse());
+		q = q.matrixTransform(m.inverse());
+		
+		var textScaleB = (16/screen.height)*(p.y - q.y); // roughly font size 12 at fullscreen
+		
+		p = document.documentElement.createSVGPoint();
+		
+		p.x = textScaleA*1;
+		if(textID==InstructionText){
+			p.y = getHeight() - textScaleA*0.65;
+		} else if(textID==GeneralText) {
+			p.y = textScaleA*1.5;
+		} else if(textID=="System Info Box") {
+			p.x = getWidth() - document.getElementById("System Bounding Box").getAttribute("width")*0.65;
+			p.y = textScaleA*4.5;
+		}
+		p = p.matrixTransform(m.inverse());
+		translate1 = "translate("+p.x+','+p.y+")";
+		var newScale = textScaleB/origTextScale;
+		scale = "scale("+newScale+','+newScale+")";
+		
+		textGroup = document.getElementById(textID);
+		textGroup.setAttribute("transform", translate1+' '+scale+' '+translate2);
+	}
+	
+	
+	// function to draw the bounding box around general info
+	function drawBoundingBox(textID){
+		var elm = document.getElementById(textID);
+		// fixes for 'use' elements
+		if(!elm.getBBox){
+			if(elm.correspondingUseElement)
+			elm = elm.correspondingUseElement;
+		}
+		// rectangle of bounding box
+		var r = elm.getBBox();
+		
+		// don't care about the root element
+		var root = document.documentElement;
+		if(textID==GeneralText){
+			BoundingBox = document.getElementById(GeneralBB);
+		} else if(textID==InstructionText){
+			BoundingBox = document.getElementById(InstructionBB);
+		} else if(textID=="System Info Box"){
+			BoundingBox = document.getElementById("System Bounding Box");
+		} else{
+			alert("Warning - could not find general or instruction bounding box!");
+		}
+		
+		// make new bbox
+		
+		if(!madeBB){
+			BoundingBox.setAttributeNS(null, "fill", "beige");
+			BoundingBox.setAttributeNS(null, "opacity", "1.0");
+			BoundingBox.setAttributeNS(null, "stroke", "black");
+			BoundingBox.setAttributeNS(null, "stroke-width", "1");
+			BoundingBox.setAttributeNS(null, "pointer-events", "none");
+		}
+		
+		// pad the rectangle
+		BoundingBox.x.baseVal.value = r.x - 10;
+		BoundingBox.y.baseVal.value = r.y - 7;
+		BoundingBox.width.baseVal.value = r.width + 20;
+		BoundingBox.height.baseVal.value = r.height + 14;
+		
+		// make the bbox rect element transform to the given text
+		BoundingBox.transform.baseVal.clear();
+		var tfm2elm = elm.getTransformToElement(BoundingBox);
+		BoundingBox.transform.baseVal.appendItem(BoundingBox.transform.baseVal.createSVGTransformFromMatrix(tfm2elm));
+	}
+	
+	
+	// function to draw the bounding box around other text info
+	function drawBoundingBox2(textID){
+		var elm = document.getElementById(textID);
+		// fixes for 'use' elements
+		if(!elm.getBBox){
+			if(elm.correspondingUseElement)
+			elm = elm.correspondingUseElement;
+		}
+		// rectangle of bounding box
+		var r = elm.getBBox();
+		
+		// don't care about the root element
+		var root = document.documentElement;
+		BoundingBox = document.getElementById('Info Bounding Box1');
+		
+		// make new bbox
+		
+		if(!madeBB){
+			BoundingBox.setAttributeNS(null, "fill", "beige");
+			BoundingBox.setAttributeNS(null, "opacity", "1.0");
+			BoundingBox.setAttributeNS(null, "stroke", "black");
+			BoundingBox.setAttributeNS(null, "stroke-width", "1");
+			BoundingBox.setAttributeNS(null, "pointer-events", "none");
+		}
+		
+		
+		// pad the rectangle
+		BoundingBox.x.baseVal.value = r.x - 10;
+		BoundingBox.y.baseVal.value = r.y - 7;
+		BoundingBox.width.baseVal.value = r.width + 20;
+		BoundingBox.height.baseVal.value = r.height + 14;
+		
+		// make the bbox rect element transform to the given text
+		BoundingBox.transform.baseVal.clear();
+		var tfm2elm = elm.getTransformToElement(BoundingBox);
+		BoundingBox.transform.baseVal.appendItem(BoundingBox.transform.baseVal.createSVGTransformFromMatrix(tfm2elm));
+		BoundingBox = document.getElementById('Info Bounding Box1');
+		
+		// make the connector element transform to the given text
+		var connector = document.getElementById("Info Bounding Box Connector");
+		connector.transform.baseVal.clear();
+		//tfm2elm.e = 0; tfm2elm.f = 0; // clear translates
+		connector.transform.baseVal.appendItem(connector.transform.baseVal.createSVGTransformFromMatrix(tfm2elm));
+		connector.x2.baseVal.value = BoundingBox.x.baseVal.value;
+		connector.y2.baseVal.value = BoundingBox.y.baseVal.value + BoundingBox.height.baseVal.value;
+	}
+	
+	
+	// function to draw the bounding box around section text info for sliding text box
+	function drawBoundingBox3(textID){
+		var elm = document.getElementById(textID);
+		// fixes for 'use' elements
+		if(!elm.getBBox){
+			if(elm.correspondingUseElement)
+			elm = elm.correspondingUseElement;
+		}
+		// get mouse coordinates
+		var p = document.documentElement.createSVGPoint();
+		p.x = event.clientX;
+		p.y = event.clientY;
+		var m = svgDocument.getScreenCTM();
+		p = p.matrixTransform(m.inverse());
+		
+		var x = p.x;
+		var y = p.y;
+		
+		// get text id
+		var textGroupID = elm.getAttribute("id");
+		var tokens = textGroupID;
+		var token = tokens.split(":");
+		var junk = token[0];
+		var tempID = token[1];
+		
+		// get line element to get line's coordinates
+		var sectionLine = document.getElementById('Line ID:'+tempID);
+		
+		var x1 = sectionLine.getAttribute('x1');
+		var y1 = sectionLine.getAttribute('y1');
+		var x2 = sectionLine.getAttribute('x2');
+		var y2 = sectionLine.getAttribute('y2');
+		
+		// algorithm to get closest point on line from user's cursor
+		var A = x - x1;
+		var B = y - y1;
+		var C = x2 - x1;
+		var D = y2 - y1;
+		
+		var dot = A * C + B * D;
+		var len_sq = C * C + D * D;
+		var param = dot / len_sq;
+		
+		// (xx,yy) = the closest point on line from user's cursor
+		var xx,yy;
+		
+		xx = parseFloat(x1) + parseFloat(param) * parseFloat(C);
+		yy = parseFloat(y1) + parseFloat(param) * parseFloat(D);
+		
+		var textGroupTransform = elm.getAttribute("transform");
+		var tokens = textGroupTransform;
+		var token = tokens.split(" ");
+		var translate1 = token[0];
+		var scale = token[1];
+		
+		translate1 = "translate("+xx+','+yy+")";
+		
+		textGroup = document.getElementById(textID);
+		textGroup.setAttribute("transform", translate1+' '+scale);
+		
+		// rectangle of bounding box
+		var r = elm.getBBox();
+		
+		// don't care about the root element
+		var root = document.documentElement;
+		BoundingBox = document.getElementById('Info Bounding Box1');
+		
+		// make new bbox
+		
+		if(!madeBB){
+			BoundingBox.setAttributeNS(null, "fill", "beige");
+			BoundingBox.setAttributeNS(null, "opacity", "1.0");
+			BoundingBox.setAttributeNS(null, "stroke", "black");
+			BoundingBox.setAttributeNS(null, "stroke-width", "1");
+			BoundingBox.setAttributeNS(null, "pointer-events", "none");
+		}
+		
+		
+		// pad the rectangle
+		BoundingBox.x.baseVal.value = r.x - 10;
+		BoundingBox.y.baseVal.value = r.y - 7;
+		BoundingBox.width.baseVal.value = r.width + 20;
+		BoundingBox.height.baseVal.value = r.height + 14;
+		
+		// make the bbox rect element transform to the given text
+		BoundingBox.transform.baseVal.clear();
+		var tfm2elm = elm.getTransformToElement(BoundingBox);
+		BoundingBox.transform.baseVal.appendItem(BoundingBox.transform.baseVal.createSVGTransformFromMatrix(tfm2elm));
+		BoundingBox = document.getElementById('Info Bounding Box1');
+		
+		// make the connector element transform to the given text
+		var connector = document.getElementById("Info Bounding Box Connector");
+		connector.transform.baseVal.clear();
+		//tfm2elm.e = 0; tfm2elm.f = 0; // clear translates
+		connector.transform.baseVal.appendItem(connector.transform.baseVal.createSVGTransformFromMatrix(tfm2elm));
+		connector.x2.baseVal.value = BoundingBox.x.baseVal.value;
+		connector.y2.baseVal.value = BoundingBox.y.baseVal.value + BoundingBox.height.baseVal.value;
+	}
+	
+  // function to draw the bounding box around other text info
+	function drawBoundingBox5(textID, nodeX, nodeY){
+	var elm = document.getElementById(textID);
+	// fixes for 'use' elements
+	if(!elm.getBBox){
+		if(elm.correspondingUseElement)
+		elm = elm.correspondingUseElement;
+	}
+	// rectangle of bounding box
+	var r = elm.getBBox();
+	
+	// don't care about the root element
+	var root = document.documentElement;
+	BoundingBox = document.getElementById('Info Bounding Box1');
+	
+	
+	// pad the rectangle
+	BoundingBox.x.baseVal.value = r.x - 10;
+	BoundingBox.y.baseVal.value = r.y - 7;
+	BoundingBox.width.baseVal.value = r.width + 20;
+	BoundingBox.height.baseVal.value = r.height + 14;
+	
+	// make the bbox rect element transform to the given text
+	BoundingBox.transform.baseVal.clear();
+	var tfm2elm = elm.getTransformToElement(BoundingBox);
+	BoundingBox.transform.baseVal.appendItem(BoundingBox.transform.baseVal.createSVGTransformFromMatrix(tfm2elm));
+	
+	// make the connector element transform to the given text
+	var connector = document.getElementById("Info Bounding Box Connector");
+	//connector.transform.baseVal.clear();
+	//tfm2elm.e = "0"; tfm2elm.f = "0";
+	//connector.transform.baseVal.appendItem(connector.transform.baseVal.createSVGTransformFromMatrix(tfm2elm));
+	
+	//tfm2elm = elm.getTransformToElement(BoundingBox);
+	
+	//connector.x1.baseVal.value = oldE;
+	//connector.y1.baseVal.value = oldF;
+	//alert("new");
+
+	//connector.x2.baseVal.value = BoundingBox.x.baseVal.value + oldE;
+	//connector.y2.baseVal.value = BoundingBox.y.baseVal.value + BoundingBox.height.baseVal.value + oldF;
+	
+	//alert("connector.x1.baseVal.value = "+connector.x1.baseVal.value);
+	//alert("connector.x2.baseVal.value = "+connector.x2.baseVal.value +", tfm2elm.e= "+tfm2elm.e);
+
+
+	var token = document.getElementById("cont").getAttribute("viewBox").split(" ");
+	var ViewBoxX1 = parseFloat(token[0]);
+	var ViewBoxY1 = parseFloat(token[1]);
+	var ViewBoxWidth = parseFloat(token[2]);
+	var ViewBoxHeight = parseFloat(token[3]);
+	var ViewBoxX2 = ViewBoxX1 + ViewBoxWidth;
+	var ViewBoxY2 = ViewBoxY1 + ViewBoxHeight;
+		//alert(ViewBoxX1);
+		//alert(ViewBoxY1);
+		//alert(ViewBoxX2);
+		//alert(ViewBoxY2);
+	
+	var BBX1 = nodeX + BoundingBox.x.baseVal.value;
+	var BBY1 = nodeY + BoundingBox.y.baseVal.value;
+	var BBX2 = BBX1 + BoundingBox.width.baseVal.value;
+	var BBY2 = BBY1 + BoundingBox.height.baseVal.value;
+	var BBWidth = BoundingBox.width.baseVal.value;
+	var BBHeight = BoundingBox.height.baseVal.value;
+
+		//alert(BBX1);
+		//alert(BBY1);
+
+
+
+	var token = document.getElementById(textID).getAttribute("transform").split(" ");
+	var translate1 = token[0];
+	var scale = token[1];
+
+	
+	// three cases for text being outside of viewbox
+	if((BBY1<ViewBoxY1) && (BBX2<ViewBoxX2)){          // case 1, text is above viewbox
+	//textGroup.setAttribute("transform", translate1+' '+scale+' '+translate2);
+		// retranslate text
+		translate1 = "translate("+nodeX+','+(nodeY - 2*BoundingBox.y.baseVal.value - BBHeight)+")";
+		elm.setAttribute("transform", translate1+' '+scale);
+
+
+
+		// rectangle of bounding box
+		r = elm.getBBox();
+		
+		// don't care about the root element
+		BoundingBox = document.getElementById('Info Bounding Box1');
+		
+		// pad the rectangle
+		BoundingBox.x.baseVal.value = r.x - 10;
+		BoundingBox.y.baseVal.value = r.y - 7;
+		BoundingBox.width.baseVal.value = r.width + 20;
+		BoundingBox.height.baseVal.value = r.height + 14;
+			
+		// make the bbox rect element transform to the given text
+		BoundingBox.transform.baseVal.clear();
+		var tfm2elm = elm.getTransformToElement(BoundingBox);
+		var oldE = tfm2elm.e;
+		var oldF = tfm2elm.f;
+		BoundingBox.transform.baseVal.appendItem(BoundingBox.transform.baseVal.createSVGTransformFromMatrix(tfm2elm));
+
+
+		// make the connector element transform to the given text
+		//var connector = document.getElementById("Info Bounding Box Connector");
+		connector.transform.baseVal.clear();
+		tfm2elm.e = "0"; tfm2elm.f = "0";
+		connector.transform.baseVal.appendItem(connector.transform.baseVal.createSVGTransformFromMatrix(tfm2elm));
+
+		connector.x1.baseVal.value = nodeX;
+		connector.y1.baseVal.value = nodeY;
+
+		connector.x2.baseVal.value = BoundingBox.x.baseVal.value + oldE;
+		connector.y2.baseVal.value = BoundingBox.y.baseVal.value + oldF;
+		//alert("1");
+		//alert("tfm2elm.e: "+ tfm2elm.e + ", tfm2elm.f: "+ tfm2elm.f);
+
+		//drawBoundingBox2(textID);
+		//return;
+	} else if((BBY1<ViewBoxY1) && (BBX2>ViewBoxX2)){          // case 2, text is above viewbox and to the right
+					// retranslate text
+		translate1 = "translate("+(nodeX- 2*BoundingBox.x.baseVal.value - BBWidth)+','+(nodeY - 2*BoundingBox.y.baseVal.value - BBHeight)+")";
+		elm.setAttribute("transform", translate1+' '+scale);
+
+
+
+		// rectangle of bounding box
+		r = elm.getBBox();
+		
+		// don't care about the root element
+		BoundingBox = document.getElementById('Info Bounding Box1');
+		
+		// pad the rectangle
+		BoundingBox.x.baseVal.value = r.x - 10;
+		BoundingBox.y.baseVal.value = r.y - 7;
+		BoundingBox.width.baseVal.value = r.width + 20;
+		BoundingBox.height.baseVal.value = r.height + 14;
+			
+		// make the bbox rect element transform to the given text
+		BoundingBox.transform.baseVal.clear();
+		var tfm2elm = elm.getTransformToElement(BoundingBox);
+		var oldE = tfm2elm.e;
+		var oldF = tfm2elm.f;
+		BoundingBox.transform.baseVal.appendItem(BoundingBox.transform.baseVal.createSVGTransformFromMatrix(tfm2elm));
+
+
+		// make the connector element transform to the given text
+		//var connector = document.getElementById("Info Bounding Box Connector");
+		connector.transform.baseVal.clear();
+		tfm2elm.e = "0"; tfm2elm.f = "0";
+		connector.transform.baseVal.appendItem(connector.transform.baseVal.createSVGTransformFromMatrix(tfm2elm));
+
+		connector.x1.baseVal.value = nodeX;
+		connector.y1.baseVal.value = nodeY;
+
+		connector.x2.baseVal.value = BoundingBox.x.baseVal.value + BBWidth + oldE;
+		connector.y2.baseVal.value = BoundingBox.y.baseVal.value + oldF;
+
+
+		//translate1 = "translate("+BBX1+','+2*connector.y1.baseVal.value - connector.y2.baseVal.value + BoundingBox.height.baseVal.value+")";
+		//elm.setAttribute("transform", translate1+' '+scale);
+		//alert("2");
+		//drawBoundingBox4(textID);
+	} else if((BBY1>ViewBoxY1) && (BBX2>ViewBoxX2)){          // case 3, text is to the right of viewbox
+		//translate1 = "translate("+BBX1+','+connector.y1.baseVal.value + connector.y2.baseVal.value+")";
+		//elm.setAttribute("transform", translate1+' '+scale);
+
+
+					// retranslate text
+		translate1 = "translate("+(nodeX- 2*BoundingBox.x.baseVal.value - BBWidth)+','+(nodeY)+")";
+		elm.setAttribute("transform", translate1+' '+scale);
+
+
+
+		// rectangle of bounding box
+		r = elm.getBBox();
+		
+		// don't care about the root element
+		BoundingBox = document.getElementById('Info Bounding Box1');
+		
+		// pad the rectangle
+		BoundingBox.x.baseVal.value = r.x - 10;
+		BoundingBox.y.baseVal.value = r.y - 7;
+		BoundingBox.width.baseVal.value = r.width + 20;
+		BoundingBox.height.baseVal.value = r.height + 14;
+			
+		// make the bbox rect element transform to the given text
+		BoundingBox.transform.baseVal.clear();
+		var tfm2elm = elm.getTransformToElement(BoundingBox);
+		var oldE = tfm2elm.e;
+		var oldF = tfm2elm.f;
+		BoundingBox.transform.baseVal.appendItem(BoundingBox.transform.baseVal.createSVGTransformFromMatrix(tfm2elm));
+
+
+		// make the connector element transform to the given text
+		//var connector = document.getElementById("Info Bounding Box Connector");
+		connector.transform.baseVal.clear();
+		tfm2elm.e = "0"; tfm2elm.f = "0";
+		connector.transform.baseVal.appendItem(connector.transform.baseVal.createSVGTransformFromMatrix(tfm2elm));
+
+		connector.x1.baseVal.value = nodeX;
+		connector.y1.baseVal.value = nodeY;
+
+		connector.x2.baseVal.value = BoundingBox.x.baseVal.value + BBWidth + oldE;
+		connector.y2.baseVal.value = BoundingBox.y.baseVal.value + BoundingBox.height.baseVal.value + oldF;
+
+
+		//alert("3");
+		//drawBoundingBox4(textID);
+	}
+	// good case
+	else{
+	// rectangle of bounding box
+	var r = elm.getBBox();
+	
+	// don't care about the root element
+	var root = document.documentElement;
+	BoundingBox = document.getElementById('Info Bounding Box1');
+	
+	// pad the rectangle
+	BoundingBox.x.baseVal.value = r.x - 10;
+	BoundingBox.y.baseVal.value = r.y - 7;
+	BoundingBox.width.baseVal.value = r.width + 20;
+	BoundingBox.height.baseVal.value = r.height + 14;
+	
+	// make the bbox rect element transform to the given text
+	BoundingBox.transform.baseVal.clear();
+	var tfm2elm = elm.getTransformToElement(BoundingBox);
+	//var nodeX = tfm2elm.e;
+	//var oldF = tfm2elm.f;
+	BoundingBox.transform.baseVal.appendItem(BoundingBox.transform.baseVal.createSVGTransformFromMatrix(tfm2elm));
+	//BoundingBox = document.getElementById('Info Bounding Box1');
+	
+	// make the connector element transform to the given text
+	//var connector = document.getElementById("Info Bounding Box Connector");
+	connector.transform.baseVal.clear();
+	tfm2elm.e = "0"; tfm2elm.f = "0";
+	connector.transform.baseVal.appendItem(connector.transform.baseVal.createSVGTransformFromMatrix(tfm2elm));
+	
+	connector.x1.baseVal.value = nodeX;
+	connector.y1.baseVal.value = nodeY;
+	connector.x2.baseVal.value = BoundingBox.x.baseVal.value + nodeX;
+	connector.y2.baseVal.value = BoundingBox.y.baseVal.value + BoundingBox.height.baseVal.value + nodeY;
+	
+	}
+}
+	
+	// function to draw the bounding box around section text info for sliding text box
+	function drawBoundingBox6(textID){
+		var elm = document.getElementById(textID);
+		// fixes for 'use' elements
+		if(!elm.getBBox){
+			if(elm.correspondingUseElement)
+			elm = elm.correspondingUseElement;
+		}
+		// get mouse coordinates
+		var p = document.documentElement.createSVGPoint();
+		p.x = event.clientX;
+		p.y = event.clientY;
+		var m = svgDocument.getScreenCTM();
+		p = p.matrixTransform(m.inverse());
+		
+		var x = p.x;
+		var y = p.y;
+		
+		// get text id
+		var textGroupID = elm.getAttribute("id");
+		var tokens = textGroupID;
+		var token = tokens.split(":");
+		var junk = token[0];
+		var tempID = token[1];
+		
+		// get line element to get line's coordinates
+		var sectionLine = document.getElementById('Line ID:'+tempID);
+		
+		var x1 = sectionLine.getAttribute('x1');
+		var y1 = sectionLine.getAttribute('y1');
+		var x2 = sectionLine.getAttribute('x2');
+		var y2 = sectionLine.getAttribute('y2');
+		
+		// algorithm to get closest point on line from user's cursor
+		var A = x - x1;
+		var B = y - y1;
+		var C = x2 - x1;
+		var D = y2 - y1;
+		
+		var dot = A * C + B * D;
+		var len_sq = C * C + D * D;
+		var param = dot / len_sq;
+		
+		// (xx,yy) = the closest point on line from user's cursor
+		var xx,yy;
+		
+		xx = parseFloat(x1) + parseFloat(param) * parseFloat(C);
+		yy = parseFloat(y1) + parseFloat(param) * parseFloat(D);
+		var centerX = xx;
+		var centerY = yy;
+		
+		var textGroupTransform = elm.getAttribute("transform");
+		var tokens = textGroupTransform;
+		var token = tokens.split(" ");
+		var translate1 = token[0];
+		var scale = token[1];
+		
+		translate1 = "translate("+xx+','+yy+")";
+		
+		textGroup = document.getElementById(textID);
+		textGroup.setAttribute("transform", translate1+' '+scale);
+		
+		// rectangle of bounding box
+		var r = elm.getBBox();
+		
+		// don't care about the root element
+		var root = document.documentElement;
+		BoundingBox = document.getElementById('Info Bounding Box1');
+		
+		
+		// pad the rectangle
+		BoundingBox.x.baseVal.value = r.x - 10;
+		BoundingBox.y.baseVal.value = r.y - 7;
+		BoundingBox.width.baseVal.value = r.width + 20;
+		BoundingBox.height.baseVal.value = r.height + 14;
+		
+	
+	// make the bbox rect element transform to the given text
+	BoundingBox.transform.baseVal.clear();
+	var tfm2elm = elm.getTransformToElement(BoundingBox);
+	BoundingBox.transform.baseVal.appendItem(BoundingBox.transform.baseVal.createSVGTransformFromMatrix(tfm2elm));
+	
+	// make the connector element transform to the given text
+	var connector = document.getElementById("Info Bounding Box Connector");
+	//connector.transform.baseVal.clear();
+	//tfm2elm.e = "0"; tfm2elm.f = "0";
+	//connector.transform.baseVal.appendItem(connector.transform.baseVal.createSVGTransformFromMatrix(tfm2elm));
+	
+	//tfm2elm = elm.getTransformToElement(BoundingBox);
+	
+	//connector.x1.baseVal.value = oldE;
+	//connector.y1.baseVal.value = oldF;
+	//alert("new");
+
+	//connector.x2.baseVal.value = BoundingBox.x.baseVal.value + oldE;
+	//connector.y2.baseVal.value = BoundingBox.y.baseVal.value + BoundingBox.height.baseVal.value + oldF;
+	
+	//alert("connector.x1.baseVal.value = "+connector.x1.baseVal.value);
+	//alert("connector.x2.baseVal.value = "+connector.x2.baseVal.value +", tfm2elm.e= "+tfm2elm.e);
+
+
+	var token = document.getElementById("cont").getAttribute("viewBox").split(" ");
+	var ViewBoxX1 = parseFloat(token[0]);
+	var ViewBoxY1 = parseFloat(token[1]);
+	var ViewBoxWidth = parseFloat(token[2]);
+	var ViewBoxHeight = parseFloat(token[3]);
+	var ViewBoxX2 = ViewBoxX1 + ViewBoxWidth;
+	var ViewBoxY2 = ViewBoxY1 + ViewBoxHeight;
+		//alert(ViewBoxX1);
+		//alert(ViewBoxY1);
+		//alert(ViewBoxX2);
+		//alert(ViewBoxY2);
+	
+	var BBX1 = centerX + BoundingBox.x.baseVal.value;
+	var BBY1 = centerY + BoundingBox.y.baseVal.value;
+	var BBX2 = BBX1 + BoundingBox.width.baseVal.value;
+	var BBY2 = BBY1 + BoundingBox.height.baseVal.value;
+	var BBWidth = BoundingBox.width.baseVal.value;
+	var BBHeight = BoundingBox.height.baseVal.value;
+
+		//alert(BBX1);
+		//alert(BBY1);
+
+
+
+	var token = document.getElementById(textID).getAttribute("transform").split(" ");
+	var translate1 = token[0];
+	var scale = token[1];
+
+	
+	// three cases for text being outside of viewbox
+	if((BBY1<ViewBoxY1) && (BBX2<ViewBoxX2)){          // case 1, text is above viewbox
+	//textGroup.setAttribute("transform", translate1+' '+scale+' '+translate2);
+		// retranslate text
+		translate1 = "translate("+centerX+','+(centerY - 2*BoundingBox.y.baseVal.value - BBHeight)+")";
+		elm.setAttribute("transform", translate1+' '+scale);
+
+
+
+		// rectangle of bounding box
+		r = elm.getBBox();
+		
+		// don't care about the root element
+		BoundingBox = document.getElementById('Info Bounding Box1');
+		
+		// pad the rectangle
+		BoundingBox.x.baseVal.value = r.x - 10;
+		BoundingBox.y.baseVal.value = r.y - 7;
+		BoundingBox.width.baseVal.value = r.width + 20;
+		BoundingBox.height.baseVal.value = r.height + 14;
+			
+		// make the bbox rect element transform to the given text
+		BoundingBox.transform.baseVal.clear();
+		var tfm2elm = elm.getTransformToElement(BoundingBox);
+		var oldE = tfm2elm.e;
+		var oldF = tfm2elm.f;
+		BoundingBox.transform.baseVal.appendItem(BoundingBox.transform.baseVal.createSVGTransformFromMatrix(tfm2elm));
+
+
+		// make the connector element transform to the given text
+		//var connector = document.getElementById("Info Bounding Box Connector");
+		connector.transform.baseVal.clear();
+		tfm2elm.e = "0"; tfm2elm.f = "0";
+		connector.transform.baseVal.appendItem(connector.transform.baseVal.createSVGTransformFromMatrix(tfm2elm));
+
+		connector.x1.baseVal.value = centerX;
+		connector.y1.baseVal.value = centerY;
+
+		connector.x2.baseVal.value = BoundingBox.x.baseVal.value + oldE;
+		connector.y2.baseVal.value = BoundingBox.y.baseVal.value + oldF;
+		//alert("1");
+		//alert("tfm2elm.e: "+ tfm2elm.e + ", tfm2elm.f: "+ tfm2elm.f);
+
+		//drawBoundingBox2(textID);
+		//return;
+	} else if((BBY1<ViewBoxY1) && (BBX2>ViewBoxX2)){          // case 2, text is above viewbox and to the right
+					// retranslate text
+		translate1 = "translate("+(centerX- 2*BoundingBox.x.baseVal.value - BBWidth)+','+(centerY - 2*BoundingBox.y.baseVal.value - BBHeight)+")";
+		elm.setAttribute("transform", translate1+' '+scale);
+
+
+
+		// rectangle of bounding box
+		r = elm.getBBox();
+		
+		// don't care about the root element
+		BoundingBox = document.getElementById('Info Bounding Box1');
+		
+		// pad the rectangle
+		BoundingBox.x.baseVal.value = r.x - 10;
+		BoundingBox.y.baseVal.value = r.y - 7;
+		BoundingBox.width.baseVal.value = r.width + 20;
+		BoundingBox.height.baseVal.value = r.height + 14;
+			
+		// make the bbox rect element transform to the given text
+		BoundingBox.transform.baseVal.clear();
+		var tfm2elm = elm.getTransformToElement(BoundingBox);
+		var oldE = tfm2elm.e;
+		var oldF = tfm2elm.f;
+		BoundingBox.transform.baseVal.appendItem(BoundingBox.transform.baseVal.createSVGTransformFromMatrix(tfm2elm));
+
+
+		// make the connector element transform to the given text
+		//var connector = document.getElementById("Info Bounding Box Connector");
+		connector.transform.baseVal.clear();
+		tfm2elm.e = "0"; tfm2elm.f = "0";
+		connector.transform.baseVal.appendItem(connector.transform.baseVal.createSVGTransformFromMatrix(tfm2elm));
+
+		connector.x1.baseVal.value = centerX;
+		connector.y1.baseVal.value = centerY;
+
+		connector.x2.baseVal.value = BoundingBox.x.baseVal.value + BBWidth + oldE;
+		connector.y2.baseVal.value = BoundingBox.y.baseVal.value + oldF;
+
+
+		//translate1 = "translate("+BBX1+','+2*connector.y1.baseVal.value - connector.y2.baseVal.value + BoundingBox.height.baseVal.value+")";
+		//elm.setAttribute("transform", translate1+' '+scale);
+		//alert("2");
+		//drawBoundingBox4(textID);
+	} else if((BBY1>ViewBoxY1) && (BBX2>ViewBoxX2)){          // case 3, text is to the right of viewbox
+		//translate1 = "translate("+BBX1+','+connector.y1.baseVal.value + connector.y2.baseVal.value+")";
+		//elm.setAttribute("transform", translate1+' '+scale);
+
+
+					// retranslate text
+		translate1 = "translate("+(centerX- 2*BoundingBox.x.baseVal.value - BBWidth)+','+(centerY)+")";
+		elm.setAttribute("transform", translate1+' '+scale);
+
+
+
+		// rectangle of bounding box
+		r = elm.getBBox();
+		
+		// don't care about the root element
+		BoundingBox = document.getElementById('Info Bounding Box1');
+		
+		// pad the rectangle
+		BoundingBox.x.baseVal.value = r.x - 10;
+		BoundingBox.y.baseVal.value = r.y - 7;
+		BoundingBox.width.baseVal.value = r.width + 20;
+		BoundingBox.height.baseVal.value = r.height + 14;
+			
+		// make the bbox rect element transform to the given text
+		BoundingBox.transform.baseVal.clear();
+		var tfm2elm = elm.getTransformToElement(BoundingBox);
+		var oldE = tfm2elm.e;
+		var oldF = tfm2elm.f;
+		BoundingBox.transform.baseVal.appendItem(BoundingBox.transform.baseVal.createSVGTransformFromMatrix(tfm2elm));
+
+
+		// make the connector element transform to the given text
+		//var connector = document.getElementById("Info Bounding Box Connector");
+		connector.transform.baseVal.clear();
+		tfm2elm.e = "0"; tfm2elm.f = "0";
+		connector.transform.baseVal.appendItem(connector.transform.baseVal.createSVGTransformFromMatrix(tfm2elm));
+
+		connector.x1.baseVal.value = centerX;
+		connector.y1.baseVal.value = centerY;
+
+		connector.x2.baseVal.value = BoundingBox.x.baseVal.value + BBWidth + oldE;
+		connector.y2.baseVal.value = BoundingBox.y.baseVal.value + BoundingBox.height.baseVal.value + oldF;
+
+
+		//alert("3");
+		//drawBoundingBox4(textID);
+	}
+	// good case
+	else{
+	// rectangle of bounding box
+	var r = elm.getBBox();
+	
+	// don't care about the root element
+	var root = document.documentElement;
+	BoundingBox = document.getElementById('Info Bounding Box1');
+	
+	// pad the rectangle
+	BoundingBox.x.baseVal.value = r.x - 10;
+	BoundingBox.y.baseVal.value = r.y - 7;
+	BoundingBox.width.baseVal.value = r.width + 20;
+	BoundingBox.height.baseVal.value = r.height + 14;
+	
+	// make the bbox rect element transform to the given text
+	BoundingBox.transform.baseVal.clear();
+	var tfm2elm = elm.getTransformToElement(BoundingBox);
+	//var centerX = tfm2elm.e;
+	//var oldF = tfm2elm.f;
+	BoundingBox.transform.baseVal.appendItem(BoundingBox.transform.baseVal.createSVGTransformFromMatrix(tfm2elm));
+	//BoundingBox = document.getElementById('Info Bounding Box1');
+	
+	// make the connector element transform to the given text
+	//var connector = document.getElementById("Info Bounding Box Connector");
+	connector.transform.baseVal.clear();
+	tfm2elm.e = "0"; tfm2elm.f = "0";
+	connector.transform.baseVal.appendItem(connector.transform.baseVal.createSVGTransformFromMatrix(tfm2elm));
+	
+	connector.x1.baseVal.value = centerX;
+	connector.y1.baseVal.value = centerY;
+	connector.x2.baseVal.value = BoundingBox.x.baseVal.value + centerX;
+	connector.y2.baseVal.value = BoundingBox.y.baseVal.value + BoundingBox.height.baseVal.value + centerY;
+	
+	}
+	}
+	
+	function drawInfoBox(){
+	svgDocument = document.getElementById("cont");
+	var m = svgDocument.getScreenCTM();
+	
+	var textGroup;
+	var tokens;
+	var token;
+	var translate1;
+	var scale;
+	
+	var p = document.documentElement.createSVGPoint();
+	p.y = getHeight();
+	
+	var q = document.documentElement.createSVGPoint();
+	q.y = 0;
+	
+	p = p.matrixTransform(m.inverse());
+	q = q.matrixTransform(m.inverse());
+	
+	var textScaleB = (16/screen.height)*(p.y - q.y); // roughly font size 12 at fullscreen
+	
+	var newScale = textScaleB/origTextScale;
+	scale = "scale("+newScale+','+newScale+")";
+	
+	var nodes=["SOURCE_NODE_1","650","632","634","645","646","671","680","684","611","652","675","699"];
+	var i=0;
+	for (i=0;i<13;i++){
+		textGroup = document.getElementById("Node Info Box: " + nodes[i]);
+		tokens = textGroup.getAttribute("transform");
+		token = tokens.split(" ");
+		translate1 = token[0];
+		textGroup.setAttribute("transform", translate1+' '+scale);
+	}
+	var sections=["FEEDER_TO_T1_S","FEEDER_TO_T1_L","650_632_S","650_632_L","632_634_S","632_634_L","632_645_S","632_645_L","645_646_S","645_646_L","632_699_S","632_699_L","699_671_S","699_671_L","671_680_S","671_680_L","671_675_S","671_675_L","671_684_S","671_684_L","684_611_S","684_611_L","684_652_S","684_652_L"];
+	i=0;
+	for (i=0;i<24;i++){
+		textGroup = document.getElementById("Section Info Box: " + sections[i]);
+		tokens = textGroup.getAttribute("transform");
+		token = tokens.split(" ");
+		translate1 = token[0];
+		textGroup.setAttribute("transform", translate1+' '+scale);
+	}
+	var loads=["allocated load at node 634 (0)","allocated load at node 645 (0)","allocated load at node 646 (0)","allocated load at node 652 (0)","allocated load at node 671 (0)","allocated load at node 675 (0)","allocated load at node 671 (1)","allocated load at node 611 (0)","allocated load at node 699 (0)"];
+	i=0;
+	for (i=0;i<9;i++){
+		textGroup = document.getElementById("Info Box for " + loads[i]);
+		tokens = textGroup.getAttribute("transform");
+		token = tokens.split(" ");
+		translate1 = token[0];
+		textGroup.setAttribute("transform", translate1+' '+scale);
+	}
+	var shuntCaps=["shunt capacitor at node 611 (1)","shunt capacitor at node 675 (1)"];
+	i=0;
+	for (i=0;i<2;i++){
+		textGroup = document.getElementById("Info Box for " + shuntCaps[i]);
+		tokens = textGroup.getAttribute("transform");
+		token = tokens.split(" ");
+		translate1 = token[0];
+		textGroup.setAttribute("transform", translate1+' '+scale);
+	}
+	var regs=["IEEE13N"];
+	i=0;
+	for (i=0;i<1;i++){
+		textGroup = document.getElementById("Regulator Info Box: " + regs[i]);
+		tokens = textGroup.getAttribute("transform");
+		token = tokens.split(" ");
+		translate1 = token[0];
+		textGroup.setAttribute("transform", translate1+' '+scale);
+	}
+	var trans=["XFM-1","SUBXFM"];
+	i=0;
+	for (i=0;i<2;i++){
+		textGroup = document.getElementById("Transformer Info Box: " + trans[i]);
+		tokens = textGroup.getAttribute("transform");
+		token = tokens.split(" ");
+		translate1 = token[0];
+		textGroup.setAttribute("transform", translate1+' '+scale);
+	}
+	var switches=["650_632_L","632_699_S","671_675_S"];
+	i=0;
+	for (i=0;i<3;i++){
+		textGroup = document.getElementById("Switch Info Box: " + switches[i]);
+		tokens = textGroup.getAttribute("transform");
+		token = tokens.split(" ");
+		translate1 = token[0];
+		textGroup.setAttribute("transform", translate1+' '+scale);
+	}
+	}
+	
+	function mouseDown(evt) {
+		textMove(GeneralText);
+		textMove(InstructionText);
+		textMove("System Info Box");
+		drawBoundingBox(GeneralText);
+		drawBoundingBox(InstructionText);
+		drawBoundingBox("System Info Box");
+		drawInfoBox();
+		refresh = true;
+	}
+	
+	function mouseMove(evt) {
+		if(refresh){
+			textMove(GeneralText);
+			textMove(InstructionText);
+			textMove("System Info Box");
+			drawBoundingBox(GeneralText);
+			drawBoundingBox(InstructionText);
+			drawBoundingBox("System Info Box");
+			drawInfoBox();
+			refresh = false;
+		}
+	}
+	
+	function mouseUp(evt) {
+		textMove(GeneralText);
+		textMove(InstructionText);
+		textMove("System Info Box");
+		drawBoundingBox(GeneralText);
+		drawBoundingBox(InstructionText);
+		drawBoundingBox("System Info Box");
+		drawInfoBox();
+		refresh = true;
+	}
+	
+	// function to get the height of the window containing the svg in pixels; this is not the same as the svg viewbox or screen resolution
+	function getHeight()
+	{
+		var y = 0;
+		if (self.innerHeight){
+			y = self.innerHeight;
+		} else if (document.documentElement && document.documentElement.clientHeight){
+			y = document.documentElement.clientHeight;
+		} else if (document.body){
+			y = document.body.clientHeight;
+		}
+		return y;
+	}
+	
+	// function to get the width of the window containing the svg in pixels; this is not the same as the svg viewbox or screen resolution
+	function getWidth()
+	{
+		var x = 0;
+		if (self.innerHeight){
+			x = self.innerWidth;
+		} else if (document.documentElement && document.documentElement.clientHeight){
+			x = document.documentElement.clientWidth;
+		} else if (document.body){
+			x = document.body.clientWidth;
+		}
+		return x;
+	}
+	
+	// to prevent selection of text; prevent text Ibar cursor when dragging
+	function disableSelection(){
+		var target = document.getElementById('cont');
+		if (typeof target.onselectstart!="undefined"){ //IE route
+			target.onselectstart=function(){return false}
+		} else if (typeof target.style.MozUserSelect!="undefined"){ //Firefox route
+			target.style.MozUserSelect="none"
+		} else { //All other route (ie: Opera)
+			target.onmousedown=function(){return false}
+			target.style.cursor = "default"
+		}
+	}
+
+]]>
+</script>
+
+<defs>
+<g id="node">
+	<circle cx="0" cy="0" r ="3" stroke="black" stroke-width=".1" fill="brown" ></circle>
+</g>
+
+<g id="section">
+	<line x1 ="-10" y1 ="0" x2 ="40" y2="0" stroke="black" stroke-width=".5"/>
+</g>
+
+<g id="transformer_USA" stroke="black">
+	<rect x="5" y="5" width = "10" height = "10" stroke="none" stroke-width="0" fill="white" />
+	<polyline stroke="black" fill="none" stroke-width=".5" points="15,10 11.8,10" />
+	<polyline stroke="black" fill="none" stroke-width=".5" points="5,10 8.2,10" />
+	<path id="xfmrRight" d="M12,5 A1.25,1.25 0 0,0 12,7.5 A1.25,1.25 0 0,0 12,10 A1.25,1.25 0 0,0 12,12.5 A1.25,1.25 0 0,0 12,15"
+	 fill="none" stroke-width=".5"/>
+	<path id="xfmrLeft" d="M8,5 A1.25,1.25 0 0,1 8,7.5 A1.25,1.25 0 0,1 8,10 A1.25,1.25 0 0,1 8,12.5 A1.25,1.25 0 0,1 8,15" fill="none" stroke-width=".5"/>
+</g>
+<g id="transformer_UK" stroke="black">
+	<rect x="5" y="5" width = "10" height = "10" stroke="none" stroke-width="0" fill="white"/>
+	<polyline points="5,10 7,10" stroke="black" stroke-width=".5"/>
+	<polyline points="15,10 13,10" stroke="black" stroke-width=".5"/>
+	<circle cx ="9" cy="10" r="2" stroke="black" stroke-width=".6" fill="none"/>
+	<circle cx ="11" cy="10" r="2" stroke="black" stroke-width=".6" fill="none"/>
+</g>
+<g id="load" stroke="black" stroke-width=".5">
+	<rect x="5" y="5" width = "10" height = "10" stroke="white" stroke-width="0" fill="white"/>
+	<polyline points="10,15 10,5"/><polyline points="10,15 14,11"/>
+	<polyline points="10,15 6,11"/><polyline points="5,5 15,5"/>
+</g>
+<g id="switch-open" stroke="black">
+	<rect x="5" y="5" width = "10" height = "10" stroke="none" stroke-width="0" fill="white"/>
+	<rect x="5" y="5" width = "10" height = "10" stroke="gray" stroke-width="0.25" fill="red">
+	<animateColor id="changecolor" attributeName="fill" from="red" to="beige" dur="0.5s" repeatCount="60" />
+</rect>
+	<polyline fill="none" stroke="black" stroke-width=".5" points="15,10 12.5,10" />
+	<polyline fill="none" stroke="black" stroke-width=".5" points="5,10 7.5,10" />
+	<polyline fill="none" stroke="black" stroke-width=".5" points="7.5,10 12,6.5" />
+	<circle cx="7.5" cy="10" r="0.3" fill="black" stroke="black"/>
+	<circle cx="12.5" cy="10" r="0.3" fill="black" stroke="black"/>
+</g>
+
+<g id="switch-closed" stroke="black">
+	<rect x="5" y="5" width = "10" height = "10" stroke="none" stroke-width="0" fill="white" /> 
+	<rect x="5" y="5" width = "10" height = "10" stroke="gray" stroke-width="0.25" fill="beige" /> 
+	<polyline fill="none" stroke="black" stroke-width=".5" points="15,10 12.5,10" />
+	<polyline fill="none" stroke="black" stroke-width=".5" points="5,10 7.5,10" />	
+	<polyline fill="none" stroke="black" stroke-width=".5" points="7.5,10 12.5,9" />
+	<circle cx="7.5" cy="10" r="0.3" fill="black" stroke="black"/>
+	<circle cx="12.5" cy="10" r="0.3" fill="black" stroke="black"/>
+</g>
+
+<g id="shunt-capacitor" stroke="black" stroke-width=".5">	<rect x="5" y="5" width = "10" height = "10" stroke="white" stroke-width="0" fill="white"/>
+
+	<polyline points="10,5 10,8"/>
+	<polyline points="5,5 15,5"/>
+	<polyline points="6,8 14,8"/>
+	<polyline points="6,10 14,10"/>
+	<polyline points="10,10 10,13"/>
+	<polyline points="8.5,13 11.5,13"/>
+	<polyline points="9.25,14 10.75,14"/>
+	<polyline points="9.75,15 10.25,15"/>
+</g>
+
+<g id="breaker-red-closed" stroke="black">
+	<rect x="5" y="5" width = "10" height = "10" stroke="none" stroke-width="0" fill="white" /> 
+	<polyline fill="none" stroke="black" stroke-width=".5"	points="15,10 12,10" />
+	<polyline fill="none" stroke="black" stroke-width=".5"	points="5,10 8,10" />
+	<rect x="8" y="8" width="4" height="4" rx=".75" stroke="black" stroke-width=".4" fill="red"/>
+</g>
+
+<g id="breaker-green-open" stroke="black">
+	<rect x="5" y="5" width = "10" height = "10" stroke="none" stroke-width="0" fill="white" /> 
+	<polyline fill="none" stroke="black" stroke-width=".5"	points="15,10 12,10" />
+	<polyline fill="none" stroke="black" stroke-width=".5"	points="5,10 8,10" />
+	<rect x="8" y="8" width="4" height="4" rx=".75" stroke="black" stroke-width=".4" fill="green"/></g>
+
+<g id="arrow" stroke-width=".5" stroke="black" fill="yellow">
+	<polygon points="5,0 9,10 5,8 1,10 5,0"/>
+</g>
+
+<g id="regulator" stroke="black">
+	<rect x="5" y="5" width = "10" height = "10" stroke="none" stroke-width="0" fill="white" /> 
+	<polyline fill="none" stroke="black" stroke-width=".5" points="15,10 12,10" />
+	<polyline fill="none" stroke="black" stroke-width=".5" points="5,10 8,10" />	
+	<circle cx="10" cy="10" r="2" fill="white" stroke="black" stroke-width=".5" />
+	<polyline fill="none" stroke="black" stroke-width=".5" points="7,13 13.5,6.5" />
+	<polyline fill="none" stroke="black" stroke-width=".5" points="11,6.5 13.5,6.5 13.5,9" />
+</g>
+
+<g id="sectionalizer" stroke="black" >
+	<rect x="5" y="5" width = "10" height = "10" stroke="none" stroke-width="0" fill="white" /> 
+	<polyline fill="none" stroke="black" stroke-width=".5" points="15,10 5,10" />
+	<polygon points="7.5,12 10,7 12.5,12" fill="black" stroke="none"/>
+</g>
+
+<g id="source" stroke="black" stroke-width=".5" fill="none">
+<polyline points="5,5 15,5"/><polyline points="10,11 10,5"/>
+<circle cx="10" cy="17" r="6"/><path d="M 10,17 C10,17 12,22 14,17 M10,17 C10,17 8,12 6,17" />
+</g>
+
+<g id="fuse" fill="none" stroke="black" stroke-width=".5">
+<rect x="5" y="5" width = "10" height = "10" stroke="none" stroke-width="0" fill="white"/>
+<rect x = "5" y = "5" width = "10" height = "10"/>
+<path d="M 5,10 C5,10 7.5,6 10,10 M10,10 C10,10 12.5,14 15,10"/>
+<circle cx="5" cy="10" r="1" fill = "black"/><circle cx="15" cy="10" r="1" fill= "black"/>
+</g>
+
+<g id="generator" fill="none"  stroke-width=".5" stroke="black">
+<text id="generatorG" x="6" y="14" fill="black" font-size="10" font-family="Arial" stroke-width = "0">G</text>
+<circle cx="10" cy="10" r="6"/>
+</g>
+
+<g id="motor" fill="none" stroke-width=".5" stroke="black">
+<text id="motorM" x="6" y="14" fill="black" font-size="10" font-family="Arial" stroke-width = "0">M</text>
+<circle cx="10" cy="10" r="6"/>
+</g>
+
+<g id="infoBox">
+<polygon points="20,-60 20,-135 220,-135 220,-60 50,-60 0,0 30,-60" style="fill:#cccccc;stroke:#000000;stroke-width:1;opacity:0.9"/>
+</g>
+</defs>
+
+
+<line id="Line ID: FEEDER_TO_T1_S" x1 ="161.939942" y1 ="800.818702" x2 ="161.939942" y2="698.8811284999999" stroke="black" stroke-width="2.165747920909091"/>
+
+<line id="Line ID: FEEDER_TO_T1_L" x1 ="161.939942" y1 ="698.8811284999999" x2 ="161.939942" y2="596.943555" stroke="black" stroke-width="2.165747920909091"/>
+
+<line id="Line ID: 650_632_S" x1 ="161.939942" y1 ="596.943555" x2 ="163.0438025" y2="498.7984835" stroke="black" stroke-width="2.165747920909091"/>
+
+<line id="Line ID: 650_632_L" x1 ="163.0438025" y1 ="498.7984835" x2 ="164.147663" y2="400.653412" stroke="black" stroke-width="2.165747920909091"/>
+
+<line id="Line ID: 632_634_S" x1 ="164.147663" y1 ="400.653412" x2 ="422.3463215" y2="399.98512900000003" stroke="black" stroke-width="2.165747920909091"/>
+
+<line id="Line ID: 632_634_L" x1 ="422.3463215" y1 ="399.98512900000003" x2 ="680.54498" y2="399.316846" stroke="black" stroke-width="2.165747920909091"/>
+
+<line id="Line ID: 632_645_S" x1 ="164.147663" y1 ="400.653412" x2 ="36.063224" y2="399.78945899999997" stroke="black" stroke-width="2.165747920909091"/>
+
+<line id="Line ID: 632_645_L" x1 ="36.063224" y1 ="399.78945899999997" x2 ="-92.021215" y2="398.925506" stroke="black" stroke-width="2.165747920909091"/>
+
+<line id="Line ID: 645_646_S" x1 ="-92.021215" y1 ="398.925506" x2 ="-239.4511325" y2="396.678936" stroke="black" stroke-width="2.165747920909091"/>
+
+<line id="Line ID: 645_646_L" x1 ="-239.4511325" y1 ="396.678936" x2 ="-386.88105" y2="394.432366" stroke="black" stroke-width="2.165747920909091"/>
+
+<line id="Line ID: 632_699_S" x1 ="164.147663" y1 ="400.653412" x2 ="165.35391099999998" y2="344.46098900000004" stroke="black" stroke-width="2.165747920909091"/>
+
+<line id="Line ID: 632_699_L" x1 ="165.35391099999998" y1 ="344.46098900000004" x2 ="166.560159" y2="288.268566" stroke="black" stroke-width="2.165747920909091"/>
+
+<line id="Line ID: 699_671_S" x1 ="166.560159" y1 ="288.268566" x2 ="167.561671" y2="232.56844900000002" stroke="black" stroke-width="2.165747920909091"/>
+
+<line id="Line ID: 699_671_L" x1 ="167.561671" y1 ="232.56844900000002" x2 ="168.563183" y2="176.868332" stroke="black" stroke-width="2.165747920909091"/>
+
+<line id="Line ID: 671_680_S" x1 ="168.563183" y1 ="176.868332" x2 ="168.786227" y2="105.23855850000001" stroke="black" stroke-width="2.165747920909091"/>
+
+<line id="Line ID: 671_680_L" x1 ="168.786227" y1 ="105.23855850000001" x2 ="169.009271" y2="33.608785" stroke="black" stroke-width="2.165747920909091"/>
+
+<line id="Line ID: 671_675_S" x1 ="168.563183" y1 ="176.868332" x2 ="350.4278705" y2="178.07855899999998" stroke="black" stroke-width="2.165747920909091"/>
+
+<line id="Line ID: 671_675_L" x1 ="350.4278705" y1 ="178.07855899999998" x2 ="532.292558" y2="179.288786" stroke="black" stroke-width="2.165747920909091"/>
+
+<line id="Line ID: 671_684_S" x1 ="168.563183" y1 ="176.868332" x2 ="21.818544000000003" y2="176.3605945" stroke="black" stroke-width="2.165747920909091"/>
+
+<line id="Line ID: 671_684_L" x1 ="21.818544000000003" y1 ="176.3605945" x2 ="-124.926095" y2="175.852857" stroke="black" stroke-width="2.165747920909091"/>
+
+<line id="Line ID: 684_611_S" x1 ="-124.926095" y1 ="175.852857" x2 ="-247.32966399999998" y2="174.90399200000002" stroke="black" stroke-width="2.165747920909091"/>
+
+<line id="Line ID: 684_611_L" x1 ="-247.32966399999998" y1 ="174.90399200000002" x2 ="-369.733233" y2="173.955127" stroke="black" stroke-width="2.165747920909091"/>
+
+<line id="Line ID: 684_652_S" x1 ="-124.926095" y1 ="175.852857" x2 ="-124.9395705" y2="91.281994" stroke="black" stroke-width="2.165747920909091"/>
+
+<line id="Line ID: 684_652_L" x1 ="-124.9395705" y1 ="91.281994" x2 ="-124.953046" y2="6.711131" stroke="black" stroke-width="2.165747920909091"/>
+
+<g transform="  translate(148.15720662906062,814.6014373709394) scale(2.7071849011363636,2.7071849011363636) translate(-13.0,0)" opacity="1">
+	<polyline points="13,5 13,0" stroke="black" stroke-width=".5" />
+	<use xlink:href = "#source"/>
+</g>
+
+<g id="arrow" transform="  translate(161.939942,677.2236492909091) scale(2.165747920909091,2.165747920909091) rotate(0.0 0 0) translate(-5.0,-5.0)" opacity="1">
+	<use xlink:href = "#arrow"/>
+</g>
+
+<g  id="Section Zoom Box on section: FEEDER_TO_T1_S" opacity="0" 
+	onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Section Info Box: FEEDER_TO_T1_S').removeAttribute('display');" 
+	onmousemove="drawBoundingBox3('Section Info Box: FEEDER_TO_T1_S')"
+	onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Section Info Box: FEEDER_TO_T1_S').setAttribute('display','none')">
+	<path d=" M161.939942,735.8462643727273 C161.939942,735.8462643727273 191.25124954090913,779.1612227909092 220.56255708181826,735.8462643727273 C220.56255708181826,735.8462643727273 191.25124954090913,692.5313059545455 161.939942,735.8462643727273" transform="translate(0,0) rotate(-90.0 161.939942 735.8462643727273)" opacity="1" fill-opacity="0" stroke="black" stroke-width="3.6095798681818176"/>
+	<set attributeName="opacity" to="1" begin="mouseover" end="mouseout"/>
+</g>
+
+<g  id="Section Zoom Box on section: FEEDER_TO_T1_L" opacity="0" 
+	onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Section Info Box: FEEDER_TO_T1_L').removeAttribute('display');" 
+	onmousemove="drawBoundingBox3('Section Info Box: FEEDER_TO_T1_L')"
+	onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Section Info Box: FEEDER_TO_T1_L').setAttribute('display','none')">
+	<path d=" M161.939942,677.2236492909091 C161.939942,677.2236492909091 191.25124954090913,720.5386077090909 220.56255708181826,677.2236492909091 C220.56255708181826,677.2236492909091 191.25124954090913,633.9086908727272 161.939942,677.2236492909091" transform="translate(0,0) rotate(-90.0 161.939942 677.2236492909091)" opacity="1" fill-opacity="0" stroke="black" stroke-width="3.6095798681818176"/>
+	<set attributeName="opacity" to="1" begin="mouseover" end="mouseout"/>
+</g>
+
+<g id="arrow" transform="  translate(163.04380249999997,498.7984835) scale(2.165747920909091,2.165747920909091) rotate(0.6443918187187023 0 0) translate(-5.0,-5.0)" opacity="1">
+	<use xlink:href = "#arrow"/>
+</g>
+
+<g  id="Section Zoom Box on section: 650_632_S" opacity="0" 
+	onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Section Info Box: 650_632_S').removeAttribute('display');" 
+	onmousemove="drawBoundingBox3('Section Info Box: 650_632_S')"
+	onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Section Info Box: 650_632_S').setAttribute('display','none')">
+	<path d=" M162.67065593691552,531.9752264977809 C162.67065593691552,531.9752264977809 179.26007661922347,575.2901849159628 195.84949730153144,531.9752264977809 C195.84949730153144,531.9752264977809 179.26007661922347,488.6602680795991 162.67065593691552,531.9752264977809" transform="translate(0,0) rotate(-89.3556081812813 162.67065593691552 531.9752264977809)" opacity="1" fill-opacity="0" stroke="black" stroke-width="3.6095798681818176"/>
+	<set attributeName="opacity" to="1" begin="mouseover" end="mouseout"/>
+</g>
+
+<g  id="Section Zoom Box on section: 650_632_L" opacity="0" 
+	onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Section Info Box: 650_632_L').removeAttribute('display');" 
+	onmousemove="drawBoundingBox3('Section Info Box: 650_632_L')"
+	onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Section Info Box: 650_632_L').setAttribute('display','none')">
+	<path d=" M163.0438025,498.7984835 C163.0438025,498.7984835 179.63322318230797,542.1134419181818 196.22264386461597,498.7984835 C196.22264386461597,498.7984835 179.63322318230797,455.4835250818182 163.0438025,498.7984835" transform="translate(0,0) rotate(-89.3556081812813 163.0438025 498.7984835)" opacity="1" fill-opacity="0" stroke="black" stroke-width="3.6095798681818176"/>
+	<set attributeName="opacity" to="1" begin="mouseover" end="mouseout"/>
+</g>
+
+<g id="arrow" transform="  translate(487.3185415017399,399.816964570519) scale(2.165747920909091,2.165747920909091) rotate(89.85170445833667 0 0) translate(-5.0,-5.0)" opacity="1">
+	<use xlink:href = "#arrow"/>
+</g>
+
+<g id="arrow" transform="  translate(314.0592881637666,400.2654030491351) scale(2.165747920909091,2.165747920909091) rotate(89.85170445833667 0 0) translate(-5.0,-5.0)" opacity="1">
+	<use xlink:href = "#arrow"/>
+</g>
+
+<g  id="Section Zoom Box on section: 632_634_S" opacity="0" 
+	onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Section Info Box: 632_634_S').removeAttribute('display');" 
+	onmousemove="drawBoundingBox3('Section Info Box: 632_634_S')"
+	onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Section Info Box: 632_634_S').setAttribute('display','none')">
+	<path d=" M185.80506966724664,400.597357190173 C185.80506966724664,400.597357190173 293.2473521285086,443.9123156083548 400.68963458977066,400.597357190173 C400.68963458977066,400.597357190173 293.2473521285086,357.2823987719912 185.80506966724664,400.597357190173" transform="translate(0,0) rotate(-0.14829554166332728 185.80506966724664 400.597357190173)" opacity="1" fill-opacity="0" stroke="black" stroke-width="3.6095798681818176"/>
+	<set attributeName="opacity" to="1" begin="mouseover" end="mouseout"/>
+</g>
+
+<g  id="Section Zoom Box on section: 632_634_L" opacity="0" 
+	onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Section Info Box: 632_634_L').removeAttribute('display');" 
+	onmousemove="drawBoundingBox3('Section Info Box: 632_634_L')"
+	onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Section Info Box: 632_634_L').setAttribute('display','none')">
+	<path d=" M400.6889148327533,400.04118380982703 C400.6889148327533,400.04118380982703 508.13119729401535,443.3561422280088 615.5734797552774,400.04118380982703 C615.5734797552774,400.04118380982703 508.13119729401535,356.72622539164524 400.6889148327533,400.04118380982703" transform="translate(0,0) rotate(-0.14829554166333989 400.6889148327533 400.04118380982703)" opacity="1" fill-opacity="0" stroke="black" stroke-width="3.6095798681818176"/>
+	<set attributeName="opacity" to="1" begin="mouseover" end="mouseout"/>
+</g>
+
+<g id="arrow" transform="  translate(36.06322399999999,399.7894590000001) scale(2.165747920909091,2.165747920909091) rotate(270.38646466567593 0 0) translate(-5.0,-5.0)" opacity="1">
+	<use xlink:href = "#arrow"/>
+</g>
+
+<g  id="Section Zoom Box on section: 632_645_S" opacity="0" 
+	onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Section Info Box: 632_645_S').removeAttribute('display');" 
+	onmousemove="drawBoundingBox3('Section Info Box: 632_645_S')"
+	onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Section Info Box: 632_645_S').setAttribute('display','none')">
+	<path d=" M142.49067645463214,400.5073316592271 C142.49067645463214,400.5073316592271 195.70561321382093,443.82229007740887 248.9205499730097,400.5073316592271 C248.9205499730097,400.5073316592271 195.70561321382093,357.1923732410453 142.49067645463214,400.5073316592271" transform="translate(0,0) rotate(180.38646466567596 142.49067645463214 400.5073316592271)" opacity="1" fill-opacity="0" stroke="black" stroke-width="3.6095798681818176"/>
+	<set attributeName="opacity" to="1" begin="mouseover" end="mouseout"/>
+</g>
+
+<g  id="Section Zoom Box on section: 632_645_L" opacity="0" 
+	onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Section Info Box: 632_645_L').removeAttribute('display');" 
+	onmousemove="drawBoundingBox3('Section Info Box: 632_645_L')"
+	onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Section Info Box: 632_645_L').setAttribute('display','none')">
+	<path d=" M36.063224,399.78945899999997 C36.063224,399.78945899999997 89.2781607591888,443.10441741818175 142.4930975183776,399.78945899999997 C142.4930975183776,399.78945899999997 89.2781607591888,356.4745005818182 36.063224,399.78945899999997" transform="translate(0,0) rotate(180.38646466567596 36.063224 399.78945899999997)" opacity="1" fill-opacity="0" stroke="black" stroke-width="3.6095798681818176"/>
+	<set attributeName="opacity" to="1" begin="mouseover" end="mouseout"/>
+</g>
+
+<g id="arrow" transform="  translate(-239.45113249999997,396.678936) scale(2.165747920909091,2.165747920909091) rotate(270.8730183123895 0 0) translate(-5.0,-5.0)" opacity="1">
+	<use xlink:href = "#arrow"/>
+</g>
+
+<g  id="Section Zoom Box on section: 645_646_S" opacity="0" 
+	onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Section Info Box: 645_646_S').removeAttribute('display');" 
+	onmousemove="drawBoundingBox3('Section Info Box: 645_646_S')"
+	onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Section Info Box: 645_646_S').setAttribute('display','none')">
+	<path d=" M-113.67618017622844,398.5955228056734 C-113.67618017622844,398.5955228056734 -50.78140309372601,441.9104812238552 12.113373988776416,398.5955228056734 C12.113373988776416,398.5955228056734 -50.78140309372601,355.2805643874916 -113.67618017622844,398.5955228056734" transform="translate(0,0) rotate(180.8730183123895 -113.67618017622844 398.5955228056734)" opacity="1" fill-opacity="0" stroke="black" stroke-width="3.6095798681818176"/>
+	<set attributeName="opacity" to="1" begin="mouseover" end="mouseout"/>
+</g>
+
+<g  id="Section Zoom Box on section: 645_646_L" opacity="0" 
+	onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Section Info Box: 645_646_L').removeAttribute('display');" 
+	onmousemove="drawBoundingBox3('Section Info Box: 645_646_L')"
+	onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Section Info Box: 645_646_L').setAttribute('display','none')">
+	<path d=" M-239.4511325,396.678936 C-239.4511325,396.678936 -176.55635541749757,439.9938944181818 -113.66157833499516,396.678936 C-113.66157833499516,396.678936 -176.55635541749757,353.36397758181823 -239.4511325,396.678936" transform="translate(0,0) rotate(180.87301831238952 -239.4511325 396.678936)" opacity="1" fill-opacity="0" stroke="black" stroke-width="3.6095798681818176"/>
+	<set attributeName="opacity" to="1" begin="mouseover" end="mouseout"/>
+</g>
+
+<g id="arrow" transform="  translate(165.8187116360465,322.80849801025624) scale(2.165747920909091,2.165747920909091) rotate(1.2297442042697497 0 0) translate(-5.0,-5.0)" opacity="1">
+	<use xlink:href = "#arrow"/>
+</g>
+
+<g  id="Section Zoom Box on section: 632_699_S" opacity="0" 
+	onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Section Info Box: 632_699_S').removeAttribute('display');" 
+	onmousemove="drawBoundingBox3('Section Info Box: 632_699_S')"
+	onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Section Info Box: 632_699_S').setAttribute('display','none')">
+	<path d=" M165.5420649081396,335.6959390307686 C165.5420649081396,335.6959390307686 171.9872698984647,379.0108974489504 178.4324748887898,335.6959390307686 C178.4324748887898,335.6959390307686 171.9872698984647,292.3809806125868 165.5420649081396,335.6959390307686" transform="translate(0,0) rotate(-88.77025579573025 165.5420649081396 335.6959390307686)" opacity="1" fill-opacity="0" stroke="black" stroke-width="3.6095798681818176"/>
+	<set attributeName="opacity" to="1" begin="mouseover" end="mouseout"/>
+</g>
+
+<g  id="Section Zoom Box on section: 632_699_L" opacity="0" 
+	onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Section Info Box: 632_699_L').removeAttribute('display');" 
+	onmousemove="drawBoundingBox3('Section Info Box: 632_699_L')"
+	onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Section Info Box: 632_699_L').setAttribute('display','none')">
+	<path d=" M165.81871163604654,322.80849801025624 C165.81871163604654,322.80849801025624 172.26391662637167,366.12345642843803 178.70912161669682,322.80849801025624 C178.70912161669682,322.80849801025624 172.26391662637167,279.49353959207446 165.81871163604654,322.80849801025624" transform="translate(0,0) rotate(-88.77025579573024 165.81871163604654 322.80849801025624)" opacity="1" fill-opacity="0" stroke="black" stroke-width="3.6095798681818176"/>
+	<set attributeName="opacity" to="1" begin="mouseover" end="mouseout"/>
+</g>
+
+<g id="arrow" transform="  translate(167.561671,232.56844900000002) scale(2.165747920909091,2.165747920909091) rotate(1.0300916980053785 0 0) translate(-5.0,-5.0)" opacity="1">
+	<use xlink:href = "#arrow"/>
+</g>
+
+<g  id="Section Zoom Box on section: 699_671_S" opacity="0" 
+	onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Section Info Box: 699_671_S').removeAttribute('display');" 
+	onmousemove="drawBoundingBox3('Section Info Box: 699_671_S')"
+	onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Section Info Box: 699_671_S').setAttribute('display','none')">
+	<path d=" M166.94950683544354,266.6145868286043 C166.94950683544354,266.6145868286043 183.97532727095182,309.92954524678606 201.0011477064601,266.6145868286043 C201.0011477064601,266.6145868286043 183.97532727095182,223.29962841042246 166.94950683544354,266.6145868286043" transform="translate(0,0) rotate(-88.96990830199462 166.94950683544354 266.6145868286043)" opacity="1" fill-opacity="0" stroke="black" stroke-width="3.6095798681818176"/>
+	<set attributeName="opacity" to="1" begin="mouseover" end="mouseout"/>
+</g>
+
+<g  id="Section Zoom Box on section: 699_671_L" opacity="0" 
+	onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Section Info Box: 699_671_L').removeAttribute('display');" 
+	onmousemove="drawBoundingBox3('Section Info Box: 699_671_L')"
+	onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Section Info Box: 699_671_L').setAttribute('display','none')">
+	<path d=" M167.561671,232.56844900000002 C167.561671,232.56844900000002 184.58749143550827,275.88340741818183 201.61331187101655,232.56844900000002 C201.61331187101655,232.56844900000002 184.58749143550827,189.2534905818182 167.561671,232.56844900000002" transform="translate(0,0) rotate(-88.96990830199458 167.561671 232.56844900000002)" opacity="1" fill-opacity="0" stroke="black" stroke-width="3.6095798681818176"/>
+	<set attributeName="opacity" to="1" begin="mouseover" end="mouseout"/>
+</g>
+
+<g id="arrow" transform="  translate(168.786227,105.23855850000001) scale(2.165747920909091,2.165747920909091) rotate(0.17840959028789882 0 0) translate(-5.0,-5.0)" opacity="1">
+	<use xlink:href = "#arrow"/>
+</g>
+
+<g  id="Section Zoom Box on section: 671_680_S" opacity="0" 
+	onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Section Info Box: 671_680_S').removeAttribute('display');" 
+	onmousemove="drawBoundingBox3('Section Info Box: 671_680_S')"
+	onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Section Info Box: 671_680_S').setAttribute('display','none')">
+	<path d=" M168.63062070276203,155.2109577859257 C168.63062070276203,155.2109577859257 193.61694147889736,198.52591620410752 218.6032622550327,155.2109577859257 C218.6032622550327,155.2109577859257 193.61694147889736,111.89599936774388 168.63062070276203,155.2109577859257" transform="translate(0,0) rotate(-89.8215904097121 168.63062070276203 155.2109577859257)" opacity="1" fill-opacity="0" stroke="black" stroke-width="3.6095798681818176"/>
+	<set attributeName="opacity" to="1" begin="mouseover" end="mouseout"/>
+</g>
+
+<g  id="Section Zoom Box on section: 671_680_L" opacity="0" 
+	onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Section Info Box: 671_680_L').removeAttribute('display');" 
+	onmousemove="drawBoundingBox3('Section Info Box: 671_680_L')"
+	onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Section Info Box: 671_680_L').setAttribute('display','none')">
+	<path d=" M168.786227,105.23855850000001 C168.786227,105.23855850000001 193.77254777613533,148.55351691818183 218.75886855227066,105.23855850000001 C218.75886855227066,105.23855850000001 193.77254777613533,61.9236000818182 168.786227,105.23855850000001" transform="translate(0,0) rotate(-89.82159040971207 168.786227 105.23855850000001)" opacity="1" fill-opacity="0" stroke="black" stroke-width="3.6095798681818176"/>
+	<set attributeName="opacity" to="1" begin="mouseover" end="mouseout"/>
+</g>
+
+<g id="arrow" transform="  translate(372.084870196074,178.2226765091848) scale(2.165747920909091,2.165747920909091) rotate(90.38127179493952 0 0) translate(-5.0,-5.0)" opacity="1">
+	<use xlink:href = "#arrow"/>
+</g>
+
+<g  id="Section Zoom Box on section: 671_675_S" opacity="0" 
+	onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Section Info Box: 671_675_S').removeAttribute('display');" 
+	onmousemove="drawBoundingBox3('Section Info Box: 671_675_S')"
+	onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Section Info Box: 671_675_S').setAttribute('display','none')">
+	<path d=" M233.53418208822217,177.30068452755452 C233.53418208822217,177.30068452755452 302.81105998477113,220.61564294573634 372.08793788132016,177.30068452755452 C372.08793788132016,177.30068452755452 302.81105998477113,133.9857261093727 233.53418208822217,177.30068452755452" transform="translate(0,0) rotate(0.3812717949395287 233.53418208822217 177.30068452755452)" opacity="1" fill-opacity="0" stroke="black" stroke-width="3.6095798681818176"/>
+	<set attributeName="opacity" to="1" begin="mouseover" end="mouseout"/>
+</g>
+
+<g  id="Section Zoom Box on section: 671_675_L" opacity="0" 
+	onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Section Info Box: 671_675_L').removeAttribute('display');" 
+	onmousemove="drawBoundingBox3('Section Info Box: 671_675_L')"
+	onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Section Info Box: 671_675_L').setAttribute('display','none')">
+	<path d=" M372.084870196074,178.22267650918482 C372.084870196074,178.22267650918482 441.36174809262303,221.53763492736664 510.63862598917206,178.22267650918482 C510.63862598917206,178.22267650918482 441.36174809262303,134.907718091003 372.084870196074,178.22267650918482" transform="translate(0,0) rotate(0.3812717949395375 372.084870196074 178.22267650918482)" opacity="1" fill-opacity="0" stroke="black" stroke-width="3.6095798681818176"/>
+	<set attributeName="opacity" to="1" begin="mouseover" end="mouseout"/>
+</g>
+
+<g id="arrow" transform="  translate(21.818544000000003,176.3605945) scale(2.165747920909091,2.165747920909091) rotate(270.1982430156199 0 0) translate(-5.0,-5.0)" opacity="1">
+	<use xlink:href = "#arrow"/>
+</g>
+
+<g  id="Section Zoom Box on section: 671_684_S" opacity="0" 
+	onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Section Info Box: 671_684_S').removeAttribute('display');" 
+	onmousemove="drawBoundingBox3('Section Info Box: 671_684_S')"
+	onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Section Info Box: 671_684_S').setAttribute('display','none')">
+	<path d=" M146.90583342761988,176.79339741565374 C146.90583342761988,176.79339741565374 209.4498525156049,220.10835583383556 271.9938716035899,176.79339741565374 C271.9938716035899,176.79339741565374 209.4498525156049,133.47843899747193 146.90583342761988,176.79339741565374" transform="translate(0,0) rotate(180.19824301561988 146.90583342761988 176.79339741565374)" opacity="1" fill-opacity="0" stroke="black" stroke-width="3.6095798681818176"/>
+	<set attributeName="opacity" to="1" begin="mouseover" end="mouseout"/>
+</g>
+
+<g  id="Section Zoom Box on section: 671_684_L" opacity="0" 
+	onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Section Info Box: 671_684_L').removeAttribute('display');" 
+	onmousemove="drawBoundingBox3('Section Info Box: 671_684_L')"
+	onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Section Info Box: 671_684_L').setAttribute('display','none')">
+	<path d=" M21.818544000000003,176.3605945 C21.818544000000003,176.3605945 84.36256308798502,219.6755529181818 146.90658217597007,176.3605945 C146.90658217597007,176.3605945 84.36256308798502,133.04563608181817 21.818544000000003,176.3605945" transform="translate(0,0) rotate(180.19824301561988 21.818544000000003 176.3605945)" opacity="1" fill-opacity="0" stroke="black" stroke-width="3.6095798681818176"/>
+	<set attributeName="opacity" to="1" begin="mouseover" end="mouseout"/>
+</g>
+
+<g id="arrow" transform="  translate(-247.32966399999998,174.90399200000007) scale(2.165747920909091,2.165747920909091) rotate(270.44414449116596 0 0) translate(-5.0,-5.0)" opacity="1">
+	<use xlink:href = "#arrow"/>
+</g>
+
+<g  id="Section Zoom Box on section: 684_611_S" opacity="0" 
+	onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Section Info Box: 684_611_S').removeAttribute('display');" 
+	onmousemove="drawBoundingBox3('Section Info Box: 684_611_S')"
+	onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Section Info Box: 684_611_S').setAttribute('display','none')">
+	<path d=" M-146.5829235117521,175.68497458649128 C-146.5829235117521,175.68497458649128 -96.2080397580233,218.9999330046731 -45.833156004294494,175.68497458649128 C-45.833156004294494,175.68497458649128 -96.2080397580233,132.37001616830946 -146.5829235117521,175.68497458649128" transform="translate(0,0) rotate(180.44414449116599 -146.5829235117521 175.68497458649128)" opacity="1" fill-opacity="0" stroke="black" stroke-width="3.6095798681818176"/>
+	<set attributeName="opacity" to="1" begin="mouseover" end="mouseout"/>
+</g>
+
+<g  id="Section Zoom Box on section: 684_611_L" opacity="0" 
+	onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Section Info Box: 684_611_L').removeAttribute('display');" 
+	onmousemove="drawBoundingBox3('Section Info Box: 684_611_L')"
+	onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Section Info Box: 684_611_L').setAttribute('display','none')">
+	<path d=" M-247.32966399999998,174.90399200000002 C-247.32966399999998,174.90399200000002 -196.95478024627116,218.21895041818183 -146.57989649254233,174.90399200000002 C-146.57989649254233,174.90399200000002 -196.95478024627116,131.5890335818182 -247.32966399999998,174.90399200000002" transform="translate(0,0) rotate(180.444144491166 -247.32966399999998 174.90399200000002)" opacity="1" fill-opacity="0" stroke="black" stroke-width="3.6095798681818176"/>
+	<set attributeName="opacity" to="1" begin="mouseover" end="mouseout"/>
+</g>
+
+<g id="arrow" transform="  translate(-124.93957049999999,91.281994) scale(2.165747920909091,2.165747920909091) rotate(359.99087050500725 0 0) translate(-5.0,-5.0)" opacity="1">
+	<use xlink:href = "#arrow"/>
+</g>
+
+<g  id="Section Zoom Box on section: 684_652_S" opacity="0" 
+	onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Section Info Box: 684_652_S').removeAttribute('display');" 
+	onmousemove="drawBoundingBox3('Section Info Box: 684_652_S')"
+	onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Section Info Box: 684_652_S').setAttribute('display','none')">
+	<path d=" M-124.92954589723605,154.19537806584165 C-124.92954589723605,154.19537806584165 -93.4728534649858,197.51033648402347 -62.01616103273556,154.19537806584165 C-62.01616103273556,154.19537806584165 -93.4728534649858,110.88041964765983 -124.92954589723605,154.19537806584165" transform="translate(0,0) rotate(269.99087050500725 -124.92954589723605 154.19537806584165)" opacity="1" fill-opacity="0" stroke="black" stroke-width="3.6095798681818176"/>
+	<set attributeName="opacity" to="1" begin="mouseover" end="mouseout"/>
+</g>
+
+<g  id="Section Zoom Box on section: 684_652_L" opacity="0" 
+	onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Section Info Box: 684_652_L').removeAttribute('display');" 
+	onmousemove="drawBoundingBox3('Section Info Box: 684_652_L')"
+	onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Section Info Box: 684_652_L').setAttribute('display','none')">
+	<path d=" M-124.9395705,91.281994 C-124.9395705,91.281994 -93.48287806774977,134.59695241818181 -62.02618563549952,91.281994 C-62.02618563549952,91.281994 -93.48287806774977,47.96703558181819 -124.9395705,91.281994" transform="translate(0,0) rotate(269.99087050500725 -124.9395705 91.281994)" opacity="1" fill-opacity="0" stroke="black" stroke-width="3.6095798681818176"/>
+	<set attributeName="opacity" to="1" begin="mouseover" end="mouseout"/>
+</g>
+
+<g  onmouseover="document.getElementById('Transformer Info Box: XFM-1').removeAttribute('display'); document.getElementById('Info Bounding Box').removeAttribute('display'); drawBoundingBox2('Transformer Info Box: XFM-1')" onmouseout="document.getElementById('Transformer Info Box: XFM-1').setAttribute('display','none'); document.getElementById('Info Bounding Box').setAttribute('display','none')" transform =" translate(637.2301666655067,399.428955619654) scale(4.331495841818182,4.331495841818182) rotate(-0.14829554166333356 0 0) translate(-10.0,-10.0)" opacity="1">
+	<use xlink:href = "#transformer_USA"/>
+</g>
+
+<g  onmouseover="document.getElementById('Transformer Info Box: SUBXFM').removeAttribute('display'); document.getElementById('Info Bounding Box').removeAttribute('display'); drawBoundingBox2('Transformer Info Box: SUBXFM')" onmouseout="document.getElementById('Transformer Info Box: SUBXFM').setAttribute('display','none'); document.getElementById('Info Bounding Box').setAttribute('display','none')" transform =" translate(161.939942,757.5037435818182) scale(4.331495841818182,4.331495841818182) rotate(-90.0 0 0) translate(-10.0,-10.0)" opacity="1">
+	<use xlink:href = "#transformer_USA"/>
+</g>
+
+<g  onmouseover="document.getElementById('Switch Info Box: 650_632_L').removeAttribute('display'); document.getElementById('Info Bounding Box').removeAttribute('display'); drawBoundingBox2('Switch Info Box: 650_632_L')" onmouseout="document.getElementById('Switch Info Box: 650_632_L').setAttribute('display','none'); document.getElementById('Info Bounding Box').setAttribute('display','none')" transform =" translate(163.66052037538964,443.9656310014793) scale(4.331495841818182,4.331495841818182) rotate(-89.3556081812813 0 0) translate(-10.0,-10.0)" opacity="1">
+	<use xlink:href = "#switch-closed"/>
+</g>
+
+<g  onmouseover="document.getElementById('Switch Info Box: 632_699_S').removeAttribute('display'); document.getElementById('Info Bounding Box').removeAttribute('display'); drawBoundingBox2('Switch Info Box: 632_699_S')" onmouseout="document.getElementById('Switch Info Box: 632_699_S').setAttribute('display','none'); document.getElementById('Info Bounding Box').setAttribute('display','none')" transform =" translate(165.0772642720931,357.3484300205124) scale(4.331495841818182,4.331495841818182) rotate(-88.77025579573025 0 0) translate(-10.0,-10.0)" opacity="1">
+	<use xlink:href = "#switch-closed"/>
+</g>
+
+<g  onmouseover="document.getElementById('Switch Info Box: 671_675_S').removeAttribute('display'); document.getElementById('Info Bounding Box').removeAttribute('display'); drawBoundingBox2('Switch Info Box: 671_675_S')" onmouseout="document.getElementById('Switch Info Box: 671_675_S').setAttribute('display','none'); document.getElementById('Info Bounding Box').setAttribute('display','none')" transform =" translate(211.8771823921481,177.1565670183697) scale(4.331495841818182,4.331495841818182) rotate(0.381271794939533 0 0) translate(-10.0,-10.0)" opacity="1">
+	<use xlink:href = "#switch-closed"/>
+</g>
+
+<g  onmouseover="document.getElementById('Regulator Info Box: IEEE13N').removeAttribute('display'); document.getElementById('Info Bounding Box').removeAttribute('display'); drawBoundingBox2('Regulator Info Box: IEEE13N')" onmouseout="document.getElementById('Regulator Info Box: IEEE13N').setAttribute('display','none'); document.getElementById('Info Bounding Box').setAttribute('display','none')" transform =" translate(162.42708462461036,553.6313359985206) scale(4.331495841818182,4.331495841818182) rotate(-89.3556081812813 0 0) translate(-10.0,-10.0)" opacity="1">
+	<use xlink:href = "#regulator"/>
+</g>
+
+<g id="shunt capacitor at node 611 (1)" transform="  translate(-410.58781738230294,187.73786237093935) scale(2.7071849011363636,2.7071849011363636) translate(-13.0,0)" opacity="1" 
+onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Info Box for shunt capacitor at node 611 (1)').removeAttribute('display');
+	drawBoundingBox2('Info Box for shunt capacitor at node 611 (1)')"
+onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Info Box for shunt capacitor at node 611 (1)').setAttribute('display','none')">"
+	<use xlink:href = "#shunt-capacitor"/>
+</g>
+
+<g id="shunt capacitor at node 675 (1)" transform="  translate(491.437973617697,193.07152137093934) scale(2.7071849011363636,2.7071849011363636) translate(-13.0,0)" opacity="1" 
+onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Info Box for shunt capacitor at node 675 (1)').removeAttribute('display');
+	drawBoundingBox2('Info Box for shunt capacitor at node 675 (1)')"
+onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Info Box for shunt capacitor at node 675 (1)').setAttribute('display','none')">"
+	<use xlink:href = "#shunt-capacitor"/>
+</g>
+
+<g id="allocated load at node 634 (0)" transform=" translate(666.7622446290607,413.09958137093935) scale(2.7071849011363636,2.7071849011363636) translate(-13.0,0)" opacity="1" 
+onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Info Box for allocated load at node 634 (0)').removeAttribute('display');
+	drawBoundingBox2('Info Box for allocated load at node 634 (0)')"
+onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Info Box for allocated load at node 634 (0)').setAttribute('display','none')">"
+	<polyline points="13,5 13,0" stroke="black" stroke-width=".5"/>
+	<use xlink:href = "#load"/>
+</g>
+
+<g id="allocated load at node 645 (0)" transform=" translate(-105.80395037093936,412.70824137093933) scale(2.7071849011363636,2.7071849011363636) translate(-13.0,0)" opacity="1" 
+onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Info Box for allocated load at node 645 (0)').removeAttribute('display');
+	drawBoundingBox2('Info Box for allocated load at node 645 (0)')"
+onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Info Box for allocated load at node 645 (0)').setAttribute('display','none')">"
+	<polyline points="13,5 13,0" stroke="black" stroke-width=".5"/>
+	<use xlink:href = "#load"/>
+</g>
+
+<g id="allocated load at node 646 (0)" transform=" translate(-400.66378537093937,408.21510137093935) scale(2.7071849011363636,2.7071849011363636) translate(-13.0,0)" opacity="1" 
+onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Info Box for allocated load at node 646 (0)').removeAttribute('display');
+	drawBoundingBox2('Info Box for allocated load at node 646 (0)')"
+onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Info Box for allocated load at node 646 (0)').setAttribute('display','none')">"
+	<polyline points="13,5 13,0" stroke="black" stroke-width=".5"/>
+	<use xlink:href = "#load"/>
+</g>
+
+<g id="allocated load at node 652 (0)" transform=" translate(-138.73578137093938,20.49386637093936) scale(2.7071849011363636,2.7071849011363636) translate(-13.0,0)" opacity="1" 
+onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Info Box for allocated load at node 652 (0)').removeAttribute('display');
+	drawBoundingBox2('Info Box for allocated load at node 652 (0)')"
+onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Info Box for allocated load at node 652 (0)').setAttribute('display','none')">"
+	<polyline points="13,5 13,0" stroke="black" stroke-width=".5"/>
+	<use xlink:href = "#load"/>
+</g>
+
+<g id="allocated load at node 671 (0)" transform=" translate(154.78044762906063,190.65106737093936) scale(2.7071849011363636,2.7071849011363636) translate(-13.0,0)" opacity="1" 
+onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Info Box for allocated load at node 671 (0)').removeAttribute('display');
+	drawBoundingBox2('Info Box for allocated load at node 671 (0)')"
+onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Info Box for allocated load at node 671 (0)').setAttribute('display','none')">"
+	<polyline points="13,5 13,0" stroke="black" stroke-width=".5"/>
+	<use xlink:href = "#load"/>
+</g>
+
+<g id="allocated load at node 675 (0)" transform=" translate(518.5098226290606,193.07152137093934) scale(2.7071849011363636,2.7071849011363636) translate(-13.0,0)" opacity="1" 
+onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Info Box for allocated load at node 675 (0)').removeAttribute('display');
+	drawBoundingBox2('Info Box for allocated load at node 675 (0)')"
+onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Info Box for allocated load at node 675 (0)').setAttribute('display','none')">"
+	<polyline points="13,5 13,0" stroke="black" stroke-width=".5"/>
+	<use xlink:href = "#load"/>
+</g>
+
+<g id="allocated load at node 671 (1)" transform=" translate(127.708598617697,190.65106737093936) scale(2.7071849011363636,2.7071849011363636) translate(-13.0,0)" opacity="1" 
+onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Info Box for allocated load at node 671 (1)').removeAttribute('display');
+	drawBoundingBox2('Info Box for allocated load at node 671 (1)')"
+onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Info Box for allocated load at node 671 (1)').setAttribute('display','none')">"
+	<use xlink:href = "#load"/>
+</g>
+
+<g id="allocated load at node 611 (0)" transform=" translate(-383.51596837093933,187.73786237093935) scale(2.7071849011363636,2.7071849011363636) translate(-13.0,0)" opacity="1" 
+onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Info Box for allocated load at node 611 (0)').removeAttribute('display');
+	drawBoundingBox2('Info Box for allocated load at node 611 (0)')"
+onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Info Box for allocated load at node 611 (0)').setAttribute('display','none')">"
+	<polyline points="13,5 13,0" stroke="black" stroke-width=".5"/>
+	<use xlink:href = "#load"/>
+</g>
+
+<g id="allocated load at node 699 (0)" transform=" translate(152.77742362906065,302.05130137093937) scale(2.7071849011363636,2.7071849011363636) translate(-13.0,0)" opacity="1" 
+onmouseover="document.getElementById('Info Bounding Box').removeAttribute('display');
+	document.getElementById('Info Box for allocated load at node 699 (0)').removeAttribute('display');
+	drawBoundingBox2('Info Box for allocated load at node 699 (0)')"
+onmouseout="document.getElementById('Info Bounding Box').setAttribute('display','none');
+	document.getElementById('Info Box for allocated load at node 699 (0)').setAttribute('display','none')">"
+	<polyline points="13,5 13,0" stroke="black" stroke-width=".5"/>
+	<use xlink:href = "#load"/>
+</g>
+
+<g  onmouseover="document.getElementById('Node Info Box: SOURCE_NODE_1').removeAttribute('display'); document.getElementById('Info Bounding Box').removeAttribute('display'); drawBoundingBox2('Node Info Box: SOURCE_NODE_1')" onmouseout="document.getElementById('Node Info Box: SOURCE_NODE_1').setAttribute('display','none'); document.getElementById('Info Bounding Box').setAttribute('display','none')" transform = "translate(161.939942,800.818702) scale(7.219159736363635,7.219159736363635)" opacity="1">
+	<use xlink:href = "#node"/>
+</g>
+
+<g  onmouseover="document.getElementById('Node Info Box: 650').removeAttribute('display'); document.getElementById('Info Bounding Box').removeAttribute('display'); drawBoundingBox2('Node Info Box: 650')" onmouseout="document.getElementById('Node Info Box: 650').setAttribute('display','none'); document.getElementById('Info Bounding Box').setAttribute('display','none')" transform = "translate(161.939942,596.943555) scale(7.219159736363635,7.219159736363635)" opacity="1">
+	<use xlink:href = "#node"/>
+</g>
+
+<g  onmouseover="document.getElementById('Node Info Box: 632').removeAttribute('display'); document.getElementById('Info Bounding Box').removeAttribute('display'); drawBoundingBox2('Node Info Box: 632')" onmouseout="document.getElementById('Node Info Box: 632').setAttribute('display','none'); document.getElementById('Info Bounding Box').setAttribute('display','none')" transform = "translate(164.147663,400.653412) scale(7.219159736363635,7.219159736363635)" opacity="1">
+	<use xlink:href = "#node"/>
+</g>
+
+<g  onmouseover="document.getElementById('Node Info Box: 634').removeAttribute('display'); document.getElementById('Info Bounding Box').removeAttribute('display'); drawBoundingBox2('Node Info Box: 634')" onmouseout="document.getElementById('Node Info Box: 634').setAttribute('display','none'); document.getElementById('Info Bounding Box').setAttribute('display','none')" transform = "translate(680.54498,399.316846) scale(7.219159736363635,7.219159736363635)" opacity="1">
+	<use xlink:href = "#node"/>
+</g>
+
+<g  onmouseover="document.getElementById('Node Info Box: 645').removeAttribute('display'); document.getElementById('Info Bounding Box').removeAttribute('display'); drawBoundingBox2('Node Info Box: 645')" onmouseout="document.getElementById('Node Info Box: 645').setAttribute('display','none'); document.getElementById('Info Bounding Box').setAttribute('display','none')" transform = "translate(-92.021215,398.925506) scale(7.219159736363635,7.219159736363635)" opacity="1">
+	<use xlink:href = "#node"/>
+</g>
+
+<g  onmouseover="document.getElementById('Node Info Box: 646').removeAttribute('display'); document.getElementById('Info Bounding Box').removeAttribute('display'); drawBoundingBox2('Node Info Box: 646')" onmouseout="document.getElementById('Node Info Box: 646').setAttribute('display','none'); document.getElementById('Info Bounding Box').setAttribute('display','none')" transform = "translate(-386.88105,394.432366) scale(7.219159736363635,7.219159736363635)" opacity="1">
+	<use xlink:href = "#node"/>
+</g>
+
+<g  onmouseover="document.getElementById('Node Info Box: 671').removeAttribute('display'); document.getElementById('Info Bounding Box').removeAttribute('display'); drawBoundingBox2('Node Info Box: 671')" onmouseout="document.getElementById('Node Info Box: 671').setAttribute('display','none'); document.getElementById('Info Bounding Box').setAttribute('display','none')" transform = "translate(168.563183,176.868332) scale(7.219159736363635,7.219159736363635)" opacity="1">
+	<use xlink:href = "#node"/>
+</g>
+
+<g  onmouseover="document.getElementById('Node Info Box: 680').removeAttribute('display'); document.getElementById('Info Bounding Box').removeAttribute('display'); drawBoundingBox2('Node Info Box: 680')" onmouseout="document.getElementById('Node Info Box: 680').setAttribute('display','none'); document.getElementById('Info Bounding Box').setAttribute('display','none')" transform = "translate(169.009271,33.608785) scale(7.219159736363635,7.219159736363635)" opacity="1">
+	<use xlink:href = "#node"/>
+</g>
+
+<g  onmouseover="document.getElementById('Node Info Box: 684').removeAttribute('display'); document.getElementById('Info Bounding Box').removeAttribute('display'); drawBoundingBox2('Node Info Box: 684')" onmouseout="document.getElementById('Node Info Box: 684').setAttribute('display','none'); document.getElementById('Info Bounding Box').setAttribute('display','none')" transform = "translate(-124.926095,175.852857) scale(7.219159736363635,7.219159736363635)" opacity="1">
+	<use xlink:href = "#node"/>
+</g>
+
+<g  onmouseover="document.getElementById('Node Info Box: 611').removeAttribute('display'); document.getElementById('Info Bounding Box').removeAttribute('display'); drawBoundingBox2('Node Info Box: 611')" onmouseout="document.getElementById('Node Info Box: 611').setAttribute('display','none'); document.getElementById('Info Bounding Box').setAttribute('display','none')" transform = "translate(-369.733233,173.955127) scale(7.219159736363635,7.219159736363635)" opacity="1">
+	<use xlink:href = "#node"/>
+</g>
+
+<g  onmouseover="document.getElementById('Node Info Box: 652').removeAttribute('display'); document.getElementById('Info Bounding Box').removeAttribute('display'); drawBoundingBox2('Node Info Box: 652')" onmouseout="document.getElementById('Node Info Box: 652').setAttribute('display','none'); document.getElementById('Info Bounding Box').setAttribute('display','none')" transform = "translate(-124.953046,6.711131) scale(7.219159736363635,7.219159736363635)" opacity="1">
+	<use xlink:href = "#node"/>
+</g>
+
+<g  onmouseover="document.getElementById('Node Info Box: 675').removeAttribute('display'); document.getElementById('Info Bounding Box').removeAttribute('display'); drawBoundingBox2('Node Info Box: 675')" onmouseout="document.getElementById('Node Info Box: 675').setAttribute('display','none'); document.getElementById('Info Bounding Box').setAttribute('display','none')" transform = "translate(532.292558,179.288786) scale(7.219159736363635,7.219159736363635)" opacity="1">
+	<use xlink:href = "#node"/>
+</g>
+
+<g  onmouseover="document.getElementById('Node Info Box: 699').removeAttribute('display'); document.getElementById('Info Bounding Box').removeAttribute('display'); drawBoundingBox2('Node Info Box: 699')" onmouseout="document.getElementById('Node Info Box: 699').setAttribute('display','none'); document.getElementById('Info Bounding Box').setAttribute('display','none')" transform = "translate(166.560159,288.268566) scale(7.219159736363635,7.219159736363635)" opacity="1">
+	<use xlink:href = "#node"/>
+</g>
+
+<g id="Info Bounding Box" display="none">
+<line id="Info Bounding Box Connector" x1="0" y1="0" x2="97.45865644090908" y2="-77.96692515272727" stroke="black" pointer-events="none" stroke-width="1" opacity="1" />
+<rect id="Info Bounding Box1" x="0" y="0" width="0" height="0" stroke="black" stroke-width ="1" stroke-opacity="1" fill="beige" fill-opacity="1"/></g>
+
+<g id="Node Info Box: SOURCE_NODE_1" transform = "translate(161.939942,800.818702) scale(1,1)" display="none">
+<text font-family="Courier New" fill="brown" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Vc" x="86.62991683636362" y="-75.80117723181817" >Vc: 66395.3&#8736;120.0&#176; V</tspan>
+	<tspan id="Vb" x="86.62991683636362" dy="-25.98897505090909" >Vb: 66395.3&#8736;-120.0&#176; V</tspan>
+	<tspan id="Va" x="86.62991683636362" dy="-25.98897505090909" >Va: 66395.3&#8736;0.0&#176; V</tspan>
+	<tspan id="Node Text ID: SOURCE_NODE_1" x="86.62991683636362" dy="-25.98897505090909" >Node ID: SOURCE_NODE_1</tspan>
+</text>
+</g>
+
+<g id="Node Info Box: 650" transform = "translate(161.939942,596.943555) scale(1,1)" display="none">
+<text font-family="Courier New" fill="brown" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Vc" x="86.62991683636362" y="-75.80117723181817" >Vc: 2368.7&#8736;88.826&#176; V</tspan>
+	<tspan id="Vb" x="86.62991683636362" dy="-25.98897505090909" >Vb: 2382.3&#8736;-150.86&#176; V</tspan>
+	<tspan id="Va" x="86.62991683636362" dy="-25.98897505090909" >Va: 2369.0&#8736;-31.084&#176; V</tspan>
+	<tspan id="Node Text ID: 650" x="86.62991683636362" dy="-25.98897505090909" >Node ID: 650</tspan>
+</text>
+</g>
+
+<g id="Node Info Box: 632" transform = "translate(164.147663,400.653412) scale(1,1)" display="none">
+<text font-family="Courier New" fill="brown" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Vc" x="86.62991683636362" y="-75.80117723181817" >Vc: 2437.6&#8736;86.637&#176; V</tspan>
+	<tspan id="Vb" x="86.62991683636362" dy="-25.98897505090909" >Vb: 2512.3&#8736;-152.556&#176; V</tspan>
+	<tspan id="Va" x="86.62991683636362" dy="-25.98897505090909" >Va: 2463.4&#8736;-33.567&#176; V</tspan>
+	<tspan id="Node Text ID: 632" x="86.62991683636362" dy="-25.98897505090909" >Node ID: 632</tspan>
+</text>
+</g>
+
+<g id="Node Info Box: 634" transform = "translate(680.54498,399.316846) scale(1,1)" display="none">
+<text font-family="Courier New" fill="brown" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Vc" x="86.62991683636362" y="-75.80117723181817" >Vc: 278.8&#8736;86.477&#176; V</tspan>
+	<tspan id="Vb" x="86.62991683636362" dy="-25.98897505090909" >Vb: 287.7&#8736;-152.751&#176; V</tspan>
+	<tspan id="Va" x="86.62991683636362" dy="-25.98897505090909" >Va: 281.3&#8736;-33.851&#176; V</tspan>
+	<tspan id="Node Text ID: 634" x="86.62991683636362" dy="-25.98897505090909" >Node ID: 634</tspan>
+</text>
+</g>
+
+<g id="Node Info Box: 645" transform = "translate(-92.021215,398.925506) scale(1,1)" display="none">
+<text font-family="Courier New" fill="brown" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Vc" x="86.62991683636362" y="-75.80117723181817" >Vc: 2432.8&#8736;86.666&#176; V</tspan>
+	<tspan id="Vb" x="86.62991683636362" dy="-25.98897505090909" >Vb: 2490.3&#8736;-152.733&#176; V</tspan>
+	<tspan id="Va" x="86.62991683636362" dy="-25.98897505090909" >Va: </tspan>
+	<tspan id="Node Text ID: 645" x="86.62991683636362" dy="-25.98897505090909" >Node ID: 645</tspan>
+</text>
+</g>
+
+<g id="Node Info Box: 646" transform = "translate(-386.88105,394.432366) scale(1,1)" display="none">
+<text font-family="Courier New" fill="brown" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Vc" x="86.62991683636362" y="-75.80117723181817" >Vc: 2427.8&#8736;86.711&#176; V</tspan>
+	<tspan id="Vb" x="86.62991683636362" dy="-25.98897505090909" >Vb: 2486.1&#8736;-152.808&#176; V</tspan>
+	<tspan id="Va" x="86.62991683636362" dy="-25.98897505090909" >Va: </tspan>
+	<tspan id="Node Text ID: 646" x="86.62991683636362" dy="-25.98897505090909" >Node ID: 646</tspan>
+</text>
+</g>
+
+<g id="Node Info Box: 671" transform = "translate(168.563183,176.868332) scale(1,1)" display="none">
+<text font-family="Courier New" fill="brown" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Vc" x="86.62991683636362" y="-75.80117723181817" >Vc: 2342.0&#8736;84.821&#176; V</tspan>
+	<tspan id="Vb" x="86.62991683636362" dy="-25.98897505090909" >Vb: 2538.5&#8736;-153.163&#176; V</tspan>
+	<tspan id="Va" x="86.62991683636362" dy="-25.98897505090909" >Va: 2390.0&#8736;-36.361&#176; V</tspan>
+	<tspan id="Node Text ID: 671" x="86.62991683636362" dy="-25.98897505090909" >Node ID: 671</tspan>
+</text>
+</g>
+
+<g id="Node Info Box: 680" transform = "translate(169.009271,33.608785) scale(1,1)" display="none">
+<text font-family="Courier New" fill="brown" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Vc" x="86.62991683636362" y="-75.80117723181817" >Vc: 2342.0&#8736;84.821&#176; V</tspan>
+	<tspan id="Vb" x="86.62991683636362" dy="-25.98897505090909" >Vb: 2538.5&#8736;-153.163&#176; V</tspan>
+	<tspan id="Va" x="86.62991683636362" dy="-25.98897505090909" >Va: 2390.0&#8736;-36.361&#176; V</tspan>
+	<tspan id="Node Text ID: 680" x="86.62991683636362" dy="-25.98897505090909" >Node ID: 680</tspan>
+</text>
+</g>
+
+<g id="Node Info Box: 684" transform = "translate(-124.926095,175.852857) scale(1,1)" display="none">
+<text font-family="Courier New" fill="brown" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Vc" x="86.62991683636362" y="-75.80117723181817" >Vc: 2337.2&#8736;84.718&#176; V</tspan>
+	<tspan id="Vb" x="86.62991683636362" dy="-25.98897505090909" >Vb: </tspan>
+	<tspan id="Va" x="86.62991683636362" dy="-25.98897505090909" >Va: 2385.3&#8736;-36.385&#176; V</tspan>
+	<tspan id="Node Text ID: 684" x="86.62991683636362" dy="-25.98897505090909" >Node ID: 684</tspan>
+</text>
+</g>
+
+<g id="Node Info Box: 611" transform = "translate(-369.733233,173.955127) scale(1,1)" display="none">
+<text font-family="Courier New" fill="brown" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Vc" x="86.62991683636362" y="-75.80117723181817" >Vc: 2332.4&#8736;84.574&#176; V</tspan>
+	<tspan id="Vb" x="86.62991683636362" dy="-25.98897505090909" >Vb: </tspan>
+	<tspan id="Va" x="86.62991683636362" dy="-25.98897505090909" >Va: </tspan>
+	<tspan id="Node Text ID: 611" x="86.62991683636362" dy="-25.98897505090909" >Node ID: 611</tspan>
+</text>
+</g>
+
+<g id="Node Info Box: 652" transform = "translate(-124.953046,6.711131) scale(1,1)" display="none">
+<text font-family="Courier New" fill="brown" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Vc" x="86.62991683636362" y="-75.80117723181817" >Vc: </tspan>
+	<tspan id="Vb" x="86.62991683636362" dy="-25.98897505090909" >Vb: </tspan>
+	<tspan id="Va" x="86.62991683636362" dy="-25.98897505090909" >Va: 2378.3&#8736;-36.378&#176; V</tspan>
+	<tspan id="Node Text ID: 652" x="86.62991683636362" dy="-25.98897505090909" >Node ID: 652</tspan>
+</text>
+</g>
+
+<g id="Node Info Box: 675" transform = "translate(532.292558,179.288786) scale(1,1)" display="none">
+<text font-family="Courier New" fill="brown" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Vc" x="86.62991683636362" y="-75.80117723181817" >Vc: 2336.5&#8736;84.781&#176; V</tspan>
+	<tspan id="Vb" x="86.62991683636362" dy="-25.98897505090909" >Vb: 2538.3&#8736;-153.238&#176; V</tspan>
+	<tspan id="Va" x="86.62991683636362" dy="-25.98897505090909" >Va: 2381.2&#8736;-36.441&#176; V</tspan>
+	<tspan id="Node Text ID: 675" x="86.62991683636362" dy="-25.98897505090909" >Node ID: 675</tspan>
+</text>
+</g>
+
+<g id="Node Info Box: 699" transform = "translate(166.560159,288.268566) scale(1,1)" display="none">
+<text font-family="Courier New" fill="brown" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Vc" x="86.62991683636362" y="-75.80117723181817" >Vc: 2386.2&#8736;85.651&#176; V</tspan>
+	<tspan id="Vb" x="86.62991683636362" dy="-25.98897505090909" >Vb: 2523.2&#8736;-152.859&#176; V</tspan>
+	<tspan id="Va" x="86.62991683636362" dy="-25.98897505090909" >Va: 2427.2&#8736;-34.941&#176; V</tspan>
+	<tspan id="Node Text ID: 699" x="86.62991683636362" dy="-25.98897505090909" >Node ID: 699</tspan>
+</text>
+</g>
+
+<g id="Section Info Box: FEEDER_TO_T1_S" transform = "translate(161.939942,749.84991525) scale(1,1)" display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Total P Loss" x="86.62991683636362" y="-75.80117723181817" >Total P Loss: 0.000 kW </tspan>
+	<tspan id="P Losses C" x="86.62991683636362" dy="-31.186770061090908" >P Loss C: 0.000 kW </tspan>
+	<tspan id="P Losses B" x="86.62991683636362" dy="-25.98897505090909" >P Loss B: -0.000 kW </tspan>
+	<tspan id="P Losses A" x="86.62991683636362" dy="-25.98897505090909" >P Loss A: 0.000 kW </tspan>
+	<tspan id="CurrC" x="86.62991683636362" dy="-31.186770061090908" >CurrC: 634.369&#8736;62.5&#176; A</tspan>
+	<tspan id="CurrB" x="86.62991683636362" dy="-25.98897505090909" >CurrB: 438.963&#8736;-171.7&#176; A</tspan>
+	<tspan id="CurrA" x="86.62991683636362" dy="-25.98897505090909" >CurrA: 599.702&#8736;-59.4&#176; A</tspan>
+	<tspan id="Phase" x="86.62991683636362" dy="-31.186770061090908" >Ph: ABC</tspan>
+	<tspan id="Section Text ID: FEEDER_TO_T1_S" x="86.62991683636362" dy="-38.983462576363635" >SecID: FEEDER_TO_T1_S</tspan>
+	<tspan id="Total Q Loss" x="495.27777253890906" y="-75.80117723181817" >Total Q Loss: 0.000 kVar</tspan>
+	<tspan id="Q Losses C" x="495.27777253890906" dy="-31.186770061090908" >Q Loss C: 0.000 kVar</tspan>
+	<tspan id="Q Losses B" x="495.27777253890906" dy="-25.98897505090909" >Q Loss B: 0.000 kVar</tspan>
+	<tspan id="Q Losses A" x="495.27777253890906" dy="-25.98897505090909" >Q Loss A: 0.000 kVar</tspan>
+</text>
+</g>
+
+<g id="Section Info Box: FEEDER_TO_T1_L" transform = "translate(161.939942,647.91234175) scale(1,1)" display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Total P Loss" x="86.62991683636362" y="-75.80117723181817" >Total P Loss: 0.000 kW </tspan>
+	<tspan id="P Losses C" x="86.62991683636362" dy="-31.186770061090908" >P Loss C: 0.000 kW </tspan>
+	<tspan id="P Losses B" x="86.62991683636362" dy="-25.98897505090909" >P Loss B: -0.000 kW </tspan>
+	<tspan id="P Losses A" x="86.62991683636362" dy="-25.98897505090909" >P Loss A: 0.000 kW </tspan>
+	<tspan id="CurrC" x="86.62991683636362" dy="-31.186770061090908" >CurrC: 634.369&#8736;-117.5&#176; A</tspan>
+	<tspan id="CurrB" x="86.62991683636362" dy="-25.98897505090909" >CurrB: 438.963&#8736;8.3&#176; A</tspan>
+	<tspan id="CurrA" x="86.62991683636362" dy="-25.98897505090909" >CurrA: 599.702&#8736;120.6&#176; A</tspan>
+	<tspan id="Phase" x="86.62991683636362" dy="-31.186770061090908" >Ph: ABC</tspan>
+	<tspan id="Section Text ID: FEEDER_TO_T1_L" x="86.62991683636362" dy="-38.983462576363635" >SecID: FEEDER_TO_T1_L</tspan>
+	<tspan id="Total Q Loss" x="495.27777253890906" y="-75.80117723181817" >Total Q Loss: 0.000 kVar</tspan>
+	<tspan id="Q Losses C" x="495.27777253890906" dy="-31.186770061090908" >Q Loss C: 0.000 kVar</tspan>
+	<tspan id="Q Losses B" x="495.27777253890906" dy="-25.98897505090909" >Q Loss B: 0.000 kVar</tspan>
+	<tspan id="Q Losses A" x="495.27777253890906" dy="-25.98897505090909" >Q Loss A: 0.000 kVar</tspan>
+</text>
+</g>
+
+<g id="Section Info Box: 650_632_S" transform = "translate(162.49187225,547.87101925) scale(1,1)" display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Total P Loss" x="86.62991683636362" y="-75.80117723181817" >Total P Loss: 59.368 kW </tspan>
+	<tspan id="P Losses C" x="86.62991683636362" dy="-31.186770061090908" >P Loss C: 41.664 kW </tspan>
+	<tspan id="P Losses B" x="86.62991683636362" dy="-25.98897505090909" >P Loss B: -3.191 kW </tspan>
+	<tspan id="P Losses A" x="86.62991683636362" dy="-25.98897505090909" >P Loss A: 20.895 kW </tspan>
+	<tspan id="CurrC" x="86.62991683636362" dy="-31.186770061090908" >CurrC: 586.699&#8736;62.5&#176; A</tspan>
+	<tspan id="CurrB" x="86.62991683636362" dy="-25.98897505090909" >CurrB: 413.142&#8736;-171.7&#176; A</tspan>
+	<tspan id="CurrA" x="86.62991683636362" dy="-25.98897505090909" >CurrA: 554.638&#8736;-59.4&#176; A</tspan>
+	<tspan id="Phase" x="86.62991683636362" dy="-31.186770061090908" >Ph: ABC</tspan>
+	<tspan id="Section Text ID: 650_632_S" x="86.62991683636362" dy="-38.983462576363635" >SecID: 650_632_S</tspan>
+	<tspan id="Total Q Loss" x="510.8711575694545" y="-75.80117723181817" >Total Q Loss: 191.668 kVar</tspan>
+	<tspan id="Q Losses C" x="510.8711575694545" dy="-31.186770061090908" >Q Loss C: 81.544 kVar</tspan>
+	<tspan id="Q Losses B" x="510.8711575694545" dy="-25.98897505090909" >Q Loss B: 31.613 kVar</tspan>
+	<tspan id="Q Losses A" x="510.8711575694545" dy="-25.98897505090909" >Q Loss A: 78.510 kVar</tspan>
+</text>
+</g>
+
+<g id="Section Info Box: 650_632_L" transform = "translate(163.59573275,449.72594775) scale(1,1)" display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Total P Loss" x="86.62991683636362" y="-75.80117723181817" >Total P Loss: 59.368 kW </tspan>
+	<tspan id="P Losses C" x="86.62991683636362" dy="-31.186770061090908" >P Loss C: 41.664 kW </tspan>
+	<tspan id="P Losses B" x="86.62991683636362" dy="-25.98897505090909" >P Loss B: -3.191 kW </tspan>
+	<tspan id="P Losses A" x="86.62991683636362" dy="-25.98897505090909" >P Loss A: 20.895 kW </tspan>
+	<tspan id="CurrC" x="86.62991683636362" dy="-31.186770061090908" >CurrC: 586.702&#8736;-117.5&#176; A</tspan>
+	<tspan id="CurrB" x="86.62991683636362" dy="-25.98897505090909" >CurrB: 413.144&#8736;8.3&#176; A</tspan>
+	<tspan id="CurrA" x="86.62991683636362" dy="-25.98897505090909" >CurrA: 554.642&#8736;120.6&#176; A</tspan>
+	<tspan id="Phase" x="86.62991683636362" dy="-31.186770061090908" >Ph: ABC</tspan>
+	<tspan id="Section Text ID: 650_632_L" x="86.62991683636362" dy="-38.983462576363635" >SecID: 650_632_L</tspan>
+	<tspan id="Total Q Loss" x="510.8711575694545" y="-75.80117723181817" >Total Q Loss: 191.668 kVar</tspan>
+	<tspan id="Q Losses C" x="510.8711575694545" dy="-31.186770061090908" >Q Loss C: 81.544 kVar</tspan>
+	<tspan id="Q Losses B" x="510.8711575694545" dy="-25.98897505090909" >Q Loss B: 31.613 kVar</tspan>
+	<tspan id="Q Losses A" x="510.8711575694545" dy="-25.98897505090909" >Q Loss A: 78.510 kVar</tspan>
+</text>
+</g>
+
+<g id="Section Info Box: 632_634_S" transform = "translate(293.24699225,400.3192705) scale(1,1)" display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Total P Loss" x="86.62991683636362" y="-75.80117723181817" >Total P Loss: 0.781 kW </tspan>
+	<tspan id="P Losses C" x="86.62991683636362" dy="-31.186770061090908" >P Loss C: 0.299 kW </tspan>
+	<tspan id="P Losses B" x="86.62991683636362" dy="-25.98897505090909" >P Loss B: 0.144 kW </tspan>
+	<tspan id="P Losses A" x="86.62991683636362" dy="-25.98897505090909" >P Loss A: 0.338 kW </tspan>
+	<tspan id="CurrC" x="86.62991683636362" dy="-31.186770061090908" >CurrC: 62.074&#8736;49.6&#176; A</tspan>
+	<tspan id="CurrB" x="86.62991683636362" dy="-25.98897505090909" >CurrB: 60.159&#8736;170.4&#176; A</tspan>
+	<tspan id="CurrA" x="86.62991683636362" dy="-25.98897505090909" >CurrA: 79.654&#8736;-68.4&#176; A</tspan>
+	<tspan id="Phase" x="86.62991683636362" dy="-31.186770061090908" >Ph: ABC</tspan>
+	<tspan id="Section Text ID: 632_634_S" x="86.62991683636362" dy="-38.983462576363635" >SecID: 632_634_S</tspan>
+	<tspan id="Total Q Loss" x="495.27777253890906" y="-75.80117723181817" >Total Q Loss: 0.992 kVar</tspan>
+	<tspan id="Q Losses C" x="495.27777253890906" dy="-31.186770061090908" >Q Loss C: 0.241 kVar</tspan>
+	<tspan id="Q Losses B" x="495.27777253890906" dy="-25.98897505090909" >Q Loss B: 0.252 kVar</tspan>
+	<tspan id="Q Losses A" x="495.27777253890906" dy="-25.98897505090909" >Q Loss A: 0.499 kVar</tspan>
+</text>
+</g>
+
+<g id="Section Info Box: 632_634_L" transform = "translate(551.44565075,399.65098750000004) scale(1,1)" display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Total P Loss" x="86.62991683636362" y="-75.80117723181817" >Total P Loss: 0.781 kW </tspan>
+	<tspan id="P Losses C" x="86.62991683636362" dy="-31.186770061090908" >P Loss C: 0.299 kW </tspan>
+	<tspan id="P Losses B" x="86.62991683636362" dy="-25.98897505090909" >P Loss B: 0.144 kW </tspan>
+	<tspan id="P Losses A" x="86.62991683636362" dy="-25.98897505090909" >P Loss A: 0.338 kW </tspan>
+	<tspan id="CurrC" x="86.62991683636362" dy="-31.186770061090908" >CurrC: 62.075&#8736;-130.4&#176; A</tspan>
+	<tspan id="CurrB" x="86.62991683636362" dy="-25.98897505090909" >CurrB: 60.159&#8736;-9.6&#176; A</tspan>
+	<tspan id="CurrA" x="86.62991683636362" dy="-25.98897505090909" >CurrA: 79.655&#8736;111.6&#176; A</tspan>
+	<tspan id="Phase" x="86.62991683636362" dy="-31.186770061090908" >Ph: ABC</tspan>
+	<tspan id="Section Text ID: 632_634_L" x="86.62991683636362" dy="-38.983462576363635" >SecID: 632_634_L</tspan>
+	<tspan id="Total Q Loss" x="495.27777253890906" y="-75.80117723181817" >Total Q Loss: 0.992 kVar</tspan>
+	<tspan id="Q Losses C" x="495.27777253890906" dy="-31.186770061090908" >Q Loss C: 0.241 kVar</tspan>
+	<tspan id="Q Losses B" x="495.27777253890906" dy="-25.98897505090909" >Q Loss B: 0.252 kVar</tspan>
+	<tspan id="Q Losses A" x="495.27777253890906" dy="-25.98897505090909" >Q Loss A: 0.499 kVar</tspan>
+</text>
+</g>
+
+<g id="Section Info Box: 632_645_S" transform = "translate(100.10544349999999,400.2214355) scale(1,1)" display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Total P Loss" x="86.62991683636362" y="-75.80117723181817" >Total P Loss: 2.766 kW </tspan>
+	<tspan id="P Losses C" x="86.62991683636362" dy="-31.186770061090908" >P Loss C: 0.224 kW </tspan>
+	<tspan id="P Losses B" x="86.62991683636362" dy="-25.98897505090909" >P Loss B: 2.542 kW </tspan>
+	<tspan id="P Losses A" x="86.62991683636362" dy="-25.98897505090909" >P Loss A: </tspan>
+	<tspan id="CurrC" x="86.62991683636362" dy="-31.186770061090908" >CurrC: 65.368&#8736;26.7&#176; A</tspan>
+	<tspan id="CurrB" x="86.62991683636362" dy="-25.98897505090909" >CurrB: 142.971&#8736;-173.6&#176; A</tspan>
+	<tspan id="CurrA" x="86.62991683636362" dy="-25.98897505090909" >CurrA: </tspan>
+	<tspan id="Phase" x="86.62991683636362" dy="-31.186770061090908" >Ph: BC</tspan>
+	<tspan id="Section Text ID: 632_645_S" x="86.62991683636362" dy="-38.983462576363635" >SecID: 632_645_S</tspan>
+	<tspan id="Total Q Loss" x="495.27777253890906" y="-75.80117723181817" >Total Q Loss: 2.388 kVar</tspan>
+	<tspan id="Q Losses C" x="495.27777253890906" dy="-31.186770061090908" >Q Loss C: 0.228 kVar</tspan>
+	<tspan id="Q Losses B" x="495.27777253890906" dy="-25.98897505090909" >Q Loss B: 2.160 kVar</tspan>
+	<tspan id="Q Losses A" x="495.27777253890906" dy="-25.98897505090909" >Q Loss A: </tspan>
+</text>
+</g>
+
+<g id="Section Info Box: 632_645_L" transform = "translate(-27.9789955,399.35748249999995) scale(1,1)" display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Total P Loss" x="86.62991683636362" y="-75.80117723181817" >Total P Loss: 2.766 kW </tspan>
+	<tspan id="P Losses C" x="86.62991683636362" dy="-31.186770061090908" >P Loss C: 0.224 kW </tspan>
+	<tspan id="P Losses B" x="86.62991683636362" dy="-25.98897505090909" >P Loss B: 2.542 kW </tspan>
+	<tspan id="P Losses A" x="86.62991683636362" dy="-25.98897505090909" >P Loss A: </tspan>
+	<tspan id="CurrC" x="86.62991683636362" dy="-31.186770061090908" >CurrC: 65.369&#8736;-153.3&#176; A</tspan>
+	<tspan id="CurrB" x="86.62991683636362" dy="-25.98897505090909" >CurrB: 142.972&#8736;6.4&#176; A</tspan>
+	<tspan id="CurrA" x="86.62991683636362" dy="-25.98897505090909" >CurrA: </tspan>
+	<tspan id="Phase" x="86.62991683636362" dy="-31.186770061090908" >Ph: BC</tspan>
+	<tspan id="Section Text ID: 632_645_L" x="86.62991683636362" dy="-38.983462576363635" >SecID: 632_645_L</tspan>
+	<tspan id="Total Q Loss" x="495.27777253890906" y="-75.80117723181817" >Total Q Loss: 2.388 kVar</tspan>
+	<tspan id="Q Losses C" x="495.27777253890906" dy="-31.186770061090908" >Q Loss C: 0.228 kVar</tspan>
+	<tspan id="Q Losses B" x="495.27777253890906" dy="-25.98897505090909" >Q Loss B: 2.160 kVar</tspan>
+	<tspan id="Q Losses A" x="495.27777253890906" dy="-25.98897505090909" >Q Loss A: </tspan>
+</text>
+</g>
+
+<g id="Section Info Box: 645_646_S" transform = "translate(-165.73617375,397.80222100000003) scale(1,1)" display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Total P Loss" x="86.62991683636362" y="-75.80117723181817" >Total P Loss: 0.544 kW </tspan>
+	<tspan id="P Losses C" x="86.62991683636362" dy="-31.186770061090908" >P Loss C: 0.272 kW </tspan>
+	<tspan id="P Losses B" x="86.62991683636362" dy="-25.98897505090909" >P Loss B: 0.272 kW </tspan>
+	<tspan id="P Losses A" x="86.62991683636362" dy="-25.98897505090909" >P Loss A: </tspan>
+	<tspan id="CurrC" x="86.62991683636362" dy="-31.186770061090908" >CurrC: 65.369&#8736;26.7&#176; A</tspan>
+	<tspan id="CurrB" x="86.62991683636362" dy="-25.98897505090909" >CurrB: 65.370&#8736;-153.3&#176; A</tspan>
+	<tspan id="CurrA" x="86.62991683636362" dy="-25.98897505090909" >CurrA: </tspan>
+	<tspan id="Phase" x="86.62991683636362" dy="-31.186770061090908" >Ph: BC</tspan>
+	<tspan id="Section Text ID: 645_646_S" x="86.62991683636362" dy="-38.983462576363635" >SecID: 645_646_S</tspan>
+	<tspan id="Total Q Loss" x="495.27777253890906" y="-75.80117723181817" >Total Q Loss: 0.430 kVar</tspan>
+	<tspan id="Q Losses C" x="495.27777253890906" dy="-31.186770061090908" >Q Loss C: 0.216 kVar</tspan>
+	<tspan id="Q Losses B" x="495.27777253890906" dy="-25.98897505090909" >Q Loss B: 0.214 kVar</tspan>
+	<tspan id="Q Losses A" x="495.27777253890906" dy="-25.98897505090909" >Q Loss A: </tspan>
+</text>
+</g>
+
+<g id="Section Info Box: 645_646_L" transform = "translate(-313.16609125,395.555651) scale(1,1)" display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Total P Loss" x="86.62991683636362" y="-75.80117723181817" >Total P Loss: 0.544 kW </tspan>
+	<tspan id="P Losses C" x="86.62991683636362" dy="-31.186770061090908" >P Loss C: 0.272 kW </tspan>
+	<tspan id="P Losses B" x="86.62991683636362" dy="-25.98897505090909" >P Loss B: 0.272 kW </tspan>
+	<tspan id="P Losses A" x="86.62991683636362" dy="-25.98897505090909" >P Loss A: </tspan>
+	<tspan id="CurrC" x="86.62991683636362" dy="-31.186770061090908" >CurrC: 65.370&#8736;-153.3&#176; A</tspan>
+	<tspan id="CurrB" x="86.62991683636362" dy="-25.98897505090909" >CurrB: 65.370&#8736;26.7&#176; A</tspan>
+	<tspan id="CurrA" x="86.62991683636362" dy="-25.98897505090909" >CurrA: </tspan>
+	<tspan id="Phase" x="86.62991683636362" dy="-31.186770061090908" >Ph: BC</tspan>
+	<tspan id="Section Text ID: 645_646_L" x="86.62991683636362" dy="-38.983462576363635" >SecID: 645_646_L</tspan>
+	<tspan id="Total Q Loss" x="495.27777253890906" y="-75.80117723181817" >Total Q Loss: 0.430 kVar</tspan>
+	<tspan id="Q Losses C" x="495.27777253890906" dy="-31.186770061090908" >Q Loss C: 0.216 kVar</tspan>
+	<tspan id="Q Losses B" x="495.27777253890906" dy="-25.98897505090909" >Q Loss B: 0.214 kVar</tspan>
+	<tspan id="Q Losses A" x="495.27777253890906" dy="-25.98897505090909" >Q Loss A: </tspan>
+</text>
+</g>
+
+<g id="Section Info Box: 632_699_S" transform = "translate(164.750787,372.5572005) scale(1,1)" display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Total P Loss" x="86.62991683636362" y="-75.80117723181817" >Total P Loss: 19.075 kW </tspan>
+	<tspan id="P Losses C" x="86.62991683636362" dy="-31.186770061090908" >P Loss C: 17.419 kW </tspan>
+	<tspan id="P Losses B" x="86.62991683636362" dy="-25.98897505090909" >P Loss B: -2.909 kW </tspan>
+	<tspan id="P Losses A" x="86.62991683636362" dy="-25.98897505090909" >P Loss A: 4.566 kW </tspan>
+	<tspan id="CurrC" x="86.62991683636362" dy="-31.186770061090908" >CurrC: 475.974&#8736;68.7&#176; A</tspan>
+	<tspan id="CurrB" x="86.62991683636362" dy="-25.98897505090909" >CurrB: 214.238&#8736;-165.6&#176; A</tspan>
+	<tspan id="CurrA" x="86.62991683636362" dy="-25.98897505090909" >CurrA: 476.116&#8736;-57.9&#176; A</tspan>
+	<tspan id="Phase" x="86.62991683636362" dy="-31.186770061090908" >Ph: ABC</tspan>
+	<tspan id="Section Text ID: 632_699_S" x="86.62991683636362" dy="-38.983462576363635" >SecID: 632_699_S</tspan>
+	<tspan id="Total Q Loss" x="510.8711575694545" y="-75.80117723181817" >Total Q Loss: 60.930 kVar</tspan>
+	<tspan id="Q Losses C" x="510.8711575694545" dy="-31.186770061090908" >Q Loss C: 26.166 kVar</tspan>
+	<tspan id="Q Losses B" x="510.8711575694545" dy="-25.98897505090909" >Q Loss B: 2.290 kVar</tspan>
+	<tspan id="Q Losses A" x="510.8711575694545" dy="-25.98897505090909" >Q Loss A: 32.474 kVar</tspan>
+</text>
+</g>
+
+<g id="Section Info Box: 632_699_L" transform = "translate(165.957035,316.36477750000006) scale(1,1)" display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Total P Loss" x="86.62991683636362" y="-75.80117723181817" >Total P Loss: 19.075 kW </tspan>
+	<tspan id="P Losses C" x="86.62991683636362" dy="-31.186770061090908" >P Loss C: 17.419 kW </tspan>
+	<tspan id="P Losses B" x="86.62991683636362" dy="-25.98897505090909" >P Loss B: -2.909 kW </tspan>
+	<tspan id="P Losses A" x="86.62991683636362" dy="-25.98897505090909" >P Loss A: 4.566 kW </tspan>
+	<tspan id="CurrC" x="86.62991683636362" dy="-31.186770061090908" >CurrC: 475.975&#8736;-111.3&#176; A</tspan>
+	<tspan id="CurrB" x="86.62991683636362" dy="-25.98897505090909" >CurrB: 214.238&#8736;14.4&#176; A</tspan>
+	<tspan id="CurrA" x="86.62991683636362" dy="-25.98897505090909" >CurrA: 476.118&#8736;122.1&#176; A</tspan>
+	<tspan id="Phase" x="86.62991683636362" dy="-31.186770061090908" >Ph: ABC</tspan>
+	<tspan id="Section Text ID: 632_699_L" x="86.62991683636362" dy="-38.983462576363635" >SecID: 632_699_L</tspan>
+	<tspan id="Total Q Loss" x="510.8711575694545" y="-75.80117723181817" >Total Q Loss: 60.930 kVar</tspan>
+	<tspan id="Q Losses C" x="510.8711575694545" dy="-31.186770061090908" >Q Loss C: 26.166 kVar</tspan>
+	<tspan id="Q Losses B" x="510.8711575694545" dy="-25.98897505090909" >Q Loss B: 2.290 kVar</tspan>
+	<tspan id="Q Losses A" x="510.8711575694545" dy="-25.98897505090909" >Q Loss A: 32.474 kVar</tspan>
+</text>
+</g>
+
+<g id="Section Info Box: 699_671_S" transform = "translate(167.060915,260.41850750000003) scale(1,1)" display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Total P Loss" x="86.62991683636362" y="-75.80117723181817" >Total P Loss: 16.687 kW </tspan>
+	<tspan id="P Losses C" x="86.62991683636362" dy="-31.186770061090908" >P Loss C: 14.287 kW </tspan>
+	<tspan id="P Losses B" x="86.62991683636362" dy="-25.98897505090909" >P Loss B: -3.226 kW </tspan>
+	<tspan id="P Losses A" x="86.62991683636362" dy="-25.98897505090909" >P Loss A: 5.626 kW </tspan>
+	<tspan id="CurrC" x="86.62991683636362" dy="-31.186770061090908" >CurrC: 420.970&#8736;70.5&#176; A</tspan>
+	<tspan id="CurrB" x="86.62991683636362" dy="-25.98897505090909" >CurrB: 185.626&#8736;-162.8&#176; A</tspan>
+	<tspan id="CurrA" x="86.62991683636362" dy="-25.98897505090909" >CurrA: 468.062&#8736;-57.8&#176; A</tspan>
+	<tspan id="Phase" x="86.62991683636362" dy="-31.186770061090908" >Ph: ABC</tspan>
+	<tspan id="Section Text ID: 699_671_S" x="86.62991683636362" dy="-38.983462576363635" >SecID: 699_671_S</tspan>
+	<tspan id="Total Q Loss" x="510.8711575694545" y="-75.80117723181817" >Total Q Loss: 53.108 kVar</tspan>
+	<tspan id="Q Losses C" x="510.8711575694545" dy="-31.186770061090908" >Q Loss C: 18.716 kVar</tspan>
+	<tspan id="Q Losses B" x="510.8711575694545" dy="-25.98897505090909" >Q Loss B: 1.946 kVar</tspan>
+	<tspan id="Q Losses A" x="510.8711575694545" dy="-25.98897505090909" >Q Loss A: 32.445 kVar</tspan>
+</text>
+</g>
+
+<g id="Section Info Box: 699_671_L" transform = "translate(168.062427,204.7183905) scale(1,1)" display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Total P Loss" x="86.62991683636362" y="-75.80117723181817" >Total P Loss: 16.687 kW </tspan>
+	<tspan id="P Losses C" x="86.62991683636362" dy="-31.186770061090908" >P Loss C: 14.287 kW </tspan>
+	<tspan id="P Losses B" x="86.62991683636362" dy="-25.98897505090909" >P Loss B: -3.226 kW </tspan>
+	<tspan id="P Losses A" x="86.62991683636362" dy="-25.98897505090909" >P Loss A: 5.626 kW </tspan>
+	<tspan id="CurrC" x="86.62991683636362" dy="-31.186770061090908" >CurrC: 420.971&#8736;-109.5&#176; A</tspan>
+	<tspan id="CurrB" x="86.62991683636362" dy="-25.98897505090909" >CurrB: 185.626&#8736;17.2&#176; A</tspan>
+	<tspan id="CurrA" x="86.62991683636362" dy="-25.98897505090909" >CurrA: 468.064&#8736;122.2&#176; A</tspan>
+	<tspan id="Phase" x="86.62991683636362" dy="-31.186770061090908" >Ph: ABC</tspan>
+	<tspan id="Section Text ID: 699_671_L" x="86.62991683636362" dy="-38.983462576363635" >SecID: 699_671_L</tspan>
+	<tspan id="Total Q Loss" x="510.8711575694545" y="-75.80117723181817" >Total Q Loss: 53.108 kVar</tspan>
+	<tspan id="Q Losses C" x="510.8711575694545" dy="-31.186770061090908" >Q Loss C: 18.716 kVar</tspan>
+	<tspan id="Q Losses B" x="510.8711575694545" dy="-25.98897505090909" >Q Loss B: 1.946 kVar</tspan>
+	<tspan id="Q Losses A" x="510.8711575694545" dy="-25.98897505090909" >Q Loss A: 32.445 kVar</tspan>
+</text>
+</g>
+
+<g id="Section Info Box: 671_680_S" transform = "translate(168.67470500000002,141.05344525) scale(1,1)" display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Total P Loss" x="86.62991683636362" y="-75.80117723181817" >Total P Loss: -0.000 kW </tspan>
+	<tspan id="P Losses C" x="86.62991683636362" dy="-31.186770061090908" >P Loss C: -0.000 kW </tspan>
+	<tspan id="P Losses B" x="86.62991683636362" dy="-25.98897505090909" >P Loss B: 0.001 kW </tspan>
+	<tspan id="P Losses A" x="86.62991683636362" dy="-25.98897505090909" >P Loss A: -0.001 kW </tspan>
+	<tspan id="CurrC" x="86.62991683636362" dy="-31.186770061090908" >CurrC: 0.003&#8736;178.4&#176; A</tspan>
+	<tspan id="CurrB" x="86.62991683636362" dy="-25.98897505090909" >CurrB: 0.003&#8736;-71.9&#176; A</tspan>
+	<tspan id="CurrA" x="86.62991683636362" dy="-25.98897505090909" >CurrA: 0.004&#8736;59.7&#176; A</tspan>
+	<tspan id="Phase" x="86.62991683636362" dy="-31.186770061090908" >Ph: ABC</tspan>
+	<tspan id="Section Text ID: 671_680_S" x="86.62991683636362" dy="-38.983462576363635" >SecID: 671_680_S</tspan>
+	<tspan id="Total Q Loss" x="510.8711575694545" y="-75.80117723181817" >Total Q Loss: -0.024 kVar</tspan>
+	<tspan id="Q Losses C" x="510.8711575694545" dy="-31.186770061090908" >Q Loss C: -0.007 kVar</tspan>
+	<tspan id="Q Losses B" x="510.8711575694545" dy="-25.98897505090909" >Q Loss B: -0.009 kVar</tspan>
+	<tspan id="Q Losses A" x="510.8711575694545" dy="-25.98897505090909" >Q Loss A: -0.009 kVar</tspan>
+</text>
+</g>
+
+<g id="Section Info Box: 671_680_L" transform = "translate(168.897749,69.42367175000001) scale(1,1)" display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Total P Loss" x="86.62991683636362" y="-75.80117723181817" >Total P Loss: -0.000 kW </tspan>
+	<tspan id="P Losses C" x="86.62991683636362" dy="-31.186770061090908" >P Loss C: -0.000 kW </tspan>
+	<tspan id="P Losses B" x="86.62991683636362" dy="-25.98897505090909" >P Loss B: 0.001 kW </tspan>
+	<tspan id="P Losses A" x="86.62991683636362" dy="-25.98897505090909" >P Loss A: -0.001 kW </tspan>
+	<tspan id="CurrC" x="86.62991683636362" dy="-31.186770061090908" >CurrC: 0.000&#8736;-90.0&#176; A</tspan>
+	<tspan id="CurrB" x="86.62991683636362" dy="-25.98897505090909" >CurrB: 0.000&#8736;-36.9&#176; A</tspan>
+	<tspan id="CurrA" x="86.62991683636362" dy="-25.98897505090909" >CurrA: 0.000&#8736;-121.6&#176; A</tspan>
+	<tspan id="Phase" x="86.62991683636362" dy="-31.186770061090908" >Ph: ABC</tspan>
+	<tspan id="Section Text ID: 671_680_L" x="86.62991683636362" dy="-38.983462576363635" >SecID: 671_680_L</tspan>
+	<tspan id="Total Q Loss" x="510.8711575694545" y="-75.80117723181817" >Total Q Loss: -0.024 kVar</tspan>
+	<tspan id="Q Losses C" x="510.8711575694545" dy="-31.186770061090908" >Q Loss C: -0.007 kVar</tspan>
+	<tspan id="Q Losses B" x="510.8711575694545" dy="-25.98897505090909" >Q Loss B: -0.009 kVar</tspan>
+	<tspan id="Q Losses A" x="510.8711575694545" dy="-25.98897505090909" >Q Loss A: -0.009 kVar</tspan>
+</text>
+</g>
+
+<g id="Section Info Box: 671_675_S" transform = "translate(259.49552675,177.4734455) scale(1,1)" display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Total P Loss" x="86.62991683636362" y="-75.80117723181817" >Total P Loss: 2.680 kW </tspan>
+	<tspan id="P Losses C" x="86.62991683636362" dy="-31.186770061090908" >P Loss C: 0.668 kW </tspan>
+	<tspan id="P Losses B" x="86.62991683636362" dy="-25.98897505090909" >P Loss B: 0.215 kW </tspan>
+	<tspan id="P Losses A" x="86.62991683636362" dy="-25.98897505090909" >P Loss A: 1.797 kW </tspan>
+	<tspan id="CurrC" x="86.62991683636362" dy="-31.186770061090908" >CurrC: 124.494&#8736;80.3&#176; A</tspan>
+	<tspan id="CurrB" x="86.62991683636362" dy="-25.98897505090909" >CurrB: 69.737&#8736;-85.8&#176; A</tspan>
+	<tspan id="CurrA" x="86.62991683636362" dy="-25.98897505090909" >CurrA: 203.700&#8736;-35.7&#176; A</tspan>
+	<tspan id="Phase" x="86.62991683636362" dy="-31.186770061090908" >Ph: ABC</tspan>
+	<tspan id="Section Text ID: 671_675_S" x="86.62991683636362" dy="-38.983462576363635" >SecID: 671_675_S</tspan>
+	<tspan id="Total Q Loss" x="495.27777253890906" y="-75.80117723181817" >Total Q Loss: 0.851 kVar</tspan>
+	<tspan id="Q Losses C" x="495.27777253890906" dy="-31.186770061090908" >Q Loss C: 0.209 kVar</tspan>
+	<tspan id="Q Losses B" x="495.27777253890906" dy="-25.98897505090909" >Q Loss B: 0.029 kVar</tspan>
+	<tspan id="Q Losses A" x="495.27777253890906" dy="-25.98897505090909" >Q Loss A: 0.612 kVar</tspan>
+</text>
+</g>
+
+<g id="Section Info Box: 671_675_L" transform = "translate(441.36021425,178.6836725) scale(1,1)" display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Total P Loss" x="86.62991683636362" y="-75.80117723181817" >Total P Loss: 2.680 kW </tspan>
+	<tspan id="P Losses C" x="86.62991683636362" dy="-31.186770061090908" >P Loss C: 0.668 kW </tspan>
+	<tspan id="P Losses B" x="86.62991683636362" dy="-25.98897505090909" >P Loss B: 0.215 kW </tspan>
+	<tspan id="P Losses A" x="86.62991683636362" dy="-25.98897505090909" >P Loss A: 1.797 kW </tspan>
+	<tspan id="CurrC" x="86.62991683636362" dy="-31.186770061090908" >CurrC: 124.496&#8736;-99.7&#176; A</tspan>
+	<tspan id="CurrB" x="86.62991683636362" dy="-25.98897505090909" >CurrB: 69.719&#8736;94.2&#176; A</tspan>
+	<tspan id="CurrA" x="86.62991683636362" dy="-25.98897505090909" >CurrA: 203.700&#8736;144.3&#176; A</tspan>
+	<tspan id="Phase" x="86.62991683636362" dy="-31.186770061090908" >Ph: ABC</tspan>
+	<tspan id="Section Text ID: 671_675_L" x="86.62991683636362" dy="-38.983462576363635" >SecID: 671_675_L</tspan>
+	<tspan id="Total Q Loss" x="495.27777253890906" y="-75.80117723181817" >Total Q Loss: 0.851 kVar</tspan>
+	<tspan id="Q Losses C" x="495.27777253890906" dy="-31.186770061090908" >Q Loss C: 0.209 kVar</tspan>
+	<tspan id="Q Losses B" x="495.27777253890906" dy="-25.98897505090909" >Q Loss B: 0.029 kVar</tspan>
+	<tspan id="Q Losses A" x="495.27777253890906" dy="-25.98897505090909" >Q Loss A: 0.612 kVar</tspan>
+</text>
+</g>
+
+<g id="Section Info Box: 671_684_S" transform = "translate(95.1908635,176.61446325) scale(1,1)" display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Total P Loss" x="86.62991683636362" y="-75.80117723181817" >Total P Loss: 0.586 kW </tspan>
+	<tspan id="P Losses C" x="86.62991683636362" dy="-31.186770061090908" >P Loss C: 0.371 kW </tspan>
+	<tspan id="P Losses B" x="86.62991683636362" dy="-25.98897505090909" >P Loss B: </tspan>
+	<tspan id="P Losses A" x="86.62991683636362" dy="-25.98897505090909" >P Loss A: 0.214 kW </tspan>
+	<tspan id="CurrC" x="86.62991683636362" dy="-31.186770061090908" >CurrC: 71.138&#8736;90.3&#176; A</tspan>
+	<tspan id="CurrB" x="86.62991683636362" dy="-25.98897505090909" >CurrB: </tspan>
+	<tspan id="CurrA" x="86.62991683636362" dy="-25.98897505090909" >CurrA: 63.505&#8736;-70.2&#176; A</tspan>
+	<tspan id="Phase" x="86.62991683636362" dy="-31.186770061090908" >Ph: AC</tspan>
+	<tspan id="Section Text ID: 671_684_S" x="86.62991683636362" dy="-38.983462576363635" >SecID: 671_684_S</tspan>
+	<tspan id="Total Q Loss" x="495.27777253890906" y="-75.80117723181817" >Total Q Loss: 0.473 kVar</tspan>
+	<tspan id="Q Losses C" x="495.27777253890906" dy="-31.186770061090908" >Q Loss C: 0.257 kVar</tspan>
+	<tspan id="Q Losses B" x="495.27777253890906" dy="-25.98897505090909" >Q Loss B: </tspan>
+	<tspan id="Q Losses A" x="495.27777253890906" dy="-25.98897505090909" >Q Loss A: 0.216 kVar</tspan>
+</text>
+</g>
+
+<g id="Section Info Box: 671_684_L" transform = "translate(-51.5537755,176.10672575) scale(1,1)" display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Total P Loss" x="86.62991683636362" y="-75.80117723181817" >Total P Loss: 0.586 kW </tspan>
+	<tspan id="P Losses C" x="86.62991683636362" dy="-31.186770061090908" >P Loss C: 0.371 kW </tspan>
+	<tspan id="P Losses B" x="86.62991683636362" dy="-25.98897505090909" >P Loss B: </tspan>
+	<tspan id="P Losses A" x="86.62991683636362" dy="-25.98897505090909" >P Loss A: 0.214 kW </tspan>
+	<tspan id="CurrC" x="86.62991683636362" dy="-31.186770061090908" >CurrC: 71.138&#8736;-89.7&#176; A</tspan>
+	<tspan id="CurrB" x="86.62991683636362" dy="-25.98897505090909" >CurrB: </tspan>
+	<tspan id="CurrA" x="86.62991683636362" dy="-25.98897505090909" >CurrA: 63.505&#8736;109.8&#176; A</tspan>
+	<tspan id="Phase" x="86.62991683636362" dy="-31.186770061090908" >Ph: AC</tspan>
+	<tspan id="Section Text ID: 671_684_L" x="86.62991683636362" dy="-38.983462576363635" >SecID: 671_684_L</tspan>
+	<tspan id="Total Q Loss" x="495.27777253890906" y="-75.80117723181817" >Total Q Loss: 0.473 kVar</tspan>
+	<tspan id="Q Losses C" x="495.27777253890906" dy="-31.186770061090908" >Q Loss C: 0.257 kVar</tspan>
+	<tspan id="Q Losses B" x="495.27777253890906" dy="-25.98897505090909" >Q Loss B: </tspan>
+	<tspan id="Q Losses A" x="495.27777253890906" dy="-25.98897505090909" >Q Loss A: 0.216 kVar</tspan>
+</text>
+</g>
+
+<g id="Section Info Box: 684_611_S" transform = "translate(-186.1278795,175.3784245) scale(1,1)" display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Total P Loss" x="86.62991683636362" y="-75.80117723181817" >Total P Loss: 0.382 kW </tspan>
+	<tspan id="P Losses C" x="86.62991683636362" dy="-31.186770061090908" >P Loss C: 0.382 kW </tspan>
+	<tspan id="P Losses B" x="86.62991683636362" dy="-25.98897505090909" >P Loss B: </tspan>
+	<tspan id="P Losses A" x="86.62991683636362" dy="-25.98897505090909" >P Loss A: </tspan>
+	<tspan id="CurrC" x="86.62991683636362" dy="-31.186770061090908" >CurrC: 71.138&#8736;90.3&#176; A</tspan>
+	<tspan id="CurrB" x="86.62991683636362" dy="-25.98897505090909" >CurrB: </tspan>
+	<tspan id="CurrA" x="86.62991683636362" dy="-25.98897505090909" >CurrA: </tspan>
+	<tspan id="Phase" x="86.62991683636362" dy="-31.186770061090908" >Ph: C</tspan>
+	<tspan id="Section Text ID: 684_611_S" x="86.62991683636362" dy="-38.983462576363635" >SecID: 684_611_S</tspan>
+	<tspan id="Total Q Loss" x="495.27777253890906" y="-75.80117723181817" >Total Q Loss: 0.386 kVar</tspan>
+	<tspan id="Q Losses C" x="495.27777253890906" dy="-31.186770061090908" >Q Loss C: 0.386 kVar</tspan>
+	<tspan id="Q Losses B" x="495.27777253890906" dy="-25.98897505090909" >Q Loss B: </tspan>
+	<tspan id="Q Losses A" x="495.27777253890906" dy="-25.98897505090909" >Q Loss A: </tspan>
+</text>
+</g>
+
+<g id="Section Info Box: 684_611_L" transform = "translate(-308.5314485,174.4295595) scale(1,1)" display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Total P Loss" x="86.62991683636362" y="-75.80117723181817" >Total P Loss: 0.382 kW </tspan>
+	<tspan id="P Losses C" x="86.62991683636362" dy="-31.186770061090908" >P Loss C: 0.382 kW </tspan>
+	<tspan id="P Losses B" x="86.62991683636362" dy="-25.98897505090909" >P Loss B: </tspan>
+	<tspan id="P Losses A" x="86.62991683636362" dy="-25.98897505090909" >P Loss A: </tspan>
+	<tspan id="CurrC" x="86.62991683636362" dy="-31.186770061090908" >CurrC: 71.138&#8736;-89.7&#176; A</tspan>
+	<tspan id="CurrB" x="86.62991683636362" dy="-25.98897505090909" >CurrB: </tspan>
+	<tspan id="CurrA" x="86.62991683636362" dy="-25.98897505090909" >CurrA: </tspan>
+	<tspan id="Phase" x="86.62991683636362" dy="-31.186770061090908" >Ph: C</tspan>
+	<tspan id="Section Text ID: 684_611_L" x="86.62991683636362" dy="-38.983462576363635" >SecID: 684_611_L</tspan>
+	<tspan id="Total Q Loss" x="495.27777253890906" y="-75.80117723181817" >Total Q Loss: 0.386 kVar</tspan>
+	<tspan id="Q Losses C" x="495.27777253890906" dy="-31.186770061090908" >Q Loss C: 0.386 kVar</tspan>
+	<tspan id="Q Losses B" x="495.27777253890906" dy="-25.98897505090909" >Q Loss B: </tspan>
+	<tspan id="Q Losses A" x="495.27777253890906" dy="-25.98897505090909" >Q Loss A: </tspan>
+</text>
+</g>
+
+<g id="Section Info Box: 684_652_S" transform = "translate(-124.93283275,133.5674255) scale(1,1)" display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Total P Loss" x="86.62991683636362" y="-75.80117723181817" >Total P Loss: 0.376 kW </tspan>
+	<tspan id="P Losses C" x="86.62991683636362" dy="-31.186770061090908" >P Loss C: </tspan>
+	<tspan id="P Losses B" x="86.62991683636362" dy="-25.98897505090909" >P Loss B: </tspan>
+	<tspan id="P Losses A" x="86.62991683636362" dy="-25.98897505090909" >P Loss A: 0.376 kW </tspan>
+	<tspan id="CurrC" x="86.62991683636362" dy="-31.186770061090908" >CurrC: </tspan>
+	<tspan id="CurrB" x="86.62991683636362" dy="-25.98897505090909" >CurrB: </tspan>
+	<tspan id="CurrA" x="86.62991683636362" dy="-25.98897505090909" >CurrA: 63.505&#8736;-70.2&#176; A</tspan>
+	<tspan id="Phase" x="86.62991683636362" dy="-31.186770061090908" >Ph: A</tspan>
+	<tspan id="Section Text ID: 684_652_S" x="86.62991683636362" dy="-38.983462576363635" >SecID: 684_652_S</tspan>
+	<tspan id="Total Q Loss" x="495.27777253890906" y="-75.80117723181817" >Total Q Loss: -0.080 kVar</tspan>
+	<tspan id="Q Losses C" x="495.27777253890906" dy="-31.186770061090908" >Q Loss C: </tspan>
+	<tspan id="Q Losses B" x="495.27777253890906" dy="-25.98897505090909" >Q Loss B: </tspan>
+	<tspan id="Q Losses A" x="495.27777253890906" dy="-25.98897505090909" >Q Loss A: -0.080 kVar</tspan>
+</text>
+</g>
+
+<g id="Section Info Box: 684_652_L" transform = "translate(-124.94630825,48.996562499999996) scale(1,1)" display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Total P Loss" x="86.62991683636362" y="-75.80117723181817" >Total P Loss: 0.376 kW </tspan>
+	<tspan id="P Losses C" x="86.62991683636362" dy="-31.186770061090908" >P Loss C: </tspan>
+	<tspan id="P Losses B" x="86.62991683636362" dy="-25.98897505090909" >P Loss B: </tspan>
+	<tspan id="P Losses A" x="86.62991683636362" dy="-25.98897505090909" >P Loss A: 0.376 kW </tspan>
+	<tspan id="CurrC" x="86.62991683636362" dy="-31.186770061090908" >CurrC: </tspan>
+	<tspan id="CurrB" x="86.62991683636362" dy="-25.98897505090909" >CurrB: </tspan>
+	<tspan id="CurrA" x="86.62991683636362" dy="-25.98897505090909" >CurrA: 63.578&#8736;109.7&#176; A</tspan>
+	<tspan id="Phase" x="86.62991683636362" dy="-31.186770061090908" >Ph: A</tspan>
+	<tspan id="Section Text ID: 684_652_L" x="86.62991683636362" dy="-38.983462576363635" >SecID: 684_652_L</tspan>
+	<tspan id="Total Q Loss" x="495.27777253890906" y="-75.80117723181817" >Total Q Loss: -0.080 kVar</tspan>
+	<tspan id="Q Losses C" x="495.27777253890906" dy="-31.186770061090908" >Q Loss C: </tspan>
+	<tspan id="Q Losses B" x="495.27777253890906" dy="-25.98897505090909" >Q Loss B: </tspan>
+	<tspan id="Q Losses A" x="495.27777253890906" dy="-25.98897505090909" >Q Loss A: -0.080 kVar</tspan>
+</text>
+</g><g id="Info Box for allocated load at node 634 (0)" transform="translate(658.6406899256516,440.17143038230296) scale(1,1) " display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+<tspan id="Qc" x="354.93730726399997" y="-75.80117723181817" >Qc: 90.0 kVar</tspan>
+<tspan id="Qb" x="354.93730726399997" dy="-25.98897505090909" >Qb: 90.0 kVar</tspan>
+<tspan id="Qa" x="354.93730726399997" dy="-25.98897505090909" >Qa: 110.0 kVar</tspan>
+<tspan id="Pc" x="86.62991683636362" y="-75.80117723181817" >Pc: 120.0 kW</tspan>
+<tspan id="Pb" x="86.62991683636362" dy="-25.98897505090909" >Pb: 120.0 kW</tspan>
+<tspan id="Pa" x="86.62991683636362" dy="-25.98897505090909" >Pa: 160.0 kW</tspan>
+<tspan id="Customer Type" x="86.62991683636362" dy="-25.98897505090909" >Type: Residential</tspan>
+<tspan id="Connection" x="86.62991683636362" dy="-25.98897505090909" >Connection: Y</tspan>
+<tspan id="Location" x="86.62991683636362" dy="-25.98897505090909" >Location: L</tspan>
+<tspan id="Device ID" x="86.62991683636362" dy="-25.98897505090909" >Device Number: 634</tspan>
+<tspan id="Section ID" x="86.62991683636362" dy="-25.98897505090909" >Section ID: 632_634_L</tspan>
+</text>
+</g>
+
+<g id="Info Box for allocated load at node 645 (0)" transform="translate(-113.92550507434845,439.78009038230294) scale(1,1) " display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+<tspan id="Qc" x="354.93730726399997" y="-75.80117723181817" >Qc: 0.0 kVar</tspan>
+<tspan id="Qb" x="354.93730726399997" dy="-25.98897505090909" >Qb: 125.0 kVar</tspan>
+<tspan id="Qa" x="354.93730726399997" dy="-25.98897505090909" >Qa: </tspan>
+<tspan id="Pc" x="86.62991683636362" y="-75.80117723181817" >Pc: 0.0 kW</tspan>
+<tspan id="Pb" x="86.62991683636362" dy="-25.98897505090909" >Pb: 170.0 kW</tspan>
+<tspan id="Pa" x="86.62991683636362" dy="-25.98897505090909" >Pa: </tspan>
+<tspan id="Customer Type" x="86.62991683636362" dy="-25.98897505090909" >Type: Residential</tspan>
+<tspan id="Connection" x="86.62991683636362" dy="-25.98897505090909" >Connection: Y</tspan>
+<tspan id="Location" x="86.62991683636362" dy="-25.98897505090909" >Location: L</tspan>
+<tspan id="Device ID" x="86.62991683636362" dy="-25.98897505090909" >Device Number: 645</tspan>
+<tspan id="Section ID" x="86.62991683636362" dy="-25.98897505090909" >Section ID: 632_645_L</tspan>
+</text>
+</g>
+
+<g id="Info Box for allocated load at node 646 (0)" transform="translate(-408.7853400743485,435.28695038230296) scale(1,1) " display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+<tspan id="Qc" x="354.93730726399997" y="-75.80117723181817" >Qc: 0.0 kVar</tspan>
+<tspan id="Qb" x="354.93730726399997" dy="-25.98897505090909" >Qb: 132.0 kVar</tspan>
+<tspan id="Qa" x="354.93730726399997" dy="-25.98897505090909" >Qa: </tspan>
+<tspan id="Pc" x="86.62991683636362" y="-75.80117723181817" >Pc: 0.0 kW</tspan>
+<tspan id="Pb" x="86.62991683636362" dy="-25.98897505090909" >Pb: 230.0 kW</tspan>
+<tspan id="Pa" x="86.62991683636362" dy="-25.98897505090909" >Pa: </tspan>
+<tspan id="Customer Type" x="86.62991683636362" dy="-25.98897505090909" >Type: Commercial</tspan>
+<tspan id="Connection" x="86.62991683636362" dy="-25.98897505090909" >Connection: D</tspan>
+<tspan id="Location" x="86.62991683636362" dy="-25.98897505090909" >Location: L</tspan>
+<tspan id="Device ID" x="86.62991683636362" dy="-25.98897505090909" >Device Number: 646</tspan>
+<tspan id="Section ID" x="86.62991683636362" dy="-25.98897505090909" >Section ID: 645_646_L</tspan>
+</text>
+</g>
+
+<g id="Info Box for allocated load at node 652 (0)" transform="translate(-146.85733607434847,47.565715382303) scale(1,1) " display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+<tspan id="Qc" x="339.3439222334545" y="-75.80117723181817" >Qc: </tspan>
+<tspan id="Qb" x="339.3439222334545" dy="-25.98897505090909" >Qb: </tspan>
+<tspan id="Qa" x="339.3439222334545" dy="-25.98897505090909" >Qa: 86.0 kVar</tspan>
+<tspan id="Pc" x="86.62991683636362" y="-75.80117723181817" >Pc: </tspan>
+<tspan id="Pb" x="86.62991683636362" dy="-25.98897505090909" >Pb: </tspan>
+<tspan id="Pa" x="86.62991683636362" dy="-25.98897505090909" >Pa: 128.0 kW</tspan>
+<tspan id="Customer Type" x="86.62991683636362" dy="-25.98897505090909" >Type: Commercial</tspan>
+<tspan id="Connection" x="86.62991683636362" dy="-25.98897505090909" >Connection: Y</tspan>
+<tspan id="Location" x="86.62991683636362" dy="-25.98897505090909" >Location: L</tspan>
+<tspan id="Device ID" x="86.62991683636362" dy="-25.98897505090909" >Device Number: 652</tspan>
+<tspan id="Section ID" x="86.62991683636362" dy="-25.98897505090909" >Section ID: 684_652_L</tspan>
+</text>
+</g>
+
+<g id="Info Box for allocated load at node 671 (0)" transform="translate(146.65889292565154,217.722916382303) scale(1,1) " display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+<tspan id="Qc" x="354.93730726399997" y="-75.80117723181817" >Qc: 220.0 kVar</tspan>
+<tspan id="Qb" x="354.93730726399997" dy="-25.98897505090909" >Qb: 220.0 kVar</tspan>
+<tspan id="Qa" x="354.93730726399997" dy="-25.98897505090909" >Qa: 220.0 kVar</tspan>
+<tspan id="Pc" x="86.62991683636362" y="-75.80117723181817" >Pc: 385.0 kW</tspan>
+<tspan id="Pb" x="86.62991683636362" dy="-25.98897505090909" >Pb: 385.0 kW</tspan>
+<tspan id="Pa" x="86.62991683636362" dy="-25.98897505090909" >Pa: 385.0 kW</tspan>
+<tspan id="Customer Type" x="86.62991683636362" dy="-25.98897505090909" >Type: Residential</tspan>
+<tspan id="Connection" x="86.62991683636362" dy="-25.98897505090909" >Connection: D</tspan>
+<tspan id="Location" x="86.62991683636362" dy="-25.98897505090909" >Location: L</tspan>
+<tspan id="Device ID" x="86.62991683636362" dy="-25.98897505090909" >Device Number: 671</tspan>
+<tspan id="Section ID" x="86.62991683636362" dy="-25.98897505090909" >Section ID: 699_671_L</tspan>
+</text>
+</g>
+
+<g id="Info Box for allocated load at node 675 (0)" transform="translate(510.3882679256515,220.14337038230298) scale(1,1) " display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+<tspan id="Qc" x="354.93730726399997" y="-75.80117723181817" >Qc: 212.0 kVar</tspan>
+<tspan id="Qb" x="354.93730726399997" dy="-25.98897505090909" >Qb: 60.0 kVar</tspan>
+<tspan id="Qa" x="354.93730726399997" dy="-25.98897505090909" >Qa: 190.0 kVar</tspan>
+<tspan id="Pc" x="86.62991683636362" y="-75.80117723181817" >Pc: 290.0 kW</tspan>
+<tspan id="Pb" x="86.62991683636362" dy="-25.98897505090909" >Pb: 68.0 kW</tspan>
+<tspan id="Pa" x="86.62991683636362" dy="-25.98897505090909" >Pa: 485.0 kW</tspan>
+<tspan id="Customer Type" x="86.62991683636362" dy="-25.98897505090909" >Type: Residential</tspan>
+<tspan id="Connection" x="86.62991683636362" dy="-25.98897505090909" >Connection: Y</tspan>
+<tspan id="Location" x="86.62991683636362" dy="-25.98897505090909" >Location: L</tspan>
+<tspan id="Device ID" x="86.62991683636362" dy="-25.98897505090909" >Device Number: 675</tspan>
+<tspan id="Section ID" x="86.62991683636362" dy="-25.98897505090909" >Section ID: 671_675_L</tspan>
+</text>
+</g>
+
+<g id="Info Box for allocated load at node 671 (1)" transform="translate(119.58704391428792,217.722916382303) scale(1,1) " display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+<tspan id="Qc" x="354.93730726399997" y="-75.80117723181817" >Qc: 151.0 kVar</tspan>
+<tspan id="Qb" x="354.93730726399997" dy="-25.98897505090909" >Qb: 0.0 kVar</tspan>
+<tspan id="Qa" x="354.93730726399997" dy="-25.98897505090909" >Qa: 0.0 kVar</tspan>
+<tspan id="Pc" x="86.62991683636362" y="-75.80117723181817" >Pc: 170.0 kW</tspan>
+<tspan id="Pb" x="86.62991683636362" dy="-25.98897505090909" >Pb: 0.0 kW</tspan>
+<tspan id="Pa" x="86.62991683636362" dy="-25.98897505090909" >Pa: 0.0 kW</tspan>
+<tspan id="Customer Type" x="86.62991683636362" dy="-25.98897505090909" >Type: Industrial</tspan>
+<tspan id="Connection" x="86.62991683636362" dy="-25.98897505090909" >Connection: D</tspan>
+<tspan id="Location" x="86.62991683636362" dy="-25.98897505090909" >Location: S</tspan>
+<tspan id="Device ID" x="86.62991683636362" dy="-25.98897505090909" >Device Number: 692</tspan>
+<tspan id="Section ID" x="86.62991683636362" dy="-25.98897505090909" >Section ID: 671_675_S</tspan>
+</text>
+</g>
+
+<g id="Info Box for allocated load at node 611 (0)" transform="translate(-391.63752307434845,214.809711382303) scale(1,1) " display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+<tspan id="Qc" x="339.3439222334545" y="-75.80117723181817" >Qc: 80.0 kVar</tspan>
+<tspan id="Qb" x="339.3439222334545" dy="-25.98897505090909" >Qb: </tspan>
+<tspan id="Qa" x="339.3439222334545" dy="-25.98897505090909" >Qa: </tspan>
+<tspan id="Pc" x="86.62991683636362" y="-75.80117723181817" >Pc: 170.0 kW</tspan>
+<tspan id="Pb" x="86.62991683636362" dy="-25.98897505090909" >Pb: </tspan>
+<tspan id="Pa" x="86.62991683636362" dy="-25.98897505090909" >Pa: </tspan>
+<tspan id="Customer Type" x="86.62991683636362" dy="-25.98897505090909" >Type: Industrial</tspan>
+<tspan id="Connection" x="86.62991683636362" dy="-25.98897505090909" >Connection: Y</tspan>
+<tspan id="Location" x="86.62991683636362" dy="-25.98897505090909" >Location: L</tspan>
+<tspan id="Device ID" x="86.62991683636362" dy="-25.98897505090909" >Device Number: 611</tspan>
+<tspan id="Section ID" x="86.62991683636362" dy="-25.98897505090909" >Section ID: 684_611_L</tspan>
+</text>
+</g>
+
+<g id="Info Box for allocated load at node 699 (0)" transform="translate(144.65586892565156,329.123150382303) scale(1,1) " display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+<tspan id="Qc" x="339.3439222334545" y="-75.80117723181817" >Qc: 68.0 kVar</tspan>
+<tspan id="Qb" x="339.3439222334545" dy="-25.98897505090909" >Qb: 38.0 kVar</tspan>
+<tspan id="Qa" x="339.3439222334545" dy="-25.98897505090909" >Qa: 10.0 kVar</tspan>
+<tspan id="Pc" x="86.62991683636362" y="-75.80117723181817" >Pc: 117.0 kW</tspan>
+<tspan id="Pb" x="86.62991683636362" dy="-25.98897505090909" >Pb: 66.0 kW</tspan>
+<tspan id="Pa" x="86.62991683636362" dy="-25.98897505090909" >Pa: 17.0 kW</tspan>
+<tspan id="Customer Type" x="86.62991683636362" dy="-25.98897505090909" >Type: Residential</tspan>
+<tspan id="Connection" x="86.62991683636362" dy="-25.98897505090909" >Connection: Y</tspan>
+<tspan id="Location" x="86.62991683636362" dy="-25.98897505090909" >Location: L</tspan>
+<tspan id="Device ID" x="86.62991683636362" dy="-25.98897505090909" >Device Number: TMP6</tspan>
+<tspan id="Section ID" x="86.62991683636362" dy="-25.98897505090909" >Section ID: 632_699_L</tspan>
+</text>
+</g>
+
+
+
+<g id="Transformer Info Box: XFM-1" transform = "translate(637.2301666655067,399.428955619654) scale(1,1)" display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Total P Loss" x="86.62991683636362" y="-75.80117723181817" >Total P Loss: 1.753 kW</tspan>
+	<tspan id="P Losses C" x="86.62991683636362" dy="-31.186770061090908" >P Loss A: 0.805 kW</tspan>
+	<tspan id="P Losses B" x="86.62991683636362" dy="-25.98897505090909" >P Loss B: 0.459 kW</tspan>
+	<tspan id="P Losses A" x="86.62991683636362" dy="-25.98897505090909" >P Loss C: 0.489 kW</tspan>
+	<tspan id="From Ic" x="86.62991683636362" dy="-31.186770061090908" >From Ic: 62.075&#8736;49.6&#176; A</tspan>
+	<tspan id="From Ib" x="86.62991683636362" dy="-25.98897505090909" >From Ib: 60.159&#8736;170.4&#176; A</tspan>
+	<tspan id="From Ia" x="86.62991683636362" dy="-25.98897505090909" >From Ia: 79.655&#8736;-68.4&#176; A</tspan>
+	<tspan id="From Vc" x="86.62991683636362" dy="-31.186770061090908" >From Vc: 2431.3&#8736;86.6&#176; V</tspan>
+	<tspan id="From Vb" x="86.62991683636362" dy="-25.98897505090909" >From Vb: 2507.8&#8736;-152.6&#176; V</tspan>
+	<tspan id="From Va" x="86.62991683636362" dy="-25.98897505090909" >From Va: 2456.3&#8736;-33.6&#176; V</tspan>
+	<tspan id="Transformer Text ID: XFM-1" x="86.62991683636362" dy="-38.983462576363635" >Transformer ID: XFM-1</tspan>
+	<tspan id="Total Q Loss" x="526.4645426" y="-75.80117723181817" >Total Q Loss: 3.188 kVar</tspan>
+	<tspan id="Q Losses C" x="526.4645426" dy="-31.186770061090908" >Q Loss A: 1.464 kVar</tspan>
+	<tspan id="Q Losses B" x="526.4645426" dy="-25.98897505090909" >Q Loss B: 0.835 kVar</tspan>
+	<tspan id="Q Losses A" x="526.4645426" dy="-25.98897505090909" >Q Loss C: 0.889 kVar</tspan>
+	<tspan id="To Ic" x="526.4645426" dy="-31.186770061090908" >To Ic: 537.982&#8736;-130.4&#176; A</tspan>
+	<tspan id="To Ib" x="526.4645426" dy="-25.98897505090909" >To Ib: 521.382&#8736;-9.6&#176; A</tspan>
+	<tspan id="To Ia" x="526.4645426" dy="-25.98897505090909" >To Ia: 690.343&#8736;111.6&#176; A</tspan>
+	<tspan id="To Vc" x="526.4645426" dy="-31.186770061090908" >To Vc: 278.8&#8736;86.5&#176; V </tspan>
+	<tspan id="To Vb" x="526.4645426" dy="-25.98897505090909" >To Vb: 287.7&#8736;-152.8&#176; V </tspan>
+	<tspan id="To Va" x="526.4645426" dy="-25.98897505090909" >To Va: 281.3&#8736;-33.9&#176; V </tspan>
+</text>
+</g>
+
+<g id="Transformer Info Box: SUBXFM" transform = "translate(161.939942,757.5037435818182) scale(1,1)" display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="Total P Loss" x="86.62991683636362" y="-75.80117723181817" >Total P Loss: 11.015 kW</tspan>
+	<tspan id="P Losses C" x="86.62991683636362" dy="-31.186770061090908" >P Loss A: -225.033 kW</tspan>
+	<tspan id="P Losses B" x="86.62991683636362" dy="-25.98897505090909" >P Loss B: 278.712 kW</tspan>
+	<tspan id="P Losses A" x="86.62991683636362" dy="-25.98897505090909" >P Loss C: -42.664 kW</tspan>
+	<tspan id="From Ic" x="86.62991683636362" dy="-31.186770061090908" >From Ic: 22.531&#8736;90.6&#176; A</tspan>
+	<tspan id="From Ib" x="86.62991683636362" dy="-25.98897505090909" >From Ib: 20.044&#8736;-139.3&#176; A</tspan>
+	<tspan id="From Ia" x="86.62991683636362" dy="-25.98897505090909" >From Ia: 18.113&#8736;-31.5&#176; A</tspan>
+	<tspan id="From Vc" x="86.62991683636362" dy="-31.186770061090908" >From Vc: 66395.3&#8736;120.0&#176; V</tspan>
+	<tspan id="From Vb" x="86.62991683636362" dy="-25.98897505090909" >From Vb: 66395.3&#8736;-120.0&#176; V</tspan>
+	<tspan id="From Va" x="86.62991683636362" dy="-25.98897505090909" >From Va: 66395.3&#8736;0.0&#176; V</tspan>
+	<tspan id="Transformer Text ID: SUBXFM" x="86.62991683636362" dy="-38.983462576363635" >Transformer ID: SUBXFM</tspan>
+	<tspan id="Total Q Loss" x="542.0579276305455" y="-75.80117723181817" >Total Q Loss: 88.121 kVar</tspan>
+	<tspan id="Q Losses C" x="542.0579276305455" dy="-31.186770061090908" >Q Loss A: -45.957 kVar</tspan>
+	<tspan id="Q Losses B" x="542.0579276305455" dy="-25.98897505090909" >Q Loss B: 67.690 kVar</tspan>
+	<tspan id="Q Losses A" x="542.0579276305455" dy="-25.98897505090909" >Q Loss C: 66.388 kVar</tspan>
+	<tspan id="To Ic" x="542.0579276305455" dy="-31.186770061090908" >To Ic: 634.369&#8736;-117.5&#176; A</tspan>
+	<tspan id="To Ib" x="542.0579276305455" dy="-25.98897505090909" >To Ib: 438.963&#8736;8.3&#176; A</tspan>
+	<tspan id="To Ia" x="542.0579276305455" dy="-25.98897505090909" >To Ia: 599.702&#8736;120.6&#176; A</tspan>
+	<tspan id="To Vc" x="542.0579276305455" dy="-31.186770061090908" >To Vc: 2368.7&#8736;88.8&#176; V </tspan>
+	<tspan id="To Vb" x="542.0579276305455" dy="-25.98897505090909" >To Vb: 2382.3&#8736;-150.9&#176; V </tspan>
+	<tspan id="To Va" x="542.0579276305455" dy="-25.98897505090909" >To Va: 2369.0&#8736;-31.1&#176; V </tspan>
+</text>
+</g>
+
+<g id="Regulator Info Box: IEEE13N" transform = "translate(162.42708462461036,553.6313359985206) scale(1,1)" display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="From Ic" x="86.62991683636362" y="-75.80117723181817">From Ic: 542.612&#8736;62.5&#176; A</tspan>
+	<tspan id="From Ib" x="86.62991683636362" dy="-25.98897505090909">From Ib: 388.840&#8736;-171.7&#176; A</tspan>
+	<tspan id="From Ia" x="86.62991683636362" dy="-25.98897505090909">From Ia: 512.960&#8736;-59.4&#176; A</tspan>
+	<tspan id="From Vc" x="86.62991683636362" dy="-31.186770061090908">From Vc: 2368.7&#8736;88.8&#176; V</tspan>
+	<tspan id="From Vb" x="86.62991683636362" dy="-25.98897505090909">From Vb: 2382.3&#8736;-150.9&#176; V</tspan>
+	<tspan id="From Va" x="86.62991683636362" dy="-25.98897505090909">From Va: 2369.0&#8736;-31.1&#176; V</tspan>
+	<tspan id="Tap C" x="86.62991683636362" dy="-31.186770061090908">Tap C: 13</tspan>
+	<tspan id="Tap B" x="86.62991683636362" dy="-25.98897505090909">Tap B: 10</tspan>
+	<tspan id="Tap A" x="86.62991683636362" dy="-25.98897505090909">Tap A: 13</tspan>
+	<tspan id="Regulator Text ID: IEEE13N" x="86.62991683636362" dy="-38.983462576363635" >Regulator ID: IEEE13N</tspan>
+	<tspan id="To Ic" x="542.0579276305455" y="-75.80117723181817">To Ic: 586.699&#8736;-117.5&#176; A</tspan>
+	<tspan id="To Ib" x="542.0579276305455" dy="-25.98897505090909">To Ib: 413.142&#8736;8.3&#176; A</tspan>
+	<tspan id="To Ia" x="542.0579276305455" dy="-25.98897505090909">To Ia: 554.638&#8736;120.6&#176; A</tspan>
+	<tspan id="To Vc" x="542.0579276305455" dy="-31.186770061090908">To Vc: 2561.2&#8736;88.8&#176; V</tspan>
+	<tspan id="To Vb" x="542.0579276305455" dy="-25.98897505090909">To Vb: 2531.2&#8736;-150.9&#176; V</tspan>
+	<tspan id="To Va" x="542.0579276305455" dy="-25.98897505090909">To Va: 2561.5&#8736;-31.1&#176; V</tspan>
+</text>
+</g>
+
+<g id="Switch Info Box: 650_632_L" transform = "translate(163.66052037538964,443.9656310014793) scale(1,1)" display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="From Ic" x="86.62991683636362" y="-75.80117723181817" >From Ic: 586.702&#8736;62.5&#176; A</tspan>
+	<tspan id="From Ib" x="86.62991683636362" dy="-25.98897505090909" >From Ib: 413.144&#8736;-171.7&#176; A</tspan>
+	<tspan id="From Ia" x="86.62991683636362" dy="-25.98897505090909" >From Ia: 554.642&#8736;-59.4&#176; A</tspan>
+	<tspan id="From Vc" x="86.62991683636362" dy="-31.186770061090908" >From Vc: 2437.6&#8736;86.6&#176; V</tspan>
+	<tspan id="From Vb" x="86.62991683636362" dy="-25.98897505090909" >From Vb: 2512.3&#8736;-152.6&#176; V</tspan>
+	<tspan id="From Va" x="86.62991683636362" dy="-25.98897505090909" >From Va: 2463.4&#8736;-33.6&#176; V</tspan>
+	<tspan id="Switch status" x="86.62991683636362" dy="-31.186770061090908" >Status: closed</tspan>
+	<tspan id="Switch Text ID: 650_632_L" x="86.62991683636362" dy="-38.983462576363635" >Switch ID: 650_632_L</tspan>
+	<tspan id="To Ic" x="542.0579276305455" y="-75.80117723181817" >To Ic: 586.702&#8736;-117.5&#176; A</tspan>
+	<tspan id="To Ib" x="542.0579276305455" dy="-25.98897505090909" >To Ib: 413.144&#8736;8.3&#176; A</tspan>
+	<tspan id="To Ia" x="542.0579276305455" dy="-25.98897505090909" >To Ia: 554.642&#8736;120.6&#176; A</tspan>
+	<tspan id="To Vc" x="542.0579276305455" dy="-31.186770061090908" >To Vc: 2437.6&#8736;86.6&#176; V</tspan>
+	<tspan id="To Vb" x="542.0579276305455" dy="-25.98897505090909" >To Vb: 2512.3&#8736;-152.6&#176; V</tspan>
+	<tspan id="To Va" x="542.0579276305455" dy="-25.98897505090909" >To Va: 2463.4&#8736;-33.6&#176; V</tspan>
+</text>
+</g>
+
+<g id="Switch Info Box: 632_699_S" transform = "translate(165.0772642720931,357.3484300205124) scale(1,1)" display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="From Ic" x="86.62991683636362" y="-75.80117723181817" >From Ic: 475.974&#8736;68.7&#176; A</tspan>
+	<tspan id="From Ib" x="86.62991683636362" dy="-25.98897505090909" >From Ib: 214.238&#8736;-165.6&#176; A</tspan>
+	<tspan id="From Ia" x="86.62991683636362" dy="-25.98897505090909" >From Ia: 476.116&#8736;-57.9&#176; A</tspan>
+	<tspan id="From Vc" x="86.62991683636362" dy="-31.186770061090908" >From Vc: 2437.6&#8736;86.6&#176; V</tspan>
+	<tspan id="From Vb" x="86.62991683636362" dy="-25.98897505090909" >From Vb: 2512.3&#8736;-152.6&#176; V</tspan>
+	<tspan id="From Va" x="86.62991683636362" dy="-25.98897505090909" >From Va: 2463.4&#8736;-33.6&#176; V</tspan>
+	<tspan id="Switch status" x="86.62991683636362" dy="-31.186770061090908" >Status: closed</tspan>
+	<tspan id="Switch Text ID: 632_699_S" x="86.62991683636362" dy="-38.983462576363635" >Switch ID: 632_699_S</tspan>
+	<tspan id="To Ic" x="542.0579276305455" y="-75.80117723181817" >To Ic: 475.974&#8736;-111.3&#176; A</tspan>
+	<tspan id="To Ib" x="542.0579276305455" dy="-25.98897505090909" >To Ib: 214.238&#8736;14.4&#176; A</tspan>
+	<tspan id="To Ia" x="542.0579276305455" dy="-25.98897505090909" >To Ia: 476.116&#8736;122.1&#176; A</tspan>
+	<tspan id="To Vc" x="542.0579276305455" dy="-31.186770061090908" >To Vc: 2437.6&#8736;86.6&#176; V</tspan>
+	<tspan id="To Vb" x="542.0579276305455" dy="-25.98897505090909" >To Vb: 2512.3&#8736;-152.6&#176; V</tspan>
+	<tspan id="To Va" x="542.0579276305455" dy="-25.98897505090909" >To Va: 2463.4&#8736;-33.6&#176; V</tspan>
+</text>
+</g>
+
+<g id="Switch Info Box: 671_675_S" transform = "translate(211.8771823921481,177.1565670183697) scale(1,1)" display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+	<tspan id="From Ic" x="86.62991683636362" y="-75.80117723181817" >From Ic: 178.839&#8736;78.1&#176; A</tspan>
+	<tspan id="From Ib" x="86.62991683636362" dy="-25.98897505090909" >From Ib: 69.737&#8736;-85.8&#176; A</tspan>
+	<tspan id="From Ia" x="86.62991683636362" dy="-25.98897505090909" >From Ia: 227.123&#8736;-48.8&#176; A</tspan>
+	<tspan id="From Vc" x="86.62991683636362" dy="-31.186770061090908" >From Vc: 2342.0&#8736;84.8&#176; V</tspan>
+	<tspan id="From Vb" x="86.62991683636362" dy="-25.98897505090909" >From Vb: 2538.5&#8736;-153.2&#176; V</tspan>
+	<tspan id="From Va" x="86.62991683636362" dy="-25.98897505090909" >From Va: 2390.0&#8736;-36.4&#176; V</tspan>
+	<tspan id="Switch status" x="86.62991683636362" dy="-31.186770061090908" >Status: closed</tspan>
+	<tspan id="Switch Text ID: 671_675_S" x="86.62991683636362" dy="-38.983462576363635" >Switch ID: 671_675_S</tspan>
+	<tspan id="To Ic" x="526.4645426" y="-75.80117723181817" >To Ic: 178.839&#8736;-101.9&#176; A</tspan>
+	<tspan id="To Ib" x="526.4645426" dy="-25.98897505090909" >To Ib: 69.737&#8736;94.2&#176; A</tspan>
+	<tspan id="To Ia" x="526.4645426" dy="-25.98897505090909" >To Ia: 227.123&#8736;131.2&#176; A</tspan>
+	<tspan id="To Vc" x="526.4645426" dy="-31.186770061090908" >To Vc: 2342.0&#8736;84.8&#176; V</tspan>
+	<tspan id="To Vb" x="526.4645426" dy="-25.98897505090909" >To Vb: 2538.5&#8736;-153.2&#176; V</tspan>
+	<tspan id="To Va" x="526.4645426" dy="-25.98897505090909" >To Va: 2390.0&#8736;-36.4&#176; V</tspan>
+</text>
+</g><g id="Info Box for shunt capacitor at node 611 (1)" transform="translate(-418.70937208571206,214.809711382303) scale(1,1) " display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+<tspan id="KVLN" x="86.62991683636362" y="-75.80117723181817" >VLN: 2.4018 KV</tspan>
+<tspan id="KVAR" x="86.62991683636362" dy="-25.98897505090909" >Q: 100.0 KVar</tspan>
+<tspan id="Phase" x="86.62991683636362" dy="-25.98897505090909" >Phase: C</tspan>
+<tspan id="Connection" x="86.62991683636362" dy="-25.98897505090909" >Connection: Y</tspan>
+<tspan id="Status" x="86.62991683636362" dy="-25.98897505090909" >Status: ON</tspan>
+<tspan id="Location" x="86.62991683636362" dy="-25.98897505090909" >Location: L</tspan>
+<tspan id="Device ID" x="86.62991683636362" dy="-25.98897505090909" >Device Number: 611</tspan>
+<tspan id="Section ID" x="86.62991683636362" dy="-25.98897505090909" >Section ID: 684_611_L</tspan>
+</text>
+</g>
+
+<g id="Info Box for shunt capacitor at node 675 (1)" transform="translate(483.3164189142879,220.14337038230298) scale(1,1) " display="none">
+<text font-family="Courier New" fill="black" font-size="25.98897505090909" text-anchor="left">
+<tspan id="KVLN" x="86.62991683636362" y="-75.80117723181817" >VLN: 2.4018 KV</tspan>
+<tspan id="KVAR" x="86.62991683636362" dy="-25.98897505090909" >Q: 200.0 KVar</tspan>
+<tspan id="Phase" x="86.62991683636362" dy="-25.98897505090909" >Phase: ABC</tspan>
+<tspan id="Connection" x="86.62991683636362" dy="-25.98897505090909" >Connection: Y</tspan>
+<tspan id="Status" x="86.62991683636362" dy="-25.98897505090909" >Status: ON</tspan>
+<tspan id="Location" x="86.62991683636362" dy="-25.98897505090909" >Location: L</tspan>
+<tspan id="Device ID" x="86.62991683636362" dy="-25.98897505090909" >Device Number: 675</tspan>
+<tspan id="Section ID" x="86.62991683636362" dy="-25.98897505090909" >Section ID: 671_675_L</tspan>
+</text>
+</g>
+
+
+
+<rect id="General Bounding Box" x="0" y="0" width="0" height="0" stroke="black" stroke-width ="1.78674203475" stroke-opacity="1" fill="beige" fill-opacity="1"/>
+
+<rect id="Instruction Bounding Box" x="0" y="0" width="0" height="0" stroke="black" stroke-width ="1.78674203475" stroke-opacity="1" fill="beige" fill-opacity="1"/>
+
+<rect id="System Bounding Box" x="0" y="0" width="0" height="0" stroke="black" stroke-width ="1.78674203475" stroke-opacity="1" fill="beige" fill-opacity="1"/>
+
+<g id="General Text" transform="translate(-936.0419954545454,-191.81576175) scale(1,1) translate(0,0)" opacity="1">
+
+<text id="General Text Font" x ="0" y ="0" stroke="black" stroke-width="0" font-family="Arial" cursor="default" font-size="23.82322713" text-anchor="start">
+	<tspan x="0" >DATE=January 29, 2007 at 16:28:50</tspan>
+	<tspan x="0" dy="1em">CYMDIST_VERSION=4.5</tspan>
+	<tspan x="0" dy="1em"></tspan>
+</text>
+</g>
+
+<g id="Instruction Text" transform="translate(-936.0419954545454,999.34559475) scale(1,1) translate(0,0)" opacity="1">
+
+<text id="Instruction Text Font" x="0" y="0" stroke="black" cursor="default" stroke-width="0" font-family="Arial" font-size="23.82322713" text-anchor="start">
+	<tspan x="0" >Zoom In: Click And Drag; Zoom Out: Alt-Key; Reset Zoom: Escape-Key</tspan>
+	<tspan x="0" dy="-1em">Pan: Hold Space bar and Drag</tspan>
+	<tspan x="0" dy="-1em">Mouseover a Component to Get Details</tspan>
+</text>
+</g>
+
+<g id="System Info Box" transform="translate(-936.0419954545454,999.34559475) scale(1,1) translate(0,0)" opacity="1">
+
+<text id="System Text Font" x="0" y="0" stroke="black" cursor="default" stroke-width="0" font-family="Arial" font-size="23.82322713" text-anchor="start">
+	<tspan x="0" >Total System Q Loss: 402.431 kVar</tspan>
+	<tspan x="0" dy="-1em">Total System P Loss: 116.013 kW</tspan>
+	<tspan x="0" dy="-1em">Total System Q Load: 2102.0 kVar</tspan>
+	<tspan x="0" dy="-1em">Total System P Load: 3466.0 kW</tspan>
+</text>
+</g>
+
+
+<g id="rectgp" opacity="1">
+<rect id="zoomRect" x="0" y="0" rx=".01" height="0" width="0" opacity="1" stroke="blue" stroke-width ="1.1911613565" fill="blue" fill-opacity=".1"/> 
+</g>
+
+</svg>
