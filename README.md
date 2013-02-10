@@ -11,7 +11,13 @@ Go to a website with an SVG file.
 The extension begins working on the SVG graphic, and the user may:
 * Pan: hold the space bar and drag the cursor to pan around the image
 * Zoom: click and drag a zoom box of the desired area
+* Zoom out: tap alt key
 * Reset zoom: press escape
+
+Try Testing out these SVG's
+---------------------------------
+Map of the United States of America: http://upload.wikimedia.org/wikipedia/commons/d/dc/USA_orthographic.svg
+Constellation Orion: http://upload.wikimedia.org/wikipedia/commons/f/ff/Orion_IAU.svg
 
 Useful Links
 ------------------------------
