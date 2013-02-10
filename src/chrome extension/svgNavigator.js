@@ -1,4 +1,4 @@
-// SVG Zoom and Pan Library
+// SVG Navigator
 // Authors: Asad Akram, Ryan Oblenida, Peter Ryszkiewicz
 
 
@@ -8,6 +8,9 @@ var svgElements = document.getElementsByTagName("svg");
 //alert(svgElements[1]);
 //var svgID = "svg2";
 if(svgElements[0] != null){
+    // send request to apply svg nav icon to tab, as page action
+    chrome.extension.sendRequest({}, function(response){});
+    
     //    alert("No svg elements on webpage!");
     //}
     var svgDocument = svgElements[0];
