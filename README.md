@@ -12,3 +12,8 @@ The extension begins working on the SVG graphic, and the user may:
 * Pan: hold the space bar and drag the cursor to pan around the image
 * Zoom: click and drag a zoom box of the desired area
 * Reset zoom: press escape
+
+Useful Links
+------------------------------
+Official Google Chrome extension page: https://chrome.google.com/webstore/detail/svg-navigator/pefngfjmidahdaahgehodmfodhhhofkl
+Github Repository: https://github.com/pRizz/SVG-Navigator---Chrome-Extension
