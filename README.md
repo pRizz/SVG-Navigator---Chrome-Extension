@@ -30,9 +30,9 @@ Try Testing out these SVG's
 
 Useful Links
 ------------------------------
-SVG 1.1 Second Edition Specifications: http://www.w3.org/TR/SVG11/
-Official Google Chrome extension page: https://chrome.google.com/webstore/detail/svg-navigator/pefngfjmidahdaahgehodmfodhhhofkl
-Github Repository: https://github.com/pRizz/SVG-Navigator---Chrome-Extension
+* SVG 1.1 Second Edition Specifications: http://www.w3.org/TR/SVG11/
+* Official Google Chrome extension page: https://chrome.google.com/webstore/detail/svg-navigator/pefngfjmidahdaahgehodmfodhhhofkl
+* Github Repository: https://github.com/pRizz/SVG-Navigator---Chrome-Extension
 
 Acknowledgements
 -----------------------------
