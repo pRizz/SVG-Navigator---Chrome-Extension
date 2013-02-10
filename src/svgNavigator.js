@@ -11,6 +11,7 @@ if(svgElements[0] != null){
     chrome.extension.sendRequest({}, function(response){});
     
     var svgDocument = svgElements[0];
+    
     var origViewBox = svgDocument.getAttribute("viewBox");
     // check if the svg document had a viewbox
     if(origViewBox == null){
@@ -19,13 +20,16 @@ if(svgElements[0] != null){
         var svgHeight = svgDocument.getAttribute("height");
         if(svgWidth == null || svgHeight == null){
             // We have a problem
+            svgDocument.setAttribute("width", getWidth());
+            svgDocument.setAttribute("height", getHeight());
+            svgWidth = svgDocument.getAttribute("width");
+            svgHeight = svgDocument.getAttribute("height");
         }
         // make new viewbox and insert it into the svg
         var format =  0.0 + ' ' +
                       0.0 + ' ' +
                       parseFloat(svgWidth) + ' ' +
-                      parseFloat(svgHeight);
-        
+                      parseFloat(svgHeight);        
         svgDocument.setAttribute("viewBox", format);
         origViewBox = format;
     }

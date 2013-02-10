@@ -16,10 +16,22 @@ The extension begins working on the SVG graphic, and the user may:
 
 Try Testing out these SVG's
 ---------------------------------
-Map of the United States of America: http://upload.wikimedia.org/wikipedia/commons/d/dc/USA_orthographic.svg
-Constellation Orion: http://upload.wikimedia.org/wikipedia/commons/f/ff/Orion_IAU.svg
+* Vector vs Raster: http://upload.wikimedia.org/wikipedia/commons/6/6b/Bitmap_VS_SVG.svg
+* World Map: http://upload.wikimedia.org/wikipedia/commons/1/17/World.svg
+* Animated world landmarks: http://svg.kvalitne.cz/worldlandmarks/worldlandmarks.svg
+* Map of the United States of America: http://upload.wikimedia.org/wikipedia/commons/d/dc/USA_orthographic.svg
+* Another USA map: http://upload.wikimedia.org/wikipedia/commons/3/32/Blank_US_Map.svg
+* Constellation Orion: http://upload.wikimedia.org/wikipedia/commons/f/ff/Orion_IAU.svg
+* Bertrand's Chords: http://upload.wikimedia.org/wikipedia/commons/9/91/Bertrand3-chords.svg
+* P and N type Silicon: http://upload.wikimedia.org/wikipedia/commons/2/20/CellStructure-SiCrystal-eng-vect.svg
+* Diagram of Zeta Potential and Slipping Plane: http://upload.wikimedia.org/wikipedia/commons/6/62/Diagram_of_zeta_potential_and_slipping_plane.svg
+* Earth Color Trace: http://upload.wikimedia.org/wikipedia/commons/4/4e/Earth_Color_Trace.svg
+* Magnetic Moment: http://upload.wikimedia.org/wikipedia/commons/4/4c/Magnetic_moment.svg
+* Simple Mandelbrot: http://upload.wikimedia.org/wikipedia/commons/3/3c/Mandelbrot_Components.svg
+* Animated Digitial Clock: http://www.bogotobogo.com/svg_source/SVGDigitalClock.svg
 
 Useful Links
 ------------------------------
+SVG 1.1 Second Edition Specifications: http://www.w3.org/TR/SVG11/
 Official Google Chrome extension page: https://chrome.google.com/webstore/detail/svg-navigator/pefngfjmidahdaahgehodmfodhhhofkl
 Github Repository: https://github.com/pRizz/SVG-Navigator---Chrome-Extension
