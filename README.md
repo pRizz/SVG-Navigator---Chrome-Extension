@@ -8,5 +8,6 @@ Originally created by Asad Akram, Ryan Oblenida aka Mr. O, and Peter Ryszkiewicz
 Usage
 --------------------------------
 When implemented on an SVG image, the user may:
-* pan: hold the space bar and drag the cursor to pan around the image
-* zoom: click and drag a zoom box of the desired area
+* Pan: hold the space bar and drag the cursor to pan around the image
+* Zoom: click and drag a zoom box of the desired area
+* Reset zoom: press escape

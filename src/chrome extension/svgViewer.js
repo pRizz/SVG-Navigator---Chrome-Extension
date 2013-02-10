@@ -7,122 +7,123 @@ var svgElements = document.getElementsByTagName("svg");
 //alert(svgElements[0]);
 //alert(svgElements[1]);
 //var svgID = "svg2";
-if(svgElements[0] == null){
-    alert("No svg elements on webpage!");
+if(svgElements[0] != null){
+    //    alert("No svg elements on webpage!");
+    //}
+    var svgDocument = svgElements[0];
+    var origViewBox = svgDocument.getAttribute("viewBox");
+    var newViewBox = svgDocument.getAttribute("viewBox");
+    
+    // variables for zooming
+    //var zoomRect = document.getElementById("zoomRect");
+    var zoomAction = false;
+    var zoomX1 = 0;
+    var zoomY1 = 0;
+    var zoomX2 = 0;
+    var zoomY2 = 0;
+    var zoomWidth = 0;
+    var zoomHeight = 0;
+    
+    // variables for panning
+    var panStart = true;
+    var panAction = false;
+    var panViewBoxX = 0;
+    var panViewBoxY = 0;
+    var panViewBoxWidth = 0;
+    var panViewBoxHeight = 0;
+    var panOldX = 0;
+    var panOldY = 0;
+    var panNewX = 0;
+    var panNewY = 0;
+    var newViewBoxX = 0;
+    var newViewBoxY = 0;
+    
+    
+    // variables for moving text
+    //	var GeneralText = "General Text";
+    //	var InstructionText = "Instruction Text";
+    //	var origTextScale = 0;
+    //	var GeneralBB = "General Bounding Box";
+    //	var InstructionBB = "Instruction Bounding Box";
+    //	var BoundingBox;
+    //	var madeBB = false;
+    //	var textflag=false;
+    
+    // variables for cursor events
+    var event;
+    
+    // variable for refreshing screen
+    var refresh = true;
+    // variables from SVGLibrary
+    var generalRows = 3;
+    var instructionRows = 3;
+    
+    // define svg namespace
+    var svgNS = "http://www.w3.org/2000/svg";
+    
+    // insert a rectangle object into the svg, acting as the zoom rectangle
+    var zoomRectangle = document.createElementNS(svgNS, "rect");
+    zoomRectangle.setAttributeNS(null, "x", 0);
+    zoomRectangle.setAttributeNS(null, "y", 0);
+    zoomRectangle.setAttributeNS(null, "rx", 0.01);
+    zoomRectangle.setAttributeNS(null, "height", 0);
+    zoomRectangle.setAttributeNS(null, "width", 0);
+    zoomRectangle.setAttributeNS(null, "opacity", 1);
+    zoomRectangle.setAttributeNS(null, "stroke", "blue");
+    zoomRectangle.setAttributeNS(null, "stroke-width", 1.0);
+    zoomRectangle.setAttributeNS(null, "fill", "blue");
+    zoomRectangle.setAttributeNS(null, "fill-opacity", 0.1);
+    svgDocument.appendChild(zoomRectangle);
+    
 }
-var svgDocument = svgElements[0];
-var origViewBox = svgDocument.getAttribute("viewBox");
-var newViewBox = svgDocument.getAttribute("viewBox");
-
-// variables for zooming
-//var zoomRect = document.getElementById("zoomRect");
-var zoomAction = false;
-var zoomX1 = 0;
-var zoomY1 = 0;
-var zoomX2 = 0;
-var zoomY2 = 0;
-var zoomWidth = 0;
-var zoomHeight = 0;
-
-// variables for panning
-var panStart = true;
-var panAction = false;
-var panViewBoxX = 0;
-var panViewBoxY = 0;
-var panViewBoxWidth = 0;
-var panViewBoxHeight = 0;
-var panOldX = 0;
-var panOldY = 0;
-var panNewX = 0;
-var panNewY = 0;
-var newViewBoxX = 0;
-var newViewBoxY = 0;
-
-
-// variables for moving text
-//	var GeneralText = "General Text";
-//	var InstructionText = "Instruction Text";
-//	var origTextScale = 0;
-//	var GeneralBB = "General Bounding Box";
-//	var InstructionBB = "Instruction Bounding Box";
-//	var BoundingBox;
-//	var madeBB = false;
-//	var textflag=false;
-
-// variables for cursor events
-var event;
-
-// variable for refreshing screen
-var refresh = true;
-// variables from SVGLibrary
-var generalRows = 3;
-var instructionRows = 3;
-
-// define svg namespace
-var svgNS = "http://www.w3.org/2000/svg";
-
-// insert a rectangle object into the svg, acting as the zoom rectangle
-var zoomRectangle = document.createElementNS(svgNS, "rect");
-zoomRectangle.setAttributeNS(null, "x", 0);
-zoomRectangle.setAttributeNS(null, "y", 0);
-zoomRectangle.setAttributeNS(null, "rx", 0.01);
-zoomRectangle.setAttributeNS(null, "height", 0);
-zoomRectangle.setAttributeNS(null, "width", 0);
-zoomRectangle.setAttributeNS(null, "opacity", 1);
-zoomRectangle.setAttributeNS(null, "stroke", "blue");
-zoomRectangle.setAttributeNS(null, "stroke-width", 1.0);
-zoomRectangle.setAttributeNS(null, "fill", "blue");
-zoomRectangle.setAttributeNS(null, "fill-opacity", 0.1);
-svgDocument.appendChild(zoomRectangle);
-
 //function init(evt) {
-    if(svgDocument) {
-        
-        // set mouse event variable
-//        event = evt;
-        // event listeners
-        svgDocument.addEventListener("mousedown", zoomMouseDown, false);
-        svgDocument.addEventListener("mousemove", zoomMouseMove, false);
-        svgDocument.addEventListener("mouseup", zoomMouseUp, false);
-        svgDocument.addEventListener("mousedown", mouseDown, false);
-        svgDocument.addEventListener("mousemove", mouseMove, false);
-        svgDocument.addEventListener("mouseup", mouseUp, false);
-        svgDocument.addEventListener("keydown",panBegin, false);
-        svgDocument.addEventListener("mousemove", panMove, false);
-        svgDocument.addEventListener("keyup",panEnd, false);
-        svgDocument.addEventListener("keyup",zoomOut, false);
-        svgDocument.addEventListener("keyup",zoomOriginal, false);
-        
-        // code to get the texts' original sizes; this is then used to scale later when viewbox changes
-//        svgDocument = document.getElementById(svgID);
-        var m = svgDocument.getScreenCTM();
-        var p = document.documentElement.createSVGPoint();
-        p.y = getHeight();
-        
-        var q = document.documentElement.createSVGPoint();
-        q.y = 0;
-        
-        p = p.matrixTransform(m.inverse());
-        q = q.matrixTransform(m.inverse());
-        
-        origTextScale = (16/screen.height)*(p.y - q.y); // roughly font size 12 at fullscreen
-        
-        disableSelection();
-        //			textMove(GeneralText);
-        //			textMove(InstructionText);
-        //			textMove("System Info Box");
-        //			drawBoundingBox(GeneralText);
-        //			drawBoundingBox(InstructionText);
-        //			drawBoundingBox("System Info Box");
-        //			drawInfoBox();
-    }
+if(svgDocument) {
+    
+    // set mouse event variable
+    //        event = evt;
+    // event listeners
+    svgDocument.addEventListener("mousedown", zoomMouseDown, false);
+    svgDocument.addEventListener("mousemove", zoomMouseMove, false);
+    svgDocument.addEventListener("mouseup", zoomMouseUp, false);
+    svgDocument.addEventListener("mousedown", mouseDown, false);
+    svgDocument.addEventListener("mousemove", mouseMove, false);
+    svgDocument.addEventListener("mouseup", mouseUp, false);
+    svgDocument.addEventListener("keydown",panBegin, false);
+    svgDocument.addEventListener("mousemove", panMove, false);
+    svgDocument.addEventListener("keyup",panEnd, false);
+    svgDocument.addEventListener("keyup",zoomOut, false);
+    svgDocument.addEventListener("keyup",zoomOriginal, false);
+    
+    // code to get the texts' original sizes; this is then used to scale later when viewbox changes
+    //        svgDocument = document.getElementById(svgID);
+    var m = svgDocument.getScreenCTM();
+    var p = document.documentElement.createSVGPoint();
+    p.y = getHeight();
+    
+    var q = document.documentElement.createSVGPoint();
+    q.y = 0;
+    
+    p = p.matrixTransform(m.inverse());
+    q = q.matrixTransform(m.inverse());
+    
+    origTextScale = (16/screen.height)*(p.y - q.y); // roughly font size 12 at fullscreen
+    
+    disableSelection();
+    //			textMove(GeneralText);
+    //			textMove(InstructionText);
+    //			textMove("System Info Box");
+    //			drawBoundingBox(GeneralText);
+    //			drawBoundingBox(InstructionText);
+    //			drawBoundingBox("System Info Box");
+    //			drawInfoBox();
+}
 //}
 
 /* Zoom Functions */
 // click and drag to zoom in
 // click to zoom out
 function zoomMouseDown(evt) {
-//    zoomRect = document.getElementById("zoomRect");
+    //    zoomRect = document.getElementById("zoomRect");
     
 	//if the left click is down and the control key is NOT depressed, sets top left of zoombox and flag
     if(zoomRectangle && !evt.ctrlKey) { // zoom
@@ -146,7 +147,7 @@ function zoomMouseMove(evt) {
         var p = document.documentElement.createSVGPoint();
         p.x = evt.clientX;
         p.y = evt.clientY;
-//        zoomRect = document.getElementById("zoomRect");
+        //        zoomRect = document.getElementById("zoomRect");
         
         if(zoomRectangle) {
             var m = zoomRectangle.getScreenCTM();
@@ -177,7 +178,7 @@ function zoomMouseMove(evt) {
 
 // function that completes zoombox, then zooms view to zoombox
 function zoomMouseUp(evt) {
-//    zoomRect = document.getElementById("zoomRect");
+    //    zoomRect = document.getElementById("zoomRect");
     var h = zoomRectangle.getAttribute("height");
     var w = zoomRectangle.getAttribute("width");
     
@@ -188,7 +189,7 @@ function zoomMouseUp(evt) {
         } else {
             var format =  parseFloat(zoomRectangle.getAttribute("x")) + ' ' + parseFloat(zoomRectangle.getAttribute("y")) + ' ' + parseFloat(w) + ' ' + parseFloat(h);
             
-//            svgDocument = document.getElementById(svgID);
+            //            svgDocument = document.getElementById(svgID);
             svgDocument.setAttribute('viewBox', format)
         }
     }
@@ -217,7 +218,7 @@ function zoomOut(evt){
             //svgDocument.style.cursor='move';
             
             
-//            svgDocument = document.getElementById(svgID);
+            //            svgDocument = document.getElementById(svgID);
             newViewBox = svgDocument.getAttribute("viewBox");
             
             var tokens = newViewBox;
@@ -262,7 +263,7 @@ function zoomOriginal(evt){
         if (charCode == 27) {
             var format =  origViewBox;
 			
-//            svgDocument = document.getElementById(svgID);
+            //            svgDocument = document.getElementById(svgID);
             svgDocument.setAttribute('viewBox', format);
 			
             //				textMove(GeneralText);
@@ -309,7 +310,7 @@ function panMove(evt) {
         panOldX = p.x;
         panOldY = p.y;
         
-//        svgDocument = document.getElementById(svgID);
+        //        svgDocument = document.getElementById(svgID);
         newViewBox = svgDocument.getAttribute("viewBox");
         
         var tokens = newViewBox;
@@ -332,7 +333,7 @@ function panMove(evt) {
         panNewX = p.x;
         panNewY = p.y;
         
-//        svgDocument = document.getElementById(svgID);
+        //        svgDocument = document.getElementById(svgID);
         newViewBox = svgDocument.getAttribute("viewBox");
         
         var tokens = newViewBox;
@@ -1342,7 +1343,7 @@ function getWidth()
 
 // to prevent selection of text; prevent text Ibar cursor when dragging
 function disableSelection(){
-//    var target = document.getElementById(svgID);
+    //    var target = document.getElementById(svgID);
     var target = svgDocument;
     if (typeof target.onselectstart!="undefined"){ //IE route
         target.onselectstart=function(){return false}
