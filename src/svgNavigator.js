@@ -40,7 +40,7 @@ if(svgElements[0] != null){
     var origViewBox = svgDocument.getAttribute("viewBox");
     // check if the svg document had a viewbox
     if(origViewBox == null){
-//        alert("no viewbox");
+        //        alert("no viewbox");
         var svgWidth = svgDocument.getAttribute("width");
         var svgHeight = svgDocument.getAttribute("height");
         if(svgWidth == null || svgHeight == null){
@@ -52,9 +52,9 @@ if(svgElements[0] != null){
         }
         // make new viewbox and insert it into the svg
         var format =  0.0 + ' ' +
-                      0.0 + ' ' +
-                      parseFloat(svgWidth) + ' ' +
-                      parseFloat(svgHeight);        
+        0.0 + ' ' +
+        parseFloat(svgWidth) + ' ' +
+        parseFloat(svgHeight);
         svgDocument.setAttribute("viewBox", format);
         origViewBox = format;
     }
@@ -121,15 +121,15 @@ if(svgElements[0] != null){
     
     // code to get the texts' original sizes; this is then used to scale later when viewbox changes
     //        svgDocument = document.getElementById(svgID);
-    var m = svgDocument.getScreenCTM();
-    var p = document.documentElement.createSVGPoint();
-    p.y = getHeight();
-    
-    var q = document.documentElement.createSVGPoint();
-    q.y = 0;
-    
-    p = p.matrixTransform(m.inverse());
-    q = q.matrixTransform(m.inverse());
+//    var m = svgDocument.getScreenCTM();
+//    var p = document.documentElement.createSVGPoint();
+//    p.y = getHeight();
+//    
+//    var q = document.documentElement.createSVGPoint();
+//    q.y = 0;
+//    
+//    p = p.matrixTransform(m.inverse());
+//    q = q.matrixTransform(m.inverse());
     
     //    origTextScale = (16/screen.height)*(p.y - q.y); // roughly font size 12 at fullscreen
     
@@ -140,8 +140,8 @@ if(svgElements[0] != null){
 // click and drag to zoom in
 // press escape to zoom out
 function zoomMouseDown(evt) {
-	//if the left click is down and the control key is NOT depressed, sets top left of zoombox and flag
-    if(zoomRectangle && !evt.ctrlKey) { // zoom
+	//if the left click is down and the control and shift keys are NOT depressed, sets top left of zoombox and flag
+    if(zoomRectangle && !evt.ctrlKey && !evt.shiftKey) { // zoom
         zoomAction = true;
         var p = document.documentElement.createSVGPoint();
         p.x = evt.clientX;
@@ -199,9 +199,9 @@ function zoomMouseUp(evt) {
             //var format =  origViewBox;
         } else {
             var format =  parseFloat(zoomRectangle.getAttribute("x")) + ' ' +
-                          parseFloat(zoomRectangle.getAttribute("y")) + ' ' +
-                          parseFloat(w) + ' ' +
-                          parseFloat(h);
+            parseFloat(zoomRectangle.getAttribute("y")) + ' ' +
+            parseFloat(w) + ' ' +
+            parseFloat(h);
             
             svgDocument.setAttribute("viewBox", format);
         }
@@ -247,9 +247,9 @@ function zoomOut(evt){
             var newViewBoxHeight = viewBoxHeight*1.2;
             
             var format =  parseFloat(newViewBoxX) + ' ' +
-                          parseFloat(newViewBoxY) + ' ' +
-                          parseFloat(newViewBoxWidth) + ' ' +
-                          parseFloat(newViewBoxHeight);
+            parseFloat(newViewBoxY) + ' ' +
+            parseFloat(newViewBoxWidth) + ' ' +
+            parseFloat(newViewBoxHeight);
             
             svgDocument.setAttribute("viewBox", format);
             
@@ -347,9 +347,9 @@ function panMove(evt) {
         
         
         var format =  parseFloat(newViewBoxX) + ' ' +
-                      parseFloat(newViewBoxY) + ' ' +
-                      parseFloat(panViewBoxWidth) + ' ' +
-                      parseFloat(panViewBoxHeight);
+        parseFloat(newViewBoxY) + ' ' +
+        parseFloat(panViewBoxWidth) + ' ' +
+        parseFloat(panViewBoxHeight);
         
         svgDocument.setAttribute('viewBox', format);
     }
@@ -440,3 +440,43 @@ function disableSelection(){
         target.style.cursor = "default"
     }
 }
+
+// try to capture shift to prevent chrome's shift panning
+// unsuccessful for now
+//function shiftKeyDown(evt){
+//    if(evt.type == "keydown"){
+//        if (evt.charCode) {
+//            var charCode = evt.charCode;
+//            //console.log("charCode");
+//        } else {
+//            var charCode = evt.keyCode;
+//            //console.log("keyCode");
+//        }
+//        
+//        // shift
+//        if (charCode == 16) {
+//            zoomDisable = true;
+//            //console.log("shift");
+//        }
+//    }
+//}
+
+// allow zooming after shift key goes up
+//function shiftKeyUp(evt){
+//    if(evt.type == "keyup"){
+//        if (evt.charCode) {
+//            var charCode = evt.charCode;
+//            //console.log("charCode");
+//            
+//        } else {
+//            var charCode = evt.keyCode;
+//            //console.log("keyCode");
+//        }
+//        
+//        // shift
+//        if (charCode == 16) {
+//            zoomDisable = false;
+//            //console.log("shift");
+//        }
+//    }
+//}
