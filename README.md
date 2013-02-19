@@ -10,6 +10,7 @@ The extension begins working on the SVG graphic, and the user may:
 * Pan: hold the space bar and drag the cursor to pan around the image
 * Zoom: click and drag a zoom box of the desired area
 * Zoom out: tap alt key
+* Zoom in or out: use mouse scroll wheel
 * Reset zoom: press escape  
 Trying to pan on an SVG by shift click and dragging currently causes undesirable panning; possibly a Google Chrome bug/feature.
 
