@@ -14,7 +14,7 @@ The extension begins working on the SVG graphic, and the user may:
 * Reset zoom: press escape  
 Trying to pan on an SVG by shift click and dragging currently causes undesirable panning; possibly a Google Chrome bug/feature.
 
-Try Testing out these SVG's
+Try Testing out these SVGs
 ---------------------------------
 * Vector vs Raster: http://upload.wikimedia.org/wikipedia/commons/6/6b/Bitmap_VS_SVG.svg
 * World Map: http://upload.wikimedia.org/wikipedia/commons/1/17/World.svg
