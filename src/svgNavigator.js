@@ -118,6 +118,8 @@ if(svgElements[0] != null){
     svgDocument.addEventListener("keyup",panEnd, false);
     svgDocument.addEventListener("keyup",zoomOut, false);
     svgDocument.addEventListener("keyup",zoomOriginal, false);
+    svgDocument.addEventListener("mousewheel",doScroll, false);
+    
     
     // code to get the texts' original sizes; this is then used to scale later when viewbox changes
     //        svgDocument = document.getElementById(svgID);
@@ -439,6 +441,61 @@ function disableSelection(){
         target.onmousedown=function(){return false}
         target.style.cursor = "default"
     }
+}
+
+// implementation for scroll zooming
+// the area pointed to by the cursor will always stay under the cursor while scrolling/zooming in or out, just like google maps does
+// might be different scroll direction on macs with "natural scroll" vs windows
+function doScroll(evt){
+    evt.preventDefault(); // prevent default scroll action in chrome
+//    console.log("client X: " + evt.clientX);
+//    console.log("client Y: " + evt.clientY);
+//    console.log("event wheel delta: " + evt.wheelDelta);
+    
+    var scrollAmount = evt.wheelDelta/120; // neg scroll in; pos scroll out; should be multiple of 1
+    // scrolling in makes viewbox smaller, so zoomAmount is smaller
+    var zoomAmount = scrollAmount < 0 ? 1.1+(0.01*scrollAmount) : 0.9+(0.01*scrollAmount);
+    
+    var p = document.documentElement.createSVGPoint();
+    p.x = evt.clientX;
+    p.y = evt.clientY;
+    
+    var m = svgDocument.getScreenCTM();
+    p = p.matrixTransform(m.inverse());
+        
+    newViewBox = svgDocument.getAttribute("viewBox");
+    var tokens = newViewBox;
+    var token = tokens.split(" ");
+    var viewBoxX = parseFloat(token[0]);
+    var viewBoxY = parseFloat(token[1]);
+    var viewBoxWidth = parseFloat(token[2]);
+    var viewBoxHeight = parseFloat(token[3]);
+    
+    var viewBoxCenterX = viewBoxX + viewBoxWidth/2;
+    var viewBoxCenterY = viewBoxY + viewBoxHeight/2;
+    
+    // algorithm to zoom in and gravitate towards cursor scroll
+    // zoom 10% towards cursor
+    var newViewBoxWidth = viewBoxWidth*zoomAmount;
+    var newViewBoxHeight = viewBoxHeight*zoomAmount;
+
+    // these should always turn out positive, because client cursor must be within svg x to x+width and y to y+height
+    var fracOfSVGX = (p.x - viewBoxX)/viewBoxWidth;
+    var fracOfSVGY = (p.y - viewBoxY)/viewBoxHeight;
+    
+    var leftWidth = fracOfSVGX*newViewBoxWidth; // offset to new x
+    var upperHeight = fracOfSVGY*newViewBoxHeight; // offset to new y
+    
+    var newViewBoxX = p.x - leftWidth;
+    var newViewBoxY = p.y - upperHeight;
+
+    // make new viewbox and insert it into the svg
+    var format =  newViewBoxX + ' ' +
+    newViewBoxY + ' ' +
+    newViewBoxWidth + ' ' +
+    newViewBoxHeight;
+    svgDocument.setAttribute("viewBox", format);
+    
 }
 
 // try to capture shift to prevent chrome's shift panning
