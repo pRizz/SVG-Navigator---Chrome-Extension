@@ -39,6 +39,7 @@ if(svgElements[0] != null){
     
     var origViewBox = svgDocument.getAttribute("viewBox");
     // save original svg width and height
+    // TODO problematic when width or height contain percent character
     var origSVGWidth = svgDocument.hasAttribute("width") ? svgDocument.getAttribute("width"): getWidth();
     var origSVGHeight = svgDocument.hasAttribute("height") ? svgDocument.getAttribute("height"): getHeight();
     // make width and height 100% to fill client web browser
