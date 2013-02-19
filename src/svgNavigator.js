@@ -220,6 +220,7 @@ function zoomMouseUp(evt) {
 
 // zoom out when user presses alt key
 function zoomOut(evt){
+//    console.log("evt.clientX: " + evt.clientX);
     if(evt.type == "keyup"){
         if (evt.charCode) {
             var charCode = evt.charCode;
@@ -234,8 +235,40 @@ function zoomOut(evt){
             //panAction = true;
             //svgDocument.style.cursor='move';
             
-            newViewBox = svgDocument.getAttribute("viewBox");
+//            newViewBox = svgDocument.getAttribute("viewBox");
+//            
+//            var tokens = newViewBox;
+//            var token = tokens.split(" ");
+//            var viewBoxX = parseFloat(token[0]);
+//            var viewBoxY = parseFloat(token[1]);
+//            var viewBoxWidth = parseFloat(token[2]);
+//            var viewBoxHeight = parseFloat(token[3]);
+//            
+//            var newViewBoxX = viewBoxX - 0.1*viewBoxWidth;
+//            var newViewBoxY = viewBoxY - 0.1*viewBoxHeight;
+//            var newViewBoxWidth = viewBoxWidth*1.2;
+//            var newViewBoxHeight = viewBoxHeight*1.2;
+//            
+//            var format =  parseFloat(newViewBoxX) + ' ' +
+//            parseFloat(newViewBoxY) + ' ' +
+//            parseFloat(newViewBoxWidth) + ' ' +
+//            parseFloat(newViewBoxHeight);
+//            
+//            svgDocument.setAttribute("viewBox", format);
+//            
+//            refresh = true;
             
+            
+            var zoomAmount = 1.1;
+            
+//            var p = document.documentElement.createSVGPoint();
+//            p.x = evt.clientX;
+//            p.y = evt.clientY;
+//            
+//            var m = svgDocument.getScreenCTM();
+//            p = p.matrixTransform(m.inverse());
+            
+            newViewBox = svgDocument.getAttribute("viewBox");
             var tokens = newViewBox;
             var token = tokens.split(" ");
             var viewBoxX = parseFloat(token[0]);
@@ -243,19 +276,33 @@ function zoomOut(evt){
             var viewBoxWidth = parseFloat(token[2]);
             var viewBoxHeight = parseFloat(token[3]);
             
-            var newViewBoxX = viewBoxX - 0.1*viewBoxWidth;
-            var newViewBoxY = viewBoxY - 0.1*viewBoxHeight;
-            var newViewBoxWidth = viewBoxWidth*1.2;
-            var newViewBoxHeight = viewBoxHeight*1.2;
+            var viewBoxCenterX = viewBoxX + viewBoxWidth/2;
+            var viewBoxCenterY = viewBoxY + viewBoxHeight/2;
             
-            var format =  parseFloat(newViewBoxX) + ' ' +
-            parseFloat(newViewBoxY) + ' ' +
-            parseFloat(newViewBoxWidth) + ' ' +
-            parseFloat(newViewBoxHeight);
+            // algorithm to zoom in and gravitate towards cursor scroll
+            // zoom 10% towards cursor
+            var newViewBoxWidth = viewBoxWidth*zoomAmount;
+            var newViewBoxHeight = viewBoxHeight*zoomAmount;
             
+            var midX = viewBoxWidth/2 + viewBoxX;
+            var midY = viewBoxHeight/2 + viewBoxY;
+            // these should always turn out positive, because client cursor must be within svg x to x+width and y to y+height
+            var fracOfSVGX = (midX - viewBoxX)/viewBoxWidth;
+            var fracOfSVGY = (midY - viewBoxY)/viewBoxHeight;
+            
+            var leftWidth = fracOfSVGX*newViewBoxWidth; // offset to new x
+            var upperHeight = fracOfSVGY*newViewBoxHeight; // offset to new y
+            
+            var newViewBoxX = midX - leftWidth;
+            var newViewBoxY = midY - upperHeight;
+            
+            // make new viewbox and insert it into the svg
+            var format =  newViewBoxX + ' ' +
+            newViewBoxY + ' ' +
+            newViewBoxWidth + ' ' +
+            newViewBoxHeight;
             svgDocument.setAttribute("viewBox", format);
-            
-            refresh = true;
+
         }
     }
 }
