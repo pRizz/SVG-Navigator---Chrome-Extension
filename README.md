@@ -1,7 +1,7 @@
 SVG Navigator - Chrome Extension
 ====================
 
-SVG Navigator is an extension for Google Chrome that may be used to add pan and zoom features to existing SVG files on the web.
+SVG Navigator is an extension for Google Chrome that adds pan and zoom features to existing SVG files on the web.
 
 Usage
 --------------------------------

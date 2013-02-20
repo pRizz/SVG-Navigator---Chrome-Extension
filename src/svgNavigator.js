@@ -27,6 +27,9 @@
  * svgNavigator.js
  */
 
+// define svg namespace
+var svgNS = "http://www.w3.org/2000/svg";
+
 // document variables
 var svgElements = document.getElementsByTagName("svg");
 
@@ -48,59 +51,59 @@ if(svgElements[0] != null){
     // check if the svg document had a viewbox
     if(origViewBox == null){
         //        alert("no viewbox");
-//        var svgWidth = svgDocument.getAttribute("width");
-//        var svgHeight = svgDocument.getAttribute("height");
-//        if(svgWidth == null || svgHeight == null){
-            // We have a problem
-//            svgDocument.setAttribute("width", getWidth());
-//            svgDocument.setAttribute("height", getHeight());
-//            svgWidth = svgDocument.getAttribute("width");
-//            svgHeight = svgDocument.getAttribute("height");
-//        }
+        //        var svgWidth = svgDocument.getAttribute("width");
+        //        var svgHeight = svgDocument.getAttribute("height");
+        //        if(svgWidth == null || svgHeight == null){
+        // We have a problem
+        //            svgDocument.setAttribute("width", getWidth());
+        //            svgDocument.setAttribute("height", getHeight());
+        //            svgWidth = svgDocument.getAttribute("width");
+        //            svgHeight = svgDocument.getAttribute("height");
+        //        }
         
         // allow svg to take up full chrome browser space
-//        if(svgDocument.hasAttribute("width")){
-//            svgDocument.removeAttribute("width");
-//        }
-//        if(svgDocument.hasAttribute("height")){
-//            svgDocument.removeAttribute("height");
-//        }
+        //        if(svgDocument.hasAttribute("width")){
+        //            svgDocument.removeAttribute("width");
+        //        }
+        //        if(svgDocument.hasAttribute("height")){
+        //            svgDocument.removeAttribute("height");
+        //        }
         // get bounding box of the svg
         // currently, there seems to be a bug in chrome when getting bounding box of groups, ex: http://upload.wikimedia.org/wikipedia/commons/d/dc/USA_orthographic.svg
-//        var boundingBoxOfSVG = svgDocument.getBBox();
-//        console.log("bb.x: " + boundingBoxOfSVG.x);
-//        console.log("bb.y: " + boundingBoxOfSVG.y);
-//        console.log("bb.width: " + boundingBoxOfSVG.width);
-//        console.log("bb.height: " + boundingBoxOfSVG.height);
+        //        var boundingBoxOfSVG = svgDocument.getBBox();
+        //        console.log("bb.x: " + boundingBoxOfSVG.x);
+        //        console.log("bb.y: " + boundingBoxOfSVG.y);
+        //        console.log("bb.width: " + boundingBoxOfSVG.width);
+        //        console.log("bb.height: " + boundingBoxOfSVG.height);
         
         // draw rect element
-//        var bb = boundingBoxOfSVG;
-//        var rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-//        rect.setAttributeNS(null, "x", bb.x);
-//        rect.setAttributeNS(null, "rx", 1);
-//        rect.setAttributeNS(null, "y", bb.y);
-//        rect.setAttributeNS(null, "height", bb.height);
-//        rect.setAttributeNS(null, "width", bb.width);
-//        rect.setAttributeNS(null, "fill", "green");
-//        rect.setAttributeNS(null, "fill-opacity", "0.05");
-//        svgDocument.appendChild(rect);
+        //        var bb = boundingBoxOfSVG;
+        //        var rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        //        rect.setAttributeNS(null, "x", bb.x);
+        //        rect.setAttributeNS(null, "rx", 1);
+        //        rect.setAttributeNS(null, "y", bb.y);
+        //        rect.setAttributeNS(null, "height", bb.height);
+        //        rect.setAttributeNS(null, "width", bb.width);
+        //        rect.setAttributeNS(null, "fill", "green");
+        //        rect.setAttributeNS(null, "fill-opacity", "0.05");
+        //        svgDocument.appendChild(rect);
         
         // make new viewbox and insert it into the svg
-//        var format =  boundingBoxOfSVG.x + ' ' +
-//        boundingBoxOfSVG.y + ' ' +
-//        boundingBoxOfSVG.width + ' ' +
-//        boundingBoxOfSVG.height;
-
+        //        var format =  boundingBoxOfSVG.x + ' ' +
+        //        boundingBoxOfSVG.y + ' ' +
+        //        boundingBoxOfSVG.width + ' ' +
+        //        boundingBoxOfSVG.height;
+        
         // preferably, we want to set the viewbox as the bounding box values of the SVG from getBBox();
         // unfortunatley, chrome's getBBox() is bugged for some SVG documents
         // so we make the viewbox at 0,0 with width and height of client browser
         var format =  0 + ' ' +
         0 + ' ' +
-//        parseFloat(svgWidth) + ' ' +
-//        parseFloat(svgHeight);
+        //        parseFloat(svgWidth) + ' ' +
+        //        parseFloat(svgHeight);
         parseFloat(origSVGWidth) + ' ' +
         parseFloat(origSVGHeight);
-
+        
         svgDocument.setAttribute("viewBox", format);
         origViewBox = format;
     }
@@ -114,6 +117,7 @@ if(svgElements[0] != null){
     var zoomY2 = 0;
     var zoomWidth = 0;
     var zoomHeight = 0;
+    var zoomRectangle = insertZoomRect();
     
     // variables for panning
     var panStart = true;
@@ -129,16 +133,13 @@ if(svgElements[0] != null){
     var newViewBoxX = 0;
     var newViewBoxY = 0;
     
-    // variables for cursor events
-    var event;
+    addEventListeners();
     
-    // variable for refreshing screen
-    var refresh = true;
-    
-    // define svg namespace
-    var svgNS = "http://www.w3.org/2000/svg";
-    
-    // insert a rectangle object into the svg, acting as the zoom rectangle
+    disableSelection();
+}
+
+// insert a rectangle object into the svg, acting as the zoom rectangle
+function insertZoomRect(){    
     var zoomRectangle = document.createElementNS(svgNS, "rect");
     zoomRectangle.setAttributeNS(null, "x", 0);
     zoomRectangle.setAttributeNS(null, "y", 0);
@@ -150,39 +151,22 @@ if(svgElements[0] != null){
     zoomRectangle.setAttributeNS(null, "stroke-width", 1.0);
     zoomRectangle.setAttributeNS(null, "fill", "blue");
     zoomRectangle.setAttributeNS(null, "fill-opacity", 0.1);
-//    zoomRectangle.setAttributeNS(null, "shape-rendering", "crispEdges");
+    //    zoomRectangle.setAttributeNS(null, "shape-rendering", "crispEdges");
     svgDocument.appendChild(zoomRectangle);
-    
+    return zoomRectangle;
+}
+
+function addEventListeners(){
     // event listeners
     svgDocument.addEventListener("mousedown", zoomMouseDown, false);
     svgDocument.addEventListener("mousemove", zoomMouseMove, false);
     svgDocument.addEventListener("mouseup", zoomMouseUp, false);
-    svgDocument.addEventListener("mousedown", mouseDown, false);
-    svgDocument.addEventListener("mousemove", mouseMove, false);
-    svgDocument.addEventListener("mouseup", mouseUp, false);
     svgDocument.addEventListener("keydown",panBegin, false);
     svgDocument.addEventListener("mousemove", panMove, false);
     svgDocument.addEventListener("keyup",panEnd, false);
     svgDocument.addEventListener("keyup",zoomOut, false);
     svgDocument.addEventListener("keyup",zoomOriginal, false);
     svgDocument.addEventListener("mousewheel",doScroll, false);
-    
-    
-    // code to get the texts' original sizes; this is then used to scale later when viewbox changes
-    //        svgDocument = document.getElementById(svgID);
-//    var m = svgDocument.getScreenCTM();
-//    var p = document.documentElement.createSVGPoint();
-//    p.y = getHeight();
-//    
-//    var q = document.documentElement.createSVGPoint();
-//    q.y = 0;
-//    
-//    p = p.matrixTransform(m.inverse());
-//    q = q.matrixTransform(m.inverse());
-    
-    //    origTextScale = (16/screen.height)*(p.y - q.y); // roughly font size 12 at fullscreen
-    
-    disableSelection();
 }
 
 /* Zoom Functions */
@@ -208,8 +192,8 @@ function zoomMouseDown(evt) {
         
         var tokens  = svgDocument.getAttribute("viewBox");
         var token = tokens.split(" ");
-//        var viewBoxX = parseFloat(token[0]);
-//        var viewBoxY = parseFloat(token[1]);
+        //        var viewBoxX = parseFloat(token[0]);
+        //        var viewBoxY = parseFloat(token[1]);
         var viewBoxWidth = parseFloat(token[2]);
         var viewBoxHeight = parseFloat(token[3]);
         var viewBoxAspectRatio = viewBoxWidth/viewBoxHeight;
@@ -268,7 +252,7 @@ function zoomMouseUp(evt) {
     
 	// the viewbox width and height is changed when the button is up
     if(zoomAction){
-//        console.log("zoom area: " + (parseFloat(h)*parseFloat(w)));
+        //        console.log("zoom area: " + (parseFloat(h)*parseFloat(w)));
         if((parseFloat(h)*parseFloat(w))<1e-6){ // prevent zooming on tiny area; svg visual starts acting weird
             //var format =  origViewBox;
         } else {
@@ -292,7 +276,7 @@ function zoomMouseUp(evt) {
 
 // zoom out when user presses alt key
 function zoomOut(evt){
-//    console.log("evt.clientX: " + evt.clientX);
+    //    console.log("evt.clientX: " + evt.clientX);
     if(evt.type == "keyup"){
         if (evt.charCode) {
             var charCode = evt.charCode;
@@ -302,43 +286,7 @@ function zoomOut(evt){
         
         // alt key
         if (charCode == 18) {
-            //alert("escape");
-            //panStart = true;
-            //panAction = true;
-            //svgDocument.style.cursor='move';
-            
-//            newViewBox = svgDocument.getAttribute("viewBox");
-//            
-//            var tokens = newViewBox;
-//            var token = tokens.split(" ");
-//            var viewBoxX = parseFloat(token[0]);
-//            var viewBoxY = parseFloat(token[1]);
-//            var viewBoxWidth = parseFloat(token[2]);
-//            var viewBoxHeight = parseFloat(token[3]);
-//            
-//            var newViewBoxX = viewBoxX - 0.1*viewBoxWidth;
-//            var newViewBoxY = viewBoxY - 0.1*viewBoxHeight;
-//            var newViewBoxWidth = viewBoxWidth*1.2;
-//            var newViewBoxHeight = viewBoxHeight*1.2;
-//            
-//            var format =  parseFloat(newViewBoxX) + ' ' +
-//            parseFloat(newViewBoxY) + ' ' +
-//            parseFloat(newViewBoxWidth) + ' ' +
-//            parseFloat(newViewBoxHeight);
-//            
-//            svgDocument.setAttribute("viewBox", format);
-//            
-//            refresh = true;
-            
-            
             var zoomAmount = 1.1;
-            
-//            var p = document.documentElement.createSVGPoint();
-//            p.x = evt.clientX;
-//            p.y = evt.clientY;
-//            
-//            var m = svgDocument.getScreenCTM();
-//            p = p.matrixTransform(m.inverse());
             
             newViewBox = svgDocument.getAttribute("viewBox");
             var tokens = newViewBox;
@@ -374,7 +322,7 @@ function zoomOut(evt){
             newViewBoxWidth + ' ' +
             newViewBoxHeight;
             svgDocument.setAttribute("viewBox", format);
-
+            
         }
     }
 }
@@ -392,21 +340,6 @@ function zoomOriginal(evt){
         if (charCode == 27) {
             var format =  origViewBox;
             svgDocument.setAttribute("viewBox", origViewBox);
-
-//            // show bounding box test
-//            // draw rect element
-//            var boundingBoxOfSVG = svgDocument.getBBox();
-//            var rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-//            rect.setAttributeNS(null, "x", boundingBoxOfSVG.x);
-//            rect.setAttributeNS(null, "rx", 1);
-//            rect.setAttributeNS(null, "y", boundingBoxOfSVG.y);
-//            rect.setAttributeNS(null, "height", boundingBoxOfSVG.height);
-//            rect.setAttributeNS(null, "width", boundingBoxOfSVG.width);
-//            rect.setAttributeNS(null, "fill", "green");
-//            rect.setAttributeNS(null, "fill-opacity", "0.05");
-//            svgDocument.appendChild(rect);
-
-            refresh = true;
         }
     }
 }
@@ -460,7 +393,7 @@ function panMove(evt) {
         p.x = evt.clientX;
         p.y = evt.clientY;
         var m = svgDocument.getScreenCTM();
-//        console.log(m);
+        //        console.log(m);
         p = p.matrixTransform(m.inverse());
         
         panNewX = p.x;
@@ -516,22 +449,7 @@ function panEnd(evt){
             
             svgDocument.style.cursor = 'default';
         }
-        refresh = true;
     }
-}
-
-function mouseDown(evt) {
-    refresh = true;
-}
-
-function mouseMove(evt) {
-    if(refresh){
-        refresh = false;
-    }
-}
-
-function mouseUp(evt) {
-    refresh = true;
 }
 
 // function to get the height of the window containing the svg in pixels; this is not the same as the svg viewbox or screen resolution
@@ -581,9 +499,9 @@ function disableSelection(){
 // might be different scroll direction on macs with "natural scroll" vs windows
 function doScroll(evt){
     evt.preventDefault(); // prevent default scroll action in chrome
-//    console.log("client X: " + evt.clientX);
-//    console.log("client Y: " + evt.clientY);
-//    console.log("event wheel delta: " + evt.wheelDelta);
+    //    console.log("client X: " + evt.clientX);
+    //    console.log("client Y: " + evt.clientY);
+    //    console.log("event wheel delta: " + evt.wheelDelta);
     
     var scrollAmount = evt.wheelDelta/120; // neg scroll in; pos scroll out; should be multiple of 1
     // scrolling in makes viewbox smaller, so zoomAmount is smaller
@@ -595,7 +513,7 @@ function doScroll(evt){
     
     var m = svgDocument.getScreenCTM();
     p = p.matrixTransform(m.inverse());
-        
+    
     newViewBox = svgDocument.getAttribute("viewBox");
     var tokens = newViewBox;
     var token = tokens.split(" ");
@@ -611,7 +529,7 @@ function doScroll(evt){
     // zoom 10% towards cursor
     var newViewBoxWidth = viewBoxWidth*zoomAmount;
     var newViewBoxHeight = viewBoxHeight*zoomAmount;
-
+    
     // these should always turn out positive, because client cursor must be within svg x to x+width and y to y+height
     var fracOfSVGX = (p.x - viewBoxX)/viewBoxWidth;
     var fracOfSVGY = (p.y - viewBoxY)/viewBoxHeight;
@@ -621,7 +539,7 @@ function doScroll(evt){
     
     var newViewBoxX = p.x - leftWidth;
     var newViewBoxY = p.y - upperHeight;
-
+    
     // make new viewbox and insert it into the svg
     var format =  newViewBoxX + ' ' +
     newViewBoxY + ' ' +
