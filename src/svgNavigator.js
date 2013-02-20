@@ -98,7 +98,7 @@ if(svgElements[0] != null){
 }
 
 // insert a rectangle object into the svg, acting as the zoom rectangle
-function insertZoomRect(){    
+function insertZoomRect(){
     var zoomRectangle = document.createElementNS(svgNS, "rect");
     zoomRectangle.setAttributeNS(null, "x", 0);
     zoomRectangle.setAttributeNS(null, "y", 0);
@@ -133,7 +133,7 @@ function addEventListeners(){
 // press escape to zoom out
 function zoomMouseDown(evt) {
 	//if the left click is down and the control and shift keys are NOT depressed, sets top left of zoombox and flag
-    if(zoomRectangle && !evt.ctrlKey && !evt.shiftKey) { // zoom
+    if(!panAction && zoomRectangle && !evt.ctrlKey && !evt.shiftKey) { // zoom
         zoomAction = true;
         var p = document.documentElement.createSVGPoint();
         p.x = evt.clientX;
@@ -164,7 +164,7 @@ function zoomMouseDown(evt) {
         }
         var relativeStrokeWidth = viewBoxWidth/clientWidth;
         
-//        console.log("zoom rect stroke width: " + relativeStrokeWidth);
+        //        console.log("zoom rect stroke width: " + relativeStrokeWidth);
         zoomRectangle.setAttributeNS(null, "stroke-width", relativeStrokeWidth);
         zoomRectangle.setAttributeNS(null, "rx", relativeStrokeWidth);
     }
@@ -196,15 +196,11 @@ function zoomMouseMove(evt) {
 
 // function that completes zoombox, then zooms view to zoombox
 function zoomMouseUp(evt) {
-    var h = zoomRectangle.getAttribute("height");
-    var w = zoomRectangle.getAttribute("width");
-    
 	// the viewbox width and height is changed when the button is up
     if(zoomAction){
-        //        console.log("zoom area: " + (parseFloat(h)*parseFloat(w)));
-        if((parseFloat(h)*parseFloat(w))<1e-6){ // prevent zooming on tiny area; svg visual starts acting weird
-            //var format =  origViewBox;
-        } else {
+        var w = zoomRectangle.getAttribute("width");
+        var h = zoomRectangle.getAttribute("height");
+        if((parseFloat(h)*parseFloat(w)) > 1e-6){ // prevent zooming on tiny area; svg visual starts acting weird
             var format =  parseFloat(zoomRectangle.getAttribute("x")) + ' ' +
             parseFloat(zoomRectangle.getAttribute("y")) + ' ' +
             parseFloat(w) + ' ' +
@@ -220,13 +216,12 @@ function zoomMouseUp(evt) {
     zoomRectangle.setAttribute("width", 0);
     zoomRectangle.setAttribute("height", 0);
     zoomAction = false;
-    
 }
 
 // zoom out when user presses alt key
 function zoomOut(evt){
     //    console.log("evt.clientX: " + evt.clientX);
-    if(evt.type == "keyup"){
+    if(!zoomAction && !panAction && evt.type == "keyup"){
         if (evt.charCode) {
             var charCode = evt.charCode;
         } else {
@@ -277,7 +272,7 @@ function zoomOut(evt){
 
 
 function zoomOriginal(evt){
-    if(evt.type == "keyup"){
+    if(!zoomAction && !panAction && evt.type == "keyup"){
         if (evt.charCode) {
             var charCode = evt.charCode;
         } else {
@@ -293,7 +288,7 @@ function zoomOriginal(evt){
 }
 
 function panBegin(evt){
-    if(evt.type == "keydown"){
+    if(!zoomAction && evt.type == "keydown"){
         if (evt.charCode) {
             var charCode = evt.charCode;
         } else {
@@ -378,8 +373,6 @@ function panEnd(evt){
         
         // spacebar
         if (charCode == 32) {
-            panStart = true;
-            panAction = false;
             var panViewBoxX = 0;
             var panViewBoxY = 0;
             var panViewBoxWidth = 0;
@@ -392,6 +385,8 @@ function panEnd(evt){
             var newViewBoxY = 0;
             
             svgDocument.style.cursor = 'default';
+            panStart = true;
+            panAction = false;
         }
     }
 }
@@ -442,55 +437,56 @@ function disableSelection(){
 // the area pointed to by the cursor will always stay under the cursor while scrolling/zooming in or out, just like google maps does
 // might be different scroll direction on macs with "natural scroll" vs windows
 function doScroll(evt){
-    evt.preventDefault(); // prevent default scroll action in chrome
-    //    console.log("client X: " + evt.clientX);
-    //    console.log("client Y: " + evt.clientY);
-    //    console.log("event wheel delta: " + evt.wheelDelta);
-    
-    var scrollAmount = evt.wheelDelta/120; // neg scroll in; pos scroll out; should be multiple of 1
-    // scrolling in makes viewbox smaller, so zoomAmount is smaller
-    var zoomAmount = scrollAmount < 0 ? 1.1+(0.01*scrollAmount) : 0.9+(0.01*scrollAmount);
-    
-    var p = document.documentElement.createSVGPoint();
-    p.x = evt.clientX;
-    p.y = evt.clientY;
-    
-    var m = svgDocument.getScreenCTM();
-    p = p.matrixTransform(m.inverse());
-    
-    newViewBox = svgDocument.getAttribute("viewBox");
-    var tokens = newViewBox;
-    var token = tokens.split(" ");
-    var viewBoxX = parseFloat(token[0]);
-    var viewBoxY = parseFloat(token[1]);
-    var viewBoxWidth = parseFloat(token[2]);
-    var viewBoxHeight = parseFloat(token[3]);
-    
-    var viewBoxCenterX = viewBoxX + viewBoxWidth/2;
-    var viewBoxCenterY = viewBoxY + viewBoxHeight/2;
-    
-    // algorithm to zoom in and gravitate towards cursor scroll
-    // zoom 10% towards cursor
-    var newViewBoxWidth = viewBoxWidth*zoomAmount;
-    var newViewBoxHeight = viewBoxHeight*zoomAmount;
-    
-    // these should always turn out positive, because client cursor must be within svg x to x+width and y to y+height
-    var fracOfSVGX = (p.x - viewBoxX)/viewBoxWidth;
-    var fracOfSVGY = (p.y - viewBoxY)/viewBoxHeight;
-    
-    var leftWidth = fracOfSVGX*newViewBoxWidth; // offset to new x
-    var upperHeight = fracOfSVGY*newViewBoxHeight; // offset to new y
-    
-    var newViewBoxX = p.x - leftWidth;
-    var newViewBoxY = p.y - upperHeight;
-    
-    // make new viewbox and insert it into the svg
-    var format =  newViewBoxX + ' ' +
-    newViewBoxY + ' ' +
-    newViewBoxWidth + ' ' +
-    newViewBoxHeight;
-    svgDocument.setAttribute("viewBox", format);
-    
+    if(!zoomAction && !panAction){
+        evt.preventDefault(); // prevent default scroll action in chrome
+        //    console.log("client X: " + evt.clientX);
+        //    console.log("client Y: " + evt.clientY);
+        //    console.log("event wheel delta: " + evt.wheelDelta);
+        
+        var scrollAmount = evt.wheelDelta/120; // neg scroll in; pos scroll out; should be multiple of 1
+        // scrolling in makes viewbox smaller, so zoomAmount is smaller
+        var zoomAmount = scrollAmount < 0 ? 1.1+(0.01*scrollAmount) : 0.9+(0.01*scrollAmount);
+        
+        var p = document.documentElement.createSVGPoint();
+        p.x = evt.clientX;
+        p.y = evt.clientY;
+        
+        var m = svgDocument.getScreenCTM();
+        p = p.matrixTransform(m.inverse());
+        
+        newViewBox = svgDocument.getAttribute("viewBox");
+        var tokens = newViewBox;
+        var token = tokens.split(" ");
+        var viewBoxX = parseFloat(token[0]);
+        var viewBoxY = parseFloat(token[1]);
+        var viewBoxWidth = parseFloat(token[2]);
+        var viewBoxHeight = parseFloat(token[3]);
+        
+        var viewBoxCenterX = viewBoxX + viewBoxWidth/2;
+        var viewBoxCenterY = viewBoxY + viewBoxHeight/2;
+        
+        // algorithm to zoom in and gravitate towards cursor scroll
+        // zoom 10% towards cursor
+        var newViewBoxWidth = viewBoxWidth*zoomAmount;
+        var newViewBoxHeight = viewBoxHeight*zoomAmount;
+        
+        // these should always turn out positive, because client cursor must be within svg x to x+width and y to y+height
+        var fracOfSVGX = (p.x - viewBoxX)/viewBoxWidth;
+        var fracOfSVGY = (p.y - viewBoxY)/viewBoxHeight;
+        
+        var leftWidth = fracOfSVGX*newViewBoxWidth; // offset to new x
+        var upperHeight = fracOfSVGY*newViewBoxHeight; // offset to new y
+        
+        var newViewBoxX = p.x - leftWidth;
+        var newViewBoxY = p.y - upperHeight;
+        
+        // make new viewbox and insert it into the svg
+        var format =  newViewBoxX + ' ' +
+        newViewBoxY + ' ' +
+        newViewBoxWidth + ' ' +
+        newViewBoxHeight;
+        svgDocument.setAttribute("viewBox", format);
+    }
 }
 
 // try to capture shift to prevent chrome's shift panning
@@ -504,7 +500,7 @@ function doScroll(evt){
 //            var charCode = evt.keyCode;
 //            //console.log("keyCode");
 //        }
-//        
+//
 //        // shift
 //        if (charCode == 16) {
 //            zoomDisable = true;
@@ -519,7 +515,7 @@ function doScroll(evt){
 //        if (evt.charCode) {
 //            var charCode = evt.charCode;
 //            //console.log("charCode");
-//            
+//
 //        } else {
 //            var charCode = evt.keyCode;
 //            //console.log("keyCode");
