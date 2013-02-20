@@ -286,7 +286,7 @@ function zoomOut(evt){
         
         // alt key
         if (charCode == 18) {
-            var zoomAmount = 1.1;
+            var zoomAmount = 1.2;
             
             newViewBox = svgDocument.getAttribute("viewBox");
             var tokens = newViewBox;
