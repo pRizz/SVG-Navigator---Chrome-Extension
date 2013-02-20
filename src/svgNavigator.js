@@ -150,6 +150,7 @@ if(svgElements[0] != null){
     zoomRectangle.setAttributeNS(null, "stroke-width", 1.0);
     zoomRectangle.setAttributeNS(null, "fill", "blue");
     zoomRectangle.setAttributeNS(null, "fill-opacity", 0.1);
+//    zoomRectangle.setAttributeNS(null, "shape-rendering", "crispEdges");
     svgDocument.appendChild(zoomRectangle);
     
     // event listeners
@@ -201,6 +202,30 @@ function zoomMouseDown(evt) {
         zoomRectangle.setAttribute("y", p.y);
         zoomX1 = p.x;
         zoomY1 = p.y;
+        
+        // re-set zoom rectangle stroke width
+        var strokeWidth = 1;
+        
+        var tokens  = svgDocument.getAttribute("viewBox");
+        var token = tokens.split(" ");
+//        var viewBoxX = parseFloat(token[0]);
+//        var viewBoxY = parseFloat(token[1]);
+        var viewBoxWidth = parseFloat(token[2]);
+        var viewBoxHeight = parseFloat(token[3]);
+        var viewBoxAspectRatio = viewBoxWidth/viewBoxHeight;
+        
+        var clientWidth = getWidth();
+        var clientHeight = getHeight();
+        var clientAspectRatio = clientWidth/clientHeight;
+        
+        if(viewBoxAspectRatio < clientAspectRatio){
+            viewBoxWidth = viewBoxHeight*clientAspectRatio;
+        }
+        var relativeStrokeWidth = viewBoxWidth/clientWidth;
+        
+        console.log("zoom rect stroke width: " + relativeStrokeWidth);
+        zoomRectangle.setAttributeNS(null, "stroke-width", relativeStrokeWidth);
+        zoomRectangle.setAttributeNS(null, "rx", relativeStrokeWidth);
     }
 }
 
@@ -243,7 +268,8 @@ function zoomMouseUp(evt) {
     
 	// the viewbox width and height is changed when the button is up
     if(zoomAction){
-        if((parseFloat(h)*parseFloat(w))<40){ // prevent zooming on tiny area
+//        console.log("zoom area: " + (parseFloat(h)*parseFloat(w)));
+        if((parseFloat(h)*parseFloat(w))<1e-6){ // prevent zooming on tiny area; svg visual starts acting weird
             //var format =  origViewBox;
         } else {
             var format =  parseFloat(zoomRectangle.getAttribute("x")) + ' ' +
