@@ -40,6 +40,9 @@ if(svgElements[0] != null){
     
     var svgDocument = svgElements[0];
     
+    // keep aspect ratio; just remove attribute if it exists
+    svgDocument.hasAttribute("preserveAspectRatio") ? svgDocument.removeAttribute("preserveAspectRatio") : null;
+    
     var origViewBox = svgDocument.getAttribute("viewBox");
     // save original svg width and height
     // TODO problematic when width or height contain percent character
@@ -207,7 +210,7 @@ function zoomMouseDown(evt) {
         }
         var relativeStrokeWidth = viewBoxWidth/clientWidth;
         
-        console.log("zoom rect stroke width: " + relativeStrokeWidth);
+//        console.log("zoom rect stroke width: " + relativeStrokeWidth);
         zoomRectangle.setAttributeNS(null, "stroke-width", relativeStrokeWidth);
         zoomRectangle.setAttributeNS(null, "rx", relativeStrokeWidth);
     }
