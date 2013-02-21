@@ -96,6 +96,8 @@ if(svgElements[0] != null){
     addEventListeners();
     
     disableSelection();
+    
+    showDebugInfo();
 }
 
 // insert a rectangle object into the svg, acting as the zoom rectangle
@@ -430,48 +432,6 @@ function panEnd(evt){
     }
 }
 
-// function to get the height of the window containing the svg in pixels; this is not the same as the svg viewbox or screen resolution
-function getHeight()
-{
-    var y = 0;
-    if (self.innerHeight){
-        y = self.innerHeight;
-    } else if (document.documentElement && document.documentElement.clientHeight){
-        y = document.documentElement.clientHeight;
-    } else if (document.body){
-        y = document.body.clientHeight;
-    }
-    return y;
-}
-
-// function to get the width of the window containing the svg in pixels; this is not the same as the svg viewbox or screen resolution
-function getWidth()
-{
-    var x = 0;
-    if (self.innerHeight){
-        x = self.innerWidth;
-    } else if (document.documentElement && document.documentElement.clientHeight){
-        x = document.documentElement.clientWidth;
-    } else if (document.body){
-        x = document.body.clientWidth;
-    }
-    return x;
-}
-
-
-// to prevent selection of text; prevent text Ibar cursor when dragging
-function disableSelection(){
-    var target = svgDocument;
-    if (typeof target.onselectstart != "undefined"){ //IE route
-        target.onselectstart = function(){return false}
-    } else if (typeof target.style.MozUserSelect!="undefined"){ //Firefox route
-        target.style.MozUserSelect="none"
-    } else { //All other route (ie: Opera)
-        target.onmousedown=function(){return false}
-        target.style.cursor = "default"
-    }
-}
-
 // implementation for scroll zooming
 // the area pointed to by the cursor will always stay under the cursor while scrolling/zooming in or out, just like google maps does
 // might be different scroll direction on macs with "natural scroll" vs windows
@@ -521,12 +481,59 @@ function doScroll(evt){
         
         // make new viewbox and insert it into the svg
         var format = formatViewBox(newViewBoxX, newViewBoxY, newViewBoxWidth, newViewBoxHeight);
-//        newViewBoxX + ' ' +
-//        newViewBoxY + ' ' +
-//        newViewBoxWidth + ' ' +
-//        newViewBoxHeight;
+        //        newViewBoxX + ' ' +
+        //        newViewBoxY + ' ' +
+        //        newViewBoxWidth + ' ' +
+        //        newViewBoxHeight;
         svgDocument.setAttribute("viewBox", format);
     }
+}
+
+
+// function to get the height of the window containing the svg in pixels; this is not the same as the svg viewbox or screen resolution
+function getHeight()
+{
+    var y = 0;
+    if (self.innerHeight){
+        y = self.innerHeight;
+    } else if (document.documentElement && document.documentElement.clientHeight){
+        y = document.documentElement.clientHeight;
+    } else if (document.body){
+        y = document.body.clientHeight;
+    }
+    return y;
+}
+
+// function to get the width of the window containing the svg in pixels; this is not the same as the svg viewbox or screen resolution
+function getWidth()
+{
+    var x = 0;
+    if (self.innerHeight){
+        x = self.innerWidth;
+    } else if (document.documentElement && document.documentElement.clientHeight){
+        x = document.documentElement.clientWidth;
+    } else if (document.body){
+        x = document.body.clientWidth;
+    }
+    return x;
+}
+
+
+// to prevent selection of text; prevent text Ibar cursor when dragging
+function disableSelection(){
+    var target = svgDocument;
+    if (typeof target.onselectstart != "undefined"){ //IE route
+        target.onselectstart = function(){return false}
+    } else if (typeof target.style.MozUserSelect!="undefined"){ //Firefox route
+        target.style.MozUserSelect="none"
+    } else { //All other route (ie: Opera)
+        target.onmousedown=function(){return false}
+        target.style.cursor = "default"
+    }
+}
+
+function showDebugInfo(){
+    
 }
 
 // helper function to make the viewbox attribute
