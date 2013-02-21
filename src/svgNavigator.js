@@ -58,10 +58,11 @@ if(svgElements[0] != null){
         // preferably, we want to set the viewbox as the bounding box values of the SVG from getBBox();
         // unfortunatley, chrome's getBBox() is bugged for some SVG documents, ex: http://upload.wikimedia.org/wikipedia/commons/d/dc/USA_orthographic.svg
         // so we make the viewbox at 0,0 with width and height of client browser
-        var format =  0 + ' ' +
-        0 + ' ' +
-        parseFloat(origSVGWidth) + ' ' +
-        parseFloat(origSVGHeight);
+        var format = formatViewBox(0, 0, origSVGWidth, origSVGHeight);
+//        0 + ' ' +
+//        0 + ' ' +
+//        parseFloat(origSVGWidth) + ' ' +
+//        parseFloat(origSVGHeight);
         
         svgDocument.setAttribute("viewBox", format);
         origViewBox = format;
@@ -103,8 +104,8 @@ function insertZoomRect(){
     zoomRectangle.setAttributeNS(null, "x", 0);
     zoomRectangle.setAttributeNS(null, "y", 0);
     zoomRectangle.setAttributeNS(null, "rx", 0.01);
-    zoomRectangle.setAttributeNS(null, "height", 0);
     zoomRectangle.setAttributeNS(null, "width", 0);
+    zoomRectangle.setAttributeNS(null, "height", 0);
     zoomRectangle.setAttributeNS(null, "opacity", 1);
     zoomRectangle.setAttributeNS(null, "stroke", "blue");
     zoomRectangle.setAttributeNS(null, "stroke-width", 1.0);
@@ -201,12 +202,46 @@ function zoomMouseUp(evt) {
         var w = zoomRectangle.getAttribute("width");
         var h = zoomRectangle.getAttribute("height");
         if((parseFloat(h)*parseFloat(w)) > 1e-6){ // prevent zooming on tiny area; svg visual starts acting weird
-            var format =  parseFloat(zoomRectangle.getAttribute("x")) + ' ' +
-            parseFloat(zoomRectangle.getAttribute("y")) + ' ' +
-            parseFloat(w) + ' ' +
-            parseFloat(h);
+            // make aspect ratio of new viewbox match the screen aspect ratio; useful later, when adding debug info to corner of screen
+//            var tokens  = svgDocument.getAttribute("viewBox");
+//            var token = tokens.split(" ");
+            var viewBoxWidth = w;
+            var viewBoxHeight = h;
+            var viewBoxAspectRatio = viewBoxWidth/viewBoxHeight;
+            
+            var clientWidth = getWidth();
+            var clientHeight = getHeight();
+            var clientAspectRatio = clientWidth/clientHeight;
+            
+            if(viewBoxAspectRatio < clientAspectRatio){
+                viewBoxWidth = viewBoxHeight*clientAspectRatio;
+            } else {
+                viewBoxHeight = viewBoxWidth/clientAspectRatio;
+            }
+            
+            var format = formatViewBox(zoomRectangle.getAttribute("x"), zoomRectangle.getAttribute("y"),
+                                       viewBoxWidth, viewBoxHeight);
+//            parseFloat(zoomRectangle.getAttribute("x")) + ' ' +
+//            parseFloat(zoomRectangle.getAttribute("y")) + ' ' +
+//            parseFloat(viewBoxWidth) + ' ' +
+//            parseFloat(viewBoxHeight);
             
             svgDocument.setAttribute("viewBox", format);
+            
+//            // test to see new viewbox by drawing rectangle
+//            var viewboxRect = document.createElementNS(svgNS, "rect");
+//            viewboxRect.setAttributeNS(null, "x", zoomRectangle.getAttribute("x"));
+//            viewboxRect.setAttributeNS(null, "y", zoomRectangle.getAttribute("y"));
+//            viewboxRect.setAttributeNS(null, "rx", 0.01);
+//            viewboxRect.setAttributeNS(null, "width", viewBoxWidth);
+//            viewboxRect.setAttributeNS(null, "height", viewBoxHeight);
+//            viewboxRect.setAttributeNS(null, "opacity", 1);
+//            viewboxRect.setAttributeNS(null, "stroke", "green");
+//            viewboxRect.setAttributeNS(null, "stroke-width", 1.0);
+//            viewboxRect.setAttributeNS(null, "fill", "green");
+//            viewboxRect.setAttributeNS(null, "fill-opacity", 0.05);
+//            //    viewboxRect.setAttributeNS(null, "shape-rendering", "crispEdges");
+//            svgDocument.appendChild(viewboxRect);
         }
     }
     
@@ -215,6 +250,7 @@ function zoomMouseUp(evt) {
     zoomY1 = 0;
     zoomRectangle.setAttribute("width", 0);
     zoomRectangle.setAttribute("height", 0);
+    
     zoomAction = false;
 }
 
@@ -260,10 +296,11 @@ function zoomOut(evt){
             var newViewBoxY = midY - upperHeight;
             
             // make new viewbox and insert it into the svg
-            var format =  newViewBoxX + ' ' +
-            newViewBoxY + ' ' +
-            newViewBoxWidth + ' ' +
-            newViewBoxHeight;
+            var format = formatViewBox(newViewBoxX, newViewBoxY, newViewBoxWidth, newViewBoxHeight);
+//            newViewBoxX + ' ' +
+//            newViewBoxY + ' ' +
+//            newViewBoxWidth + ' ' +
+//            newViewBoxHeight;
             svgDocument.setAttribute("viewBox", format);
             
         }
@@ -353,10 +390,11 @@ function panMove(evt) {
         
         
         
-        var format =  parseFloat(newViewBoxX) + ' ' +
-        parseFloat(newViewBoxY) + ' ' +
-        parseFloat(panViewBoxWidth) + ' ' +
-        parseFloat(panViewBoxHeight);
+        var format = formatViewBox(newViewBoxX, newViewBoxY, panViewBoxWidth, panViewBoxHeight);
+//        parseFloat(newViewBoxX) + ' ' +
+//        parseFloat(newViewBoxY) + ' ' +
+//        parseFloat(panViewBoxWidth) + ' ' +
+//        parseFloat(panViewBoxHeight);
         
         svgDocument.setAttribute('viewBox', format);
     }
@@ -470,7 +508,7 @@ function doScroll(evt){
         var newViewBoxWidth = viewBoxWidth*zoomAmount;
         var newViewBoxHeight = viewBoxHeight*zoomAmount;
         
-        // these should always turn out positive, because client cursor must be within svg x to x+width and y to y+height
+        // these should always turn out positive and between 0 and 1.0, because client cursor must be within svg x to x+width and y to y+height
         var fracOfSVGX = (p.x - viewBoxX)/viewBoxWidth;
         var fracOfSVGY = (p.y - viewBoxY)/viewBoxHeight;
         
@@ -481,12 +519,22 @@ function doScroll(evt){
         var newViewBoxY = p.y - upperHeight;
         
         // make new viewbox and insert it into the svg
-        var format =  newViewBoxX + ' ' +
-        newViewBoxY + ' ' +
-        newViewBoxWidth + ' ' +
-        newViewBoxHeight;
+        var format = formatViewBox(newViewBoxX, newViewBoxY, newViewBoxWidth, newViewBoxHeight);
+//        newViewBoxX + ' ' +
+//        newViewBoxY + ' ' +
+//        newViewBoxWidth + ' ' +
+//        newViewBoxHeight;
         svgDocument.setAttribute("viewBox", format);
     }
+}
+
+// helper function to make the viewbox attribute
+// ignore error checking for now
+function formatViewBox(x, y, width, height){
+    return parseFloat(x) + ' ' +
+    parseFloat(y) + ' ' +
+    parseFloat(width) + ' ' +
+    parseFloat(height);
 }
 
 // try to capture shift to prevent chrome's shift panning
