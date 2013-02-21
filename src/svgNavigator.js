@@ -199,14 +199,17 @@ function zoomMouseMove(evt) {
 function zoomMouseUp(evt) {
 	// the viewbox width and height is changed when the button is up
     if(zoomAction){
-        var w = zoomRectangle.getAttribute("width");
-        var h = zoomRectangle.getAttribute("height");
-        if((parseFloat(h)*parseFloat(w)) > 1e-6){ // prevent zooming on tiny area; svg visual starts acting weird
+        var zoomRectWidth = zoomRectangle.getAttribute("width");
+        var zoomRectHeight = zoomRectangle.getAttribute("height");
+        if((parseFloat(zoomRectWidth)*parseFloat(zoomRectHeight)) > 1e-6){ // prevent zooming on tiny area; svg visual starts acting weird
             // make aspect ratio of new viewbox match the screen aspect ratio; useful later, when adding debug info to corner of screen
-//            var tokens  = svgDocument.getAttribute("viewBox");
-//            var token = tokens.split(" ");
-            var viewBoxWidth = w;
-            var viewBoxHeight = h;
+            var zoomRectX = zoomRectangle.getAttribute("x");
+            var zoomRectY = zoomRectangle.getAttribute("y");
+            
+            var viewBoxX = zoomRectX;
+            var viewBoxY = zoomRectY;
+            var viewBoxWidth = zoomRectWidth;
+            var viewBoxHeight = zoomRectHeight;
             var viewBoxAspectRatio = viewBoxWidth/viewBoxHeight;
             
             var clientWidth = getWidth();
@@ -215,23 +218,21 @@ function zoomMouseUp(evt) {
             
             if(viewBoxAspectRatio < clientAspectRatio){
                 viewBoxWidth = viewBoxHeight*clientAspectRatio;
+                viewBoxX = zoomRectX - (viewBoxWidth-zoomRectWidth)/2;
             } else {
                 viewBoxHeight = viewBoxWidth/clientAspectRatio;
+                viewBoxY = zoomRectY - (viewBoxHeight-zoomRectHeight)/2;
             }
             
-            var format = formatViewBox(zoomRectangle.getAttribute("x"), zoomRectangle.getAttribute("y"),
+            var format = formatViewBox(viewBoxX, viewBoxY,
                                        viewBoxWidth, viewBoxHeight);
-//            parseFloat(zoomRectangle.getAttribute("x")) + ' ' +
-//            parseFloat(zoomRectangle.getAttribute("y")) + ' ' +
-//            parseFloat(viewBoxWidth) + ' ' +
-//            parseFloat(viewBoxHeight);
             
             svgDocument.setAttribute("viewBox", format);
             
 //            // test to see new viewbox by drawing rectangle
 //            var viewboxRect = document.createElementNS(svgNS, "rect");
-//            viewboxRect.setAttributeNS(null, "x", zoomRectangle.getAttribute("x"));
-//            viewboxRect.setAttributeNS(null, "y", zoomRectangle.getAttribute("y"));
+//            viewboxRect.setAttributeNS(null, "x", viewBoxX);
+//            viewboxRect.setAttributeNS(null, "y", viewBoxY);
 //            viewboxRect.setAttributeNS(null, "rx", 0.01);
 //            viewboxRect.setAttributeNS(null, "width", viewBoxWidth);
 //            viewboxRect.setAttributeNS(null, "height", viewBoxHeight);
