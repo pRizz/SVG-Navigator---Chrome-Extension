@@ -59,15 +59,14 @@ if(svgElements[0] != null){
         // unfortunatley, chrome's getBBox() is bugged for some SVG documents, ex: http://upload.wikimedia.org/wikipedia/commons/d/dc/USA_orthographic.svg
         // so we make the viewbox at 0,0 with width and height of client browser
         var format = formatViewBox(0, 0, origSVGWidth, origSVGHeight);
-//        0 + ' ' +
-//        0 + ' ' +
-//        parseFloat(origSVGWidth) + ' ' +
-//        parseFloat(origSVGHeight);
         
         svgDocument.setAttribute("viewBox", format);
-        origViewBox = format;
+        //        fillViewBoxToScreen();
+        //        origViewBox = svgDocument.getAttribute("viewBox");
     }
-    var newViewBox = svgDocument.getAttribute("viewBox");
+    fillViewBoxToScreen();
+    origViewBox = svgDocument.getAttribute("viewBox");
+    //    var newViewBox = svgDocument.getAttribute("viewBox");
     
     // global variables for zooming
     var zoomAction = false;
@@ -90,14 +89,20 @@ if(svgElements[0] != null){
     var panOldY = 0;
     var panNewX = 0;
     var panNewY = 0;
-    var newViewBoxX = 0;
-    var newViewBoxY = 0;
+    //    var newViewBoxX = 0;
+    //    var newViewBoxY = 0;
     
+    var mouseEvent = {clientX:0, clientY:0};
     addEventListeners();
     
     disableSelection();
     
-    showDebugInfo();
+    // for debugging
+    var debugTextElement;
+    var debugBoundingBox;
+    var debugChildren = new Array();
+    var debugMode = false;
+    printDebugInfo();
 }
 
 // insert a rectangle object into the svg, acting as the zoom rectangle
@@ -129,6 +134,9 @@ function addEventListeners(){
     svgDocument.addEventListener("keyup",zoomOut, false);
     svgDocument.addEventListener("keyup",zoomOriginal, false);
     svgDocument.addEventListener("mousewheel",doScroll, false);
+    if(debugMode){
+        svgDocument.addEventListener("mousemove",mouseMoveEvent, false);
+    }
 }
 
 /* Zoom Functions */
@@ -226,25 +234,25 @@ function zoomMouseUp(evt) {
                 viewBoxY = zoomRectY - (viewBoxHeight-zoomRectHeight)/2;
             }
             
-            var format = formatViewBox(viewBoxX, viewBoxY,
-                                       viewBoxWidth, viewBoxHeight);
+            var format = formatViewBox(viewBoxX, viewBoxY, viewBoxWidth, viewBoxHeight);
             
             svgDocument.setAttribute("viewBox", format);
+            printDebugInfo();
             
-//            // test to see new viewbox by drawing rectangle
-//            var viewboxRect = document.createElementNS(svgNS, "rect");
-//            viewboxRect.setAttributeNS(null, "x", viewBoxX);
-//            viewboxRect.setAttributeNS(null, "y", viewBoxY);
-//            viewboxRect.setAttributeNS(null, "rx", 0.01);
-//            viewboxRect.setAttributeNS(null, "width", viewBoxWidth);
-//            viewboxRect.setAttributeNS(null, "height", viewBoxHeight);
-//            viewboxRect.setAttributeNS(null, "opacity", 1);
-//            viewboxRect.setAttributeNS(null, "stroke", "green");
-//            viewboxRect.setAttributeNS(null, "stroke-width", 1.0);
-//            viewboxRect.setAttributeNS(null, "fill", "green");
-//            viewboxRect.setAttributeNS(null, "fill-opacity", 0.05);
-//            //    viewboxRect.setAttributeNS(null, "shape-rendering", "crispEdges");
-//            svgDocument.appendChild(viewboxRect);
+            //            // test to see new viewbox by drawing rectangle
+            //            var viewboxRect = document.createElementNS(svgNS, "rect");
+            //            viewboxRect.setAttributeNS(null, "x", viewBoxX);
+            //            viewboxRect.setAttributeNS(null, "y", viewBoxY);
+            //            viewboxRect.setAttributeNS(null, "rx", 0.01);
+            //            viewboxRect.setAttributeNS(null, "width", viewBoxWidth);
+            //            viewboxRect.setAttributeNS(null, "height", viewBoxHeight);
+            //            viewboxRect.setAttributeNS(null, "opacity", 1);
+            //            viewboxRect.setAttributeNS(null, "stroke", "green");
+            //            viewboxRect.setAttributeNS(null, "stroke-width", 1.0);
+            //            viewboxRect.setAttributeNS(null, "fill", "green");
+            //            viewboxRect.setAttributeNS(null, "fill-opacity", 0.05);
+            //            //    viewboxRect.setAttributeNS(null, "shape-rendering", "crispEdges");
+            //            svgDocument.appendChild(viewboxRect);
         }
     }
     
@@ -271,7 +279,7 @@ function zoomOut(evt){
         if (charCode == 18) {
             var zoomAmount = 1.2;
             
-            newViewBox = svgDocument.getAttribute("viewBox");
+            var newViewBox = svgDocument.getAttribute("viewBox");
             var tokens = newViewBox;
             var token = tokens.split(" ");
             var viewBoxX = parseFloat(token[0]);
@@ -300,12 +308,12 @@ function zoomOut(evt){
             
             // make new viewbox and insert it into the svg
             var format = formatViewBox(newViewBoxX, newViewBoxY, newViewBoxWidth, newViewBoxHeight);
-//            newViewBoxX + ' ' +
-//            newViewBoxY + ' ' +
-//            newViewBoxWidth + ' ' +
-//            newViewBoxHeight;
+            //            newViewBoxX + ' ' +
+            //            newViewBoxY + ' ' +
+            //            newViewBoxWidth + ' ' +
+            //            newViewBoxHeight;
             svgDocument.setAttribute("viewBox", format);
-            
+            printDebugInfo();
         }
     }
 }
@@ -323,6 +331,7 @@ function zoomOriginal(evt){
         if (charCode == 27) {
             var format =  origViewBox;
             svgDocument.setAttribute("viewBox", origViewBox);
+            printDebugInfo();
         }
     }
 }
@@ -359,7 +368,7 @@ function panMove(evt) {
         panOldX = p.x;
         panOldY = p.y;
         
-        newViewBox = svgDocument.getAttribute("viewBox");
+        var newViewBox = svgDocument.getAttribute("viewBox");
         
         var tokens = newViewBox;
         var token = tokens.split(" ");
@@ -379,7 +388,7 @@ function panMove(evt) {
         panNewX = p.x;
         panNewY = p.y;
         
-        newViewBox = svgDocument.getAttribute("viewBox");
+        var newViewBox = svgDocument.getAttribute("viewBox");
         
         var tokens = newViewBox;
         var token = tokens.split(" ");
@@ -388,18 +397,19 @@ function panMove(evt) {
         panViewBoxWidth = parseFloat(token[2]);
         panViewBoxHeight = parseFloat(token[3]);
         
-        newViewBoxX = parseFloat(panViewBoxX - (panNewX - panOldX));
-        newViewBoxY = parseFloat(panViewBoxY - (panNewY - panOldY));
+        var newViewBoxX = parseFloat(panViewBoxX - (panNewX - panOldX));
+        var newViewBoxY = parseFloat(panViewBoxY - (panNewY - panOldY));
         
         
         
         var format = formatViewBox(newViewBoxX, newViewBoxY, panViewBoxWidth, panViewBoxHeight);
-//        parseFloat(newViewBoxX) + ' ' +
-//        parseFloat(newViewBoxY) + ' ' +
-//        parseFloat(panViewBoxWidth) + ' ' +
-//        parseFloat(panViewBoxHeight);
+        //        parseFloat(newViewBoxX) + ' ' +
+        //        parseFloat(newViewBoxY) + ' ' +
+        //        parseFloat(panViewBoxWidth) + ' ' +
+        //        parseFloat(panViewBoxHeight);
         
-        svgDocument.setAttribute('viewBox', format);
+        svgDocument.setAttribute("viewBox", format);
+        printDebugInfo();
     }
 }
 
@@ -453,7 +463,7 @@ function doScroll(evt){
         var m = svgDocument.getScreenCTM();
         p = p.matrixTransform(m.inverse());
         
-        newViewBox = svgDocument.getAttribute("viewBox");
+        var newViewBox = svgDocument.getAttribute("viewBox");
         var tokens = newViewBox;
         var token = tokens.split(" ");
         var viewBoxX = parseFloat(token[0]);
@@ -486,6 +496,7 @@ function doScroll(evt){
         //        newViewBoxWidth + ' ' +
         //        newViewBoxHeight;
         svgDocument.setAttribute("viewBox", format);
+        printDebugInfo();
     }
 }
 
@@ -532,8 +543,96 @@ function disableSelection(){
     }
 }
 
-function showDebugInfo(){
+// make aspect ratio of new viewbox match the screen aspect ratio; useful later, when adding debug info to corner of screen
+function fillViewBoxToScreen(){
+    var newViewBox = svgDocument.getAttribute("viewBox");
+    var tokens = newViewBox;
+    var token = tokens.split(" ");
+    var viewBoxX = parseFloat(token[0]);
+    var viewBoxY = parseFloat(token[1]);
+    var viewBoxWidth = parseFloat(token[2]);
+    var viewBoxHeight = parseFloat(token[3]);
     
+    var newViewBoxX = viewBoxX;
+    var newViewBoxY = viewBoxY;
+    var newViewBoxWidth = viewBoxWidth;
+    var newViewBoxHeight = viewBoxHeight;
+    
+    //    var zoomRectX = zoomRectangle.getAttribute("x");
+    //    var zoomRectY = zoomRectangle.getAttribute("y");
+    
+    var viewBoxAspectRatio = viewBoxWidth/viewBoxHeight;
+    
+    var clientWidth = getWidth();
+    var clientHeight = getHeight();
+    var clientAspectRatio = clientWidth/clientHeight;
+    
+    if(viewBoxAspectRatio < clientAspectRatio){
+        newViewBoxWidth = viewBoxHeight*clientAspectRatio;
+        newViewBoxX = viewBoxX - (newViewBoxWidth - viewBoxWidth)/2;
+    } else {
+        newViewBoxHeight = viewBoxWidth/clientAspectRatio;
+        newViewBoxY = viewBoxY - (newViewBoxHeight - viewBoxHeight)/2;
+    }
+    var format = formatViewBox(newViewBoxX, newViewBoxY, newViewBoxWidth, newViewBoxHeight);
+    
+    svgDocument.setAttribute("viewBox", format);
+}
+
+function mouseMoveEvent(evt){
+    mouseEvent = evt;
+    printDebugInfo();
+}
+
+function printDebugInfo(){
+    if(debugMode){
+        var viewBox = svgDocument.getAttribute("viewBox");
+        var tokens = viewBox;
+        var token = tokens.split(" ");
+        var viewBoxX = parseFloat(token[0]);
+        var viewBoxY = parseFloat(token[1]);
+        var viewBoxWidth = parseFloat(token[2]);
+        var viewBoxHeight = parseFloat(token[3]);
+        
+        if(!debugTextElement){
+            debugTextElement = document.createElementNS(svgNS, "text");
+            debugTextElement.setAttribute("font-family", "monospace");
+            debugTextElement.setAttribute("dy", "1em");
+            debugTextElement.appendChild(document.createElementNS(svgNS, "tspan")); // to bump down next text
+            
+            var textLines = 7; // number of lines to display in debug info
+            for(var count = 0; count < textLines; count++){
+                debugChildren[count] = document.createElementNS(svgNS, "tspan");
+                debugChildren[count].setAttribute("dy", "1em");
+                debugTextElement.appendChild(debugChildren[count]);
+            }
+            
+            debugBoundingBox = document.createElementNS(svgNS, "rect");
+            svgDocument.appendChild(debugTextElement);
+        }
+        debugTextElement.setAttribute("id", "debugText");
+        debugTextElement.setAttribute("x", viewBoxX);
+        debugTextElement.setAttribute("y", viewBoxY);
+        debugTextElement.setAttribute("transform",
+                                      "translate(" + (viewBoxX) + " " + (viewBoxY) + ") " +
+                                      "scale(" + viewBoxWidth/getWidth() + " " + viewBoxHeight/getHeight() + ") " +
+                                      "translate(" + (-viewBoxX) + " " + (-viewBoxY) + ")");
+        debugTextElement.setAttribute("font-size", 12);
+        
+        for(var count = 0; count < debugChildren.length; count++){
+            debugChildren[count].setAttribute("x", viewBoxX);
+        }
+        
+        debugChildren[0].textContent = "Debug Info:";
+        debugChildren[1].textContent = "ViewBox X: " + viewBoxX;
+        debugChildren[2].textContent = "ViewBox Y: " + viewBoxY;
+        debugChildren[3].textContent = "ViewBox Width: " + viewBoxWidth;
+        debugChildren[4].textContent = "ViewBox Height: " + viewBoxHeight;
+        
+        debugChildren[5].textContent = "Client X: " + mouseEvent.clientX;
+        debugChildren[6].textContent = "Client Y: " + mouseEvent.clientY;
+        
+    }
 }
 
 // helper function to make the viewbox attribute
