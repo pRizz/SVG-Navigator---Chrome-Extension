@@ -92,17 +92,18 @@ if(svgElements[0] != null){
     //    var newViewBoxX = 0;
     //    var newViewBoxY = 0;
     
-    var mouseEvent = {clientX:0, clientY:0};
-    addEventListeners();
-    
-    disableSelection();
     
     // for debugging
     var debugTextElement;
     var debugBoundingBox;
     var debugChildren = new Array();
-    var debugMode = false;
+    var debugMode = true;
+    var mouseEvent = {clientX:0, clientY:0};
     printDebugInfo();
+    
+    addEventListeners();
+    
+    disableSelection();
 }
 
 // insert a rectangle object into the svg, acting as the zoom rectangle
@@ -617,7 +618,7 @@ function printDebugInfo(){
                                       "translate(" + (viewBoxX) + " " + (viewBoxY) + ") " +
                                       "scale(" + viewBoxWidth/getWidth() + " " + viewBoxHeight/getHeight() + ") " +
                                       "translate(" + (-viewBoxX) + " " + (-viewBoxY) + ")");
-        debugTextElement.setAttribute("font-size", 12);
+        debugTextElement.setAttribute("font-size", "12pt");
         
         for(var count = 0; count < debugChildren.length; count++){
             debugChildren[count].setAttribute("x", viewBoxX);
