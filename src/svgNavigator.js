@@ -97,7 +97,7 @@ if(svgElements[0] != null){
     var debugTextElement;
     var debugBoundingBox;
     var debugChildren = new Array();
-    var debugMode = true;
+    var debugMode = false;
     var mouseEvent = {clientX:0, clientY:0};
     printDebugInfo();
     
