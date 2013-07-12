@@ -150,7 +150,7 @@ function addEventListeners(){
                                     svgDocument.addEventListener("mousedown", zoomMouseDown, false); // zoom box
                                     svgDocument.addEventListener("mousemove", zoomMouseMove, false); // zoom box
                                     svgDocument.addEventListener("mouseup", zoomMouseUp, false); // zoom box
-                                } else {
+                                } else { // default to mouse panning
                                     svgDocument.addEventListener("mousedown", panBegin2, false); // mouse panning
                                     svgDocument.addEventListener("mousemove", panMove2, false); // mouse panning
                                     svgDocument.addEventListener("mouseup", panEnd2, false); // mouse panning
