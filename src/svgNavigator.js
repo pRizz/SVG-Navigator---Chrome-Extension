@@ -36,7 +36,7 @@ var svgElements = document.getElementsByTagName("svg");
 // check if first svg element exists, and use it
 if(svgElements[0] != null){
     // send request to apply svg nav icon to tab, as page action
-    chrome.extension.sendRequest({}, function(response){});
+    chrome.extension.sendRequest("showIcon", function(response){});
     
     var svgDocument = svgElements[0];
     
@@ -79,8 +79,10 @@ if(svgElements[0] != null){
     var zoomRectangle = insertZoomRect();
     
     // global variables for panning
-    var panStart = true;
-    var panAction = false;
+    var panStart_Spacebar = true; // TODO try to not need these separate variables
+    var panAction_Spacebar = false; // TODO try to not need these separate variables
+    var panStart_Mouse = true; // TODO try to not need these separate variables
+    var panAction_Mouse = false; // TODO try to not need these separate variables
     var panViewBoxX = 0;
     var panViewBoxY = 0;
     var panViewBoxWidth = 0;
@@ -126,18 +128,34 @@ function insertZoomRect(){
 
 function addEventListeners(){
     // event listeners
-    svgDocument.addEventListener("mousedown", zoomMouseDown, false);
-    svgDocument.addEventListener("mousemove", zoomMouseMove, false);
-    svgDocument.addEventListener("mouseup", zoomMouseUp, false);
-    svgDocument.addEventListener("keydown",panBegin, false);
-    svgDocument.addEventListener("mousemove", panMove, false);
-    svgDocument.addEventListener("keyup",panEnd, false);
-    svgDocument.addEventListener("keyup",zoomOut, false);
-    svgDocument.addEventListener("keyup",zoomOriginal, false);
-    svgDocument.addEventListener("mousewheel",doScroll, false);
+
+    svgDocument.addEventListener("keydown", panBegin, false); // spacebar panning
+    svgDocument.addEventListener("mousemove", panMove, false); // spacebar panning
+    svgDocument.addEventListener("keyup",panEnd, false); // spacebar panning
+    svgDocument.addEventListener("keyup",zoomOut, false); // escape key zoom out
+    svgDocument.addEventListener("keyup",zoomOriginal, false); // escape key zoom out
+    svgDocument.addEventListener("mousewheel",doScroll, false); // scroll zooming
     if(debugMode){
         svgDocument.addEventListener("mousemove",mouseMoveEvent, false);
     }
+//    console.log("in svgNav.js, requesting the localStorage of clickAndDragBehavior");
+    chrome.extension.sendRequest({"storage": "clickAndDragBehavior"},
+                                function(response){
+                                //console.log("in svgNav.js, response.storage: " + response.storage);
+                                if(response.storage == "pan"){
+                                    svgDocument.addEventListener("mousedown", panBegin2, false); // mouse panning
+                                    svgDocument.addEventListener("mousemove", panMove2, false); // mouse panning
+                                    svgDocument.addEventListener("mouseup", panEnd2, false); // mouse panning
+                                } else if(response.storage == "zoomBox"){
+                                    svgDocument.addEventListener("mousedown", zoomMouseDown, false); // zoom box
+                                    svgDocument.addEventListener("mousemove", zoomMouseMove, false); // zoom box
+                                    svgDocument.addEventListener("mouseup", zoomMouseUp, false); // zoom box
+                                } else {
+                                    svgDocument.addEventListener("mousedown", panBegin2, false); // mouse panning
+                                    svgDocument.addEventListener("mousemove", panMove2, false); // mouse panning
+                                    svgDocument.addEventListener("mouseup", panEnd2, false); // mouse panning
+                                };
+                            });
 }
 
 /* Zoom Functions */
@@ -145,7 +163,7 @@ function addEventListeners(){
 // press escape to zoom out
 function zoomMouseDown(evt) {
 	//if the left click is down and the control and shift keys are NOT depressed, sets top left of zoombox and flag
-    if(!panAction && zoomRectangle && !evt.ctrlKey && !evt.shiftKey) { // zoom
+    if(!(panAction_Spacebar || panAction_Mouse) && zoomRectangle && !evt.ctrlKey && !evt.shiftKey) { // zoom
         zoomAction = true;
         var p = document.documentElement.createSVGPoint();
         p.x = evt.clientX;
@@ -269,7 +287,7 @@ function zoomMouseUp(evt) {
 // zoom out when user presses alt key
 function zoomOut(evt){
     //    console.log("evt.clientX: " + evt.clientX);
-    if(!zoomAction && !panAction && evt.type == "keyup"){
+    if(!zoomAction && !(panAction_Spacebar || panAction_Mouse) && evt.type == "keyup"){
         if (evt.charCode) {
             var charCode = evt.charCode;
         } else {
@@ -319,9 +337,9 @@ function zoomOut(evt){
     }
 }
 
-
+// zoom back to original view when escape button is clicked
 function zoomOriginal(evt){
-    if(!zoomAction && !panAction && evt.type == "keyup"){
+    if(!zoomAction && !(panAction_Spacebar || panAction_Mouse) && evt.type == "keyup"){
         if (evt.charCode) {
             var charCode = evt.charCode;
         } else {
@@ -338,7 +356,7 @@ function zoomOriginal(evt){
 }
 
 function panBegin(evt){
-    if(!zoomAction && evt.type == "keydown"){
+    if(!panAction_Mouse && !zoomAction && evt.type == "keydown"){
         if (evt.charCode) {
             var charCode = evt.charCode;
         } else {
@@ -346,20 +364,29 @@ function panBegin(evt){
         }
         
         // spacebar
-        if (charCode == 32 && panStart == true) {
+        if (charCode == 32 && panStart_Spacebar == true) {
             //alert("start");
-            panStart = true;
-            panAction = true;
+            panStart_Spacebar = true;
+            panAction_Spacebar = true;
             svgDocument.style.cursor='move';
         }
     }
 }
 
+// pan with mouse down
+function panBegin2(evt){
+    if(!panAction_Spacebar && !zoomAction){
+        panStart_Mouse = true;
+        panAction_Mouse = true;
+        svgDocument.style.cursor='move';
+    }
+}
+
 
 function panMove(evt) {
-    if(panStart && panAction){
-        panAction = true;
-        panStart = false;
+    if(panStart_Spacebar && panAction_Spacebar){
+        panAction_Spacebar = true;
+        panStart_Spacebar = false;
         var p = document.documentElement.createSVGPoint();
         p.x = evt.clientX;
         p.y = evt.clientY;
@@ -378,7 +405,66 @@ function panMove(evt) {
         panViewBoxWidth = parseFloat(token[2]);
         panViewBoxHeight = parseFloat(token[3]);
     }
-    if(panAction && !panStart) {
+    if(panAction_Spacebar && !panStart_Spacebar) {
+        var p = document.documentElement.createSVGPoint();
+        p.x = evt.clientX;
+        p.y = evt.clientY;
+        var m = svgDocument.getScreenCTM();
+        //        console.log(m);
+        p = p.matrixTransform(m.inverse());
+        
+        panNewX = p.x;
+        panNewY = p.y;
+        
+        var newViewBox = svgDocument.getAttribute("viewBox");
+        
+        var tokens = newViewBox;
+        var token = tokens.split(" ");
+        panViewBoxX = parseFloat(token[0]);
+        panViewBoxY = parseFloat(token[1]);
+        panViewBoxWidth = parseFloat(token[2]);
+        panViewBoxHeight = parseFloat(token[3]);
+        
+        var newViewBoxX = parseFloat(panViewBoxX - (panNewX - panOldX));
+        var newViewBoxY = parseFloat(panViewBoxY - (panNewY - panOldY));
+        
+        
+        
+        var format = formatViewBox(newViewBoxX, newViewBoxY, panViewBoxWidth, panViewBoxHeight);
+        //        parseFloat(newViewBoxX) + ' ' +
+        //        parseFloat(newViewBoxY) + ' ' +
+        //        parseFloat(panViewBoxWidth) + ' ' +
+        //        parseFloat(panViewBoxHeight);
+        
+        svgDocument.setAttribute("viewBox", format);
+        printDebugInfo();
+    }
+}
+
+// pan with mouse down
+function panMove2(evt) {
+    if(panStart_Mouse && panAction_Mouse){
+        panAction_Mouse = true;
+        panStart_Mouse = false;
+        var p = document.documentElement.createSVGPoint();
+        p.x = evt.clientX;
+        p.y = evt.clientY;
+        var m = svgDocument.getScreenCTM();
+        p = p.matrixTransform(m.inverse());
+        
+        panOldX = p.x;
+        panOldY = p.y;
+        
+        var newViewBox = svgDocument.getAttribute("viewBox");
+        
+        var tokens = newViewBox;
+        var token = tokens.split(" ");
+        panViewBoxX = parseFloat(token[0]);
+        panViewBoxY = parseFloat(token[1]);
+        panViewBoxWidth = parseFloat(token[2]);
+        panViewBoxHeight = parseFloat(token[3]);
+    }
+    if(panAction_Mouse && !panStart_Mouse) {
         var p = document.documentElement.createSVGPoint();
         p.x = evt.clientX;
         p.y = evt.clientY;
@@ -416,7 +502,7 @@ function panMove(evt) {
 
 
 function panEnd(evt){
-    if(evt.type == "keyup"){
+    if(panAction_Spacebar && !panStart_Spacebar && evt.type == "keyup"){
         if (evt.charCode) {
             var charCode = evt.charCode;
         } else {
@@ -437,17 +523,39 @@ function panEnd(evt){
             var newViewBoxY = 0;
             
             svgDocument.style.cursor = 'default';
-            panStart = true;
-            panAction = false;
+            panStart_Spacebar = true;
+            panAction_Spacebar = false;
         }
     }
+}
+
+// pan with mouse down
+function panEnd2(evt){
+    if(panAction_Mouse && !panStart_Mouse) {
+            var panViewBoxX = 0;
+            var panViewBoxY = 0;
+            var panViewBoxWidth = 0;
+            var panViewBoxHeight = 0;
+            var panOldX = 0;
+            var panOldY = 0;
+            var panNewX = 0;
+            var panNewY = 0;
+            var newViewBoxX = 0;
+            var newViewBoxY = 0;
+            
+            svgDocument.style.cursor = 'default';
+            panStart_Mouse = true;
+            panAction_Mouse = false;
+    }
+//        }
+//    }
 }
 
 // implementation for scroll zooming
 // the area pointed to by the cursor will always stay under the cursor while scrolling/zooming in or out, just like google maps does
 // might be different scroll direction on macs with "natural scroll" vs windows
 function doScroll(evt){
-    if(!zoomAction && !panAction){
+    if(!zoomAction && !(panAction_Spacebar || panAction_Mouse)){
         evt.preventDefault(); // prevent default scroll action in chrome
         //    console.log("client X: " + evt.clientX);
         //    console.log("client Y: " + evt.clientY);
