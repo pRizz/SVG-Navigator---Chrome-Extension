@@ -2,17 +2,38 @@
 <html lang="en">
     <head>
         <meta http-equiv="content-type" content="text/html; charset=utf-8">
-            <title>SVG Navigator Settings</title>
+        <title>SVG Navigator Options</title>
+        <link rel="stylesheet" type="text/css" href="options.css">
     </head>
     <body>
-        <p>Click and drag behavior:</p>
-        <form id="clickAndDragBehavior">
-            <input type="radio" name="cADB" value="pan"> pan image<br>
-            <input type="radio" name="cADB" value="zoomBox"> zoom box
-        </form>
-        <br>
-        <button id="save">Save</button><br><br>
-        <div id="status"></div>
+        <h1>SVG Navigator Options</h1>
+        <div style="height:10px" ></div>
+        <div class="boxedDiv">
+            <div class="boxedDivInner">
+                <p>Click and drag behavior:</p>
+                <form id="clickAndDragBehavior">
+                    <input type="radio" name="cADB" value="pan"> pan image<br>
+                    <input type="radio" name="cADB" value="zoomBox"> zoom box
+                </form>
+                <br>
+            </div>
+            <div style="height:5px" ></div>
+            <div class="boxedDivInner">
+                Enabled controls:
+                <form>
+                    <input type="checkbox" name="controls" value="doScroll" id="doScrollControl"> scroll zooming (Mouse scroll)<br>
+                    <input type="checkbox" name="controls" value="zoomOut" id="zoomOutControl"> panning (Spacebar and mouse panning)<br>
+                    <input type="checkbox" name="controls" value="zoomOriginal" id="zoomOriginalControl"> reset zoom to original (Escape key)<br>
+                    <input type="checkbox" name="controls" value="zoomOut" id="zoomOutControl"> zoom out (Alt key)<br>
+                </form>
+            </div>
+            <div style="height:5px" ></div>
+            <div class="boxedDivInner" style="text-align:center">
+                <button id="save" style="width:300px;height:30px;font-size:20px;">Save</button>
+                <button id="save" style="width:300px;height:30px;font-size:20px;">Save</button>
+                <div id="status"></div>
+            </div>
+        </div>
     </body>
     <script src="options.js"></script>
 </html>

@@ -1,0 +1,33 @@
+/*
+ SVG Navigator
+ options.css
+ created 2013-7-13 by Peter Ryszkiewicz
+*/
+
+body{
+    font-family: 'Lucida Sans Unicode', 'Verdana', 'Lucida Grande', sans-serif;
+}
+
+h1 {
+    margin:auto;
+    text-align:center;
+    padding:10px 0px 10px 0px;
+    background:#F4F4F4;
+    width:800px;
+    border: 5px solid #CCCCCC;
+}
+
+.boxedDiv {
+    width:790px;
+    margin:auto;
+    padding:5px 5px 5px 5px;
+    background:#E0E0E0;
+    border: 5px solid #CCCCCC;
+}
+
+.boxedDivInner {
+    width:780px;
+    margin:auto;
+    padding:5px 5px 5px 5px;
+    background:#F4F4F4;
+}

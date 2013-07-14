@@ -132,7 +132,7 @@ function addEventListeners(){
     svgDocument.addEventListener("keydown", panBegin, false); // spacebar panning
     svgDocument.addEventListener("mousemove", panMove, false); // spacebar panning
     svgDocument.addEventListener("keyup",panEnd, false); // spacebar panning
-    svgDocument.addEventListener("keyup",zoomOut, false); // escape key zoom out
+    svgDocument.addEventListener("keyup",zoomOut, false); // alt key zoom out
     svgDocument.addEventListener("keyup",zoomOriginal, false); // escape key zoom out
     svgDocument.addEventListener("mousewheel",doScroll, false); // scroll zooming
     if(debugMode){
