@@ -13,6 +13,7 @@ The extension begins working on the SVG graphic, and the user may:
 * Zoom in or out: use mouse scroll wheel
 * Reset zoom: press escape  
 Trying to pan on an SVG by shift click and dragging currently causes undesirable panning; possibly a Google Chrome bug/feature.
+If you want to view local files with this extension, you must enable "Allow access to file URLs" in Chrome's Extensions view.
 
 Try Testing out these SVGs
 ---------------------------------
