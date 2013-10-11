@@ -14,7 +14,8 @@ h1 {
     padding:10px 0px 10px 0px;
     background:#F4F4F4;
     width:800px;
-    border: 1px solid #BBBBBB;
+    border: 1px solid #BBB;
+    box-shadow: 2px 2px 2px 0px #AAA;
 }
 
 .boxedDiv {
@@ -22,7 +23,8 @@ h1 {
     margin:auto;
     padding:5px 5px 5px 5px;
     background:#E0E0E0;
-    border: 1px solid #BBBBBB;
+    border: 1px solid #BBB;
+    box-shadow: 2px 2px 2px 0px #AAA;
 }
 
 .boxedDivInner {
@@ -30,5 +32,5 @@ h1 {
     margin:auto;
     padding:5px 5px 5px 5px;
     background:#F4F4F4;
-    border: 1px solid #BBBBBB;
+    border: 1px solid #BBB;
 }
