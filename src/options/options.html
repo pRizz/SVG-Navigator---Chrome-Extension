@@ -3,7 +3,11 @@
     <head>
         <meta http-equiv="content-type" content="text/html; charset=utf-8">
         <title>SVG Navigator Options</title>
-        <link rel="stylesheet" type="text/css" href="options.css">
+        <link rel="stylesheet" type="text/css" href="css/jquery-ui.min.css">
+        <link rel="stylesheet" type="text/css" href="css/options.css">
+        <script src="js/jquery-1.9.1.js"></script>
+        <script src="js/jquery-ui.min.js"></script>
+        <script src="js/options.js"></script>
     </head>
     <body>
         <h1>SVG Navigator Options</h1>
@@ -29,9 +33,7 @@
             </div>
             <div style="height:5px" ></div>-->
             <div class="boxedDivInner" style="text-align:center">
-                <button id="save" style="width:300px;height:30px;font-size:20px;">Save</button>
-                
-                <button id="reset" style="float:right">Reset</button>
+                <button id="save">Save</button>                
             </div>
             <div style="height:5px" ></div>
             <div class="boxedDivInner" style="text-align:center">
@@ -39,8 +41,11 @@
                 Asad Akram, Ryan Oblenida, Peter Ryszkiewicz
             </div>
         </div>
+        <div id="dialog">
+        </div>
+        
+        
     </body>
-    <script src="options.js"></script>
 </html>
 
 
