@@ -1,21 +1,22 @@
 SVG Navigator - Chrome Extension
 ====================
 
+Description
+--------------------------------
 SVG Navigator is an extension for Google Chrome that adds pan and zoom features to existing SVG files on the web.
 
 Usage
 --------------------------------
-Go to a website with an SVG file.
-The extension begins working on the SVG graphic, and the user may:
-* Pan: hold the space bar and drag the cursor to pan around the image
-* Zoom: click and drag a zoom box of the desired area
-* Zoom out: tap alt key
+Go to a website with an SVG file. The extension begins working on the SVG graphic and you may:
+* Pan: click and drag or hold the space bar and drag the cursor to pan around the image
 * Zoom in or out: use mouse scroll wheel
-* Reset zoom: press escape  
+* Zoom: click and drag a zoom box of the desired area if enabled
+* Zoom out: tap alt key
+* Reset zoom: press escape
 Trying to pan on an SVG by shift click and dragging currently causes undesirable panning; possibly a Google Chrome bug/feature.
 If you want to view local files with this extension, you must enable "Allow access to file URLs" in Chrome's Extensions view.
 
-Try Testing out these SVGs
+Try Testing Out These SVGs
 ---------------------------------
 * Vector vs Raster: http://upload.wikimedia.org/wikipedia/commons/6/6b/Bitmap_VS_SVG.svg
 * World Map: http://upload.wikimedia.org/wikipedia/commons/1/17/World.svg

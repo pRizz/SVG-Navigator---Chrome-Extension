@@ -54,7 +54,7 @@ if(svgElements[0] != null){
     var origViewBox = svgDocument.getAttribute("viewBox");
     // check if the svg document had a viewbox
     if(origViewBox == null){
-        console.log("SVG Navigator: warning: SVG had no viewbox attribute. Making new viewbox attribute.");
+        console.warn("SVG Navigator: warning: SVG had no viewbox attribute. Making new viewbox attribute.");
         // preferably, we want to set the viewbox as the bounding box values of the SVG from getBBox();
         // unfortunatley, chrome's getBBox() is bugged for some SVG documents, ex: http://upload.wikimedia.org/wikipedia/commons/d/dc/USA_orthographic.svg
         // so we make the viewbox at 0,0 with width and height of client browser
@@ -138,24 +138,24 @@ function addEventListeners(){
     if(debugMode){
         svgDocument.addEventListener("mousemove",mouseMoveEvent, false);
     }
-//    console.log("in svgNav.js, requesting the localStorage of clickAndDragBehavior");
-    chrome.extension.sendRequest({"storage": "clickAndDragBehavior"},
-                                function(response){
-                                //console.log("in svgNav.js, response.storage: " + response.storage);
-                                if(response.storage == "pan"){
-                                    svgDocument.addEventListener("mousedown", panBegin2, false); // mouse panning
-                                    svgDocument.addEventListener("mousemove", panMove2, false); // mouse panning
-                                    svgDocument.addEventListener("mouseup", panEnd2, false); // mouse panning
-                                } else if(response.storage == "zoomBox"){
-                                    svgDocument.addEventListener("mousedown", zoomMouseDown, false); // zoom box
-                                    svgDocument.addEventListener("mousemove", zoomMouseMove, false); // zoom box
-                                    svgDocument.addEventListener("mouseup", zoomMouseUp, false); // zoom box
-                                } else { // default to mouse panning
-                                    svgDocument.addEventListener("mousedown", panBegin2, false); // mouse panning
-                                    svgDocument.addEventListener("mousemove", panMove2, false); // mouse panning
-                                    svgDocument.addEventListener("mouseup", panEnd2, false); // mouse panning
-                                };
-                            });
+	chrome.extension.sendRequest("localStorage",
+	                            function(response){
+								// settings were stored as JSON in store.js
+								var clickAndDragBehavior = JSON.parse(response["store.settings.clickAndDragBehavior"]);
+	                            if(clickAndDragBehavior == "pan"){
+	                                svgDocument.addEventListener("mousedown", panBegin2, false); // mouse panning
+	                                svgDocument.addEventListener("mousemove", panMove2, false); // mouse panning
+	                                svgDocument.addEventListener("mouseup", panEnd2, false); // mouse panning
+	                            } else if(clickAndDragBehavior == "zoomBox"){
+	                                svgDocument.addEventListener("mousedown", zoomMouseDown, false); // zoom box
+	                                svgDocument.addEventListener("mousemove", zoomMouseMove, false); // zoom box
+	                                svgDocument.addEventListener("mouseup", zoomMouseUp, false); // zoom box
+	                            } else { // default to mouse panning									
+	                                svgDocument.addEventListener("mousedown", panBegin2, false); // mouse panning
+	                                svgDocument.addEventListener("mousemove", panMove2, false); // mouse panning
+	                                svgDocument.addEventListener("mouseup", panEnd2, false); // mouse panning
+	                            }
+	                        });
 }
 
 /* Zoom Functions */

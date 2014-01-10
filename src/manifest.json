@@ -22,12 +22,12 @@
     "content_scripts": [
     {
         "matches": ["http://*/*.svg", "https://*/*.svg", "ftp://*/*.svg", "file://*/*.svg"],
-        "js": ["svgNavigator.js"],
+        "js": ["options_custom/js/defaultSettings.js","svgNavigator.js"],
         "run_at": "document_end"
     }
     ],
     
     "manifest_version": 2,
-    "options_page": "options/options.html",
+    "options_page": "options_custom/index.html",
     "permissions": ["storage"]
 }

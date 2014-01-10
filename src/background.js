@@ -9,10 +9,10 @@ function onRequest(request, sender, sendResponse) {
     if(request == "showIcon"){
         chrome.pageAction.show(sender.tab.id);
     }
-    // return the saved element from options, if it exists
-    if(request.storage){
-        sendResponse({"storage": localStorage[request.storage]});
-    }
+    // return the localStorage when requested
+	if(request == "localStorage"){
+        sendResponse(localStorage);
+	}
 };
 
 // Listen for the content script to send a message to the background page.
