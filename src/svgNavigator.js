@@ -145,26 +145,44 @@ function addEventListeners(){
 	chrome.extension.sendRequest("localStorage",
 	function(response){
 		// settings were stored as JSON in store.js
-		var clickAndDragBehavior = JSON.parse(response["store.settings.clickAndDragBehavior"]);
-		if(clickAndDragBehavior == "pan"){
-			svgDocument.addEventListener("mousedown", panBegin2, false); // mouse panning
-			svgDocument.addEventListener("mousemove", panMove2, false); // mouse panning
-			svgDocument.addEventListener("mouseup", panEnd2, false); // mouse panning
-		} else if(clickAndDragBehavior == "zoomBox"){
-			svgDocument.addEventListener("mousedown", zoomMouseDown, false); // zoom box
-			svgDocument.addEventListener("mousemove", zoomMouseMove, false); // zoom box
-			svgDocument.addEventListener("mouseup", zoomMouseUp, false); // zoom box
-		} else { // default to mouse panning									
+		try{
+			var clickAndDragBehavior = JSON.parse(response["store.settings.clickAndDragBehavior"]);
+			if(clickAndDragBehavior == "pan"){
+				svgDocument.addEventListener("mousedown", panBegin2, false); // mouse panning
+				svgDocument.addEventListener("mousemove", panMove2, false); // mouse panning
+				svgDocument.addEventListener("mouseup", panEnd2, false); // mouse panning
+			} else if(clickAndDragBehavior == "zoomBox"){
+				svgDocument.addEventListener("mousedown", zoomMouseDown, false); // zoom box
+				svgDocument.addEventListener("mousemove", zoomMouseMove, false); // zoom box
+				svgDocument.addEventListener("mouseup", zoomMouseUp, false); // zoom box
+			} else { // default to mouse panning									
+				svgDocument.addEventListener("mousedown", panBegin2, false); // mouse panning
+				svgDocument.addEventListener("mousemove", panMove2, false); // mouse panning
+				svgDocument.addEventListener("mouseup", panEnd2, false); // mouse panning
+			}
+		} catch(e){
+			// default to mouse panning
 			svgDocument.addEventListener("mousedown", panBegin2, false); // mouse panning
 			svgDocument.addEventListener("mousemove", panMove2, false); // mouse panning
 			svgDocument.addEventListener("mouseup", panEnd2, false); // mouse panning
 		}
-		scrollSensitivity = JSON.parse(response["store.settings.scrollSensitivity"]);
-		invertScroll = JSON.parse(response["store.settings.invertScroll"]);
-	    svgDocument.addEventListener("mousewheel", doScroll, false); // scroll zooming
 		
-		debugMode = JSON.parse(response["store.settings.showDebugInfo"]);
-	    printDebugInfo();
+		try{
+			scrollSensitivity = JSON.parse(response["store.settings.scrollSensitivity"]);
+			invertScroll = JSON.parse(response["store.settings.invertScroll"]);
+		    svgDocument.addEventListener("mousewheel", doScroll, false); // scroll zooming
+		} catch(e){
+			// with defaults
+		    svgDocument.addEventListener("mousewheel", doScroll, false); // scroll zooming
+		}
+
+		try{
+			debugMode = JSON.parse(response["store.settings.showDebugInfo"]);
+		    printDebugInfo();
+		} catch(e){
+			// with defaults
+		    printDebugInfo();
+		}
 	});
 }
 
