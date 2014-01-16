@@ -29,8 +29,8 @@ this.manifest = {
 			"name": "scrollSensitivity",
             "type": "slider",
             "label": "Scroll sensitivity:",
-            "max": 1,
-            "min": 0,
+            "max": 10,
+            "min": 0.01,
             "step": 0.01,
             "display": true,
             "displayModifier": function (value) {

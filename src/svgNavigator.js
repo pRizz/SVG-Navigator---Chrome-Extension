@@ -93,7 +93,12 @@ if(svgElements[0] != null){
     var panNewY = 0;
     //    var newViewBoxX = 0;
     //    var newViewBoxY = 0;
-    
+	
+	// global settings, defaults
+	var clickAndDragBehavior = SVGNavigatorDefaultSettings.clickAndDragBehavior;
+	var scrollSensitivity = SVGNavigatorDefaultSettings.scrollSensitivity;
+	var invertScroll = SVGNavigatorDefaultSettings.invertScroll;
+	var showDebugInfo = SVGNavigatorDefaultSettings.showDebugInfo;    
     
     // for debugging
     var debugTextElement;
@@ -101,7 +106,6 @@ if(svgElements[0] != null){
     var debugChildren = new Array();
     var debugMode = false;
     var mouseEvent = {clientX:0, clientY:0};
-    printDebugInfo();
     
     addEventListeners();
     
@@ -131,31 +135,37 @@ function addEventListeners(){
 
     svgDocument.addEventListener("keydown", panBegin, false); // spacebar panning
     svgDocument.addEventListener("mousemove", panMove, false); // spacebar panning
-    svgDocument.addEventListener("keyup",panEnd, false); // spacebar panning
-    svgDocument.addEventListener("keyup",zoomOut, false); // alt key zoom out
-    svgDocument.addEventListener("keyup",zoomOriginal, false); // escape key zoom out
-    svgDocument.addEventListener("mousewheel",doScroll, false); // scroll zooming
+    svgDocument.addEventListener("keyup", panEnd, false); // spacebar panning
+    svgDocument.addEventListener("keyup", zoomOut, false); // alt key zoom out
+    svgDocument.addEventListener("keyup", zoomOriginal, false); // escape key zoom out
     if(debugMode){
-        svgDocument.addEventListener("mousemove",mouseMoveEvent, false);
+        svgDocument.addEventListener("mousemove", mouseMoveEvent, false);
     }
+	// retrieve options from stored settings
 	chrome.extension.sendRequest("localStorage",
-	                            function(response){
-								// settings were stored as JSON in store.js
-								var clickAndDragBehavior = JSON.parse(response["store.settings.clickAndDragBehavior"]);
-	                            if(clickAndDragBehavior == "pan"){
-	                                svgDocument.addEventListener("mousedown", panBegin2, false); // mouse panning
-	                                svgDocument.addEventListener("mousemove", panMove2, false); // mouse panning
-	                                svgDocument.addEventListener("mouseup", panEnd2, false); // mouse panning
-	                            } else if(clickAndDragBehavior == "zoomBox"){
-	                                svgDocument.addEventListener("mousedown", zoomMouseDown, false); // zoom box
-	                                svgDocument.addEventListener("mousemove", zoomMouseMove, false); // zoom box
-	                                svgDocument.addEventListener("mouseup", zoomMouseUp, false); // zoom box
-	                            } else { // default to mouse panning									
-	                                svgDocument.addEventListener("mousedown", panBegin2, false); // mouse panning
-	                                svgDocument.addEventListener("mousemove", panMove2, false); // mouse panning
-	                                svgDocument.addEventListener("mouseup", panEnd2, false); // mouse panning
-	                            }
-	                        });
+	function(response){
+		// settings were stored as JSON in store.js
+		var clickAndDragBehavior = JSON.parse(response["store.settings.clickAndDragBehavior"]);
+		if(clickAndDragBehavior == "pan"){
+			svgDocument.addEventListener("mousedown", panBegin2, false); // mouse panning
+			svgDocument.addEventListener("mousemove", panMove2, false); // mouse panning
+			svgDocument.addEventListener("mouseup", panEnd2, false); // mouse panning
+		} else if(clickAndDragBehavior == "zoomBox"){
+			svgDocument.addEventListener("mousedown", zoomMouseDown, false); // zoom box
+			svgDocument.addEventListener("mousemove", zoomMouseMove, false); // zoom box
+			svgDocument.addEventListener("mouseup", zoomMouseUp, false); // zoom box
+		} else { // default to mouse panning									
+			svgDocument.addEventListener("mousedown", panBegin2, false); // mouse panning
+			svgDocument.addEventListener("mousemove", panMove2, false); // mouse panning
+			svgDocument.addEventListener("mouseup", panEnd2, false); // mouse panning
+		}
+		scrollSensitivity = JSON.parse(response["store.settings.scrollSensitivity"]);
+		invertScroll = JSON.parse(response["store.settings.invertScroll"]);
+	    svgDocument.addEventListener("mousewheel", doScroll, false); // scroll zooming
+		
+		debugMode = JSON.parse(response["store.settings.showDebugInfo"]);
+	    printDebugInfo();
+	});
 }
 
 /* Zoom Functions */
@@ -557,13 +567,21 @@ function panEnd2(evt){
 function doScroll(evt){
     if(!zoomAction && !(panAction_Spacebar || panAction_Mouse)){
         evt.preventDefault(); // prevent default scroll action in chrome
-        //    console.log("client X: " + evt.clientX);
-        //    console.log("client Y: " + evt.clientY);
-        //    console.log("event wheel delta: " + evt.wheelDelta);
+
+		var maxWheelDelta = 2700; // ad hoc limit
+		var wheelDelta = evt.wheelDelta;
+		var wheelDeltaNormalized = wheelDelta/maxWheelDelta; // [-1, 1]
+		if(wheelDeltaNormalized > 1){
+			wheelDeltaNormalized = 1;			
+		} else if(wheelDeltaNormalized < -1){
+			wheelDeltaNormalized = -1;
+		}
         
-        var scrollAmount = evt.wheelDelta/120; // neg scroll in; pos scroll out; should be multiple of 1
+        var scrollAmount = wheelDeltaNormalized * scrollSensitivity * (invertScroll ? -1 : 1); // neg scroll in; pos scroll out; [-scrollSensitivity, scrollSensitivity]
+		var maxScrollSensitivity = 10; // check this matches the manifest.js max for scrollSensitivity
+		var scrollAmountNormalized = scrollAmount/maxScrollSensitivity; // [-1, 1]
         // scrolling in makes viewbox smaller, so zoomAmount is smaller
-        var zoomAmount = scrollAmount < 0 ? 1.1+(0.01*scrollAmount) : 0.9+(0.01*scrollAmount);
+        var zoomAmount = scrollAmountNormalized < 0 ? -1 * scrollAmountNormalized + 1.005 : -0.99 * scrollAmountNormalized + 0.995 ; // zoom out : zoom in; (1, 5) : (0, 1)
         
         var p = document.documentElement.createSVGPoint();
         p.x = evt.clientX;

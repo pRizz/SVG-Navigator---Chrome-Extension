@@ -2,7 +2,7 @@
     
 this.SVGNavigatorDefaultSettings = {
 	"clickAndDragBehavior": "pan",
-	"scrollSensitivity": 1,
+	"scrollSensitivity": 7,
 	"invertScroll": false,
 	"showDebugInfo": false,
 };
