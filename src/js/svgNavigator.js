@@ -30,11 +30,23 @@
 // define svg namespace
 var svgNS = "http://www.w3.org/2000/svg";
 
-// document variables
-var svgElements = document.getElementsByTagName("svg");
+var baseURI = document.rootElement ? document.rootElement.baseURI : undefined;
+if(baseURI && baseURI.indexOf(".svg", baseURI.length - 4) !== -1){
+	// wrap the svg document in an html document
+	var svgDoc = document;
+	var svgDocElement = svgDoc.documentElement;
+	var htmlDoc = document.implementation.createHTMLDocument();
 
-// check if first svg element exists, and use it
-if(svgElements[0] != null){
+	svgContext = svgDocElement;
+	document.replaceChild(htmlDoc.documentElement, svgDoc.documentElement);
+
+	// the htmlDoc is the new document object
+	document.body.appendChild(svgDocElement)
+	document.body.style.margin = 0;
+
+	// document variables
+	var svgElements = document.getElementsByTagName("svg");
+	
     // send request to apply svg nav icon to tab, as page action
     chrome.extension.sendRequest("showIcon", function(response){});
     
@@ -103,8 +115,8 @@ if(svgElements[0] != null){
     // for debugging
     var debugTextElement;
     var debugBoundingBox;
-    var debugChildren = new Array();
-    var debugMode = false;
+    var debugChildren = [];
+    var debugMode = showDebugInfo;
     var mouseEvent = {clientX:0, clientY:0};
     
     addEventListeners();
@@ -125,7 +137,6 @@ function insertZoomRect(){
     zoomRectangle.setAttributeNS(null, "stroke-width", 1.0);
     zoomRectangle.setAttributeNS(null, "fill", "blue");
     zoomRectangle.setAttributeNS(null, "fill-opacity", 0.1);
-    //    zoomRectangle.setAttributeNS(null, "shape-rendering", "crispEdges");
     svgDocument.appendChild(zoomRectangle);
     return zoomRectangle;
 }
@@ -133,14 +144,11 @@ function insertZoomRect(){
 function addEventListeners(){
     // event listeners
 
-    svgDocument.addEventListener("keydown", panBegin, false); // spacebar panning
-    svgDocument.addEventListener("mousemove", panMove, false); // spacebar panning
-    svgDocument.addEventListener("keyup", panEnd, false); // spacebar panning
-    svgDocument.addEventListener("keyup", zoomOut, false); // alt key zoom out
-    svgDocument.addEventListener("keyup", zoomOriginal, false); // escape key zoom out
-    if(debugMode){
-        svgDocument.addEventListener("mousemove", mouseMoveEvent, false);
-    }
+    document.addEventListener("keydown", panBegin, false); // spacebar panning
+    document.addEventListener("mousemove", panMove, false); // spacebar panning
+    document.addEventListener("keyup", panEnd, false); // spacebar panning
+    document.addEventListener("keyup", zoomOut, false); // alt key zoom out
+    document.addEventListener("keyup", zoomOriginal, false); // escape key zoom out
 	// retrieve options from stored settings
 	chrome.extension.sendRequest("localStorage",
 	function(response){
@@ -148,36 +156,39 @@ function addEventListeners(){
 		try{
 			var clickAndDragBehavior = JSON.parse(response["store.settings.clickAndDragBehavior"]);
 			if(clickAndDragBehavior == "pan"){
-				svgDocument.addEventListener("mousedown", panBegin2, false); // mouse panning
-				svgDocument.addEventListener("mousemove", panMove2, false); // mouse panning
-				svgDocument.addEventListener("mouseup", panEnd2, false); // mouse panning
+				document.addEventListener("mousedown", panBegin2, false); // mouse panning
+				document.addEventListener("mousemove", panMove2, false); // mouse panning
+				document.addEventListener("mouseup", panEnd2, false); // mouse panning
 			} else if(clickAndDragBehavior == "zoomBox"){
-				svgDocument.addEventListener("mousedown", zoomMouseDown, false); // zoom box
-				svgDocument.addEventListener("mousemove", zoomMouseMove, false); // zoom box
-				svgDocument.addEventListener("mouseup", zoomMouseUp, false); // zoom box
+				document.addEventListener("mousedown", zoomMouseDown, false); // zoom box
+				document.addEventListener("mousemove", zoomMouseMove, false); // zoom box
+				document.addEventListener("mouseup", zoomMouseUp, false); // zoom box
 			} else { // default to mouse panning									
-				svgDocument.addEventListener("mousedown", panBegin2, false); // mouse panning
-				svgDocument.addEventListener("mousemove", panMove2, false); // mouse panning
-				svgDocument.addEventListener("mouseup", panEnd2, false); // mouse panning
+				document.addEventListener("mousedown", panBegin2, false); // mouse panning
+				document.addEventListener("mousemove", panMove2, false); // mouse panning
+				document.addEventListener("mouseup", panEnd2, false); // mouse panning
 			}
 		} catch(e){
 			// default to mouse panning
-			svgDocument.addEventListener("mousedown", panBegin2, false); // mouse panning
-			svgDocument.addEventListener("mousemove", panMove2, false); // mouse panning
-			svgDocument.addEventListener("mouseup", panEnd2, false); // mouse panning
+			document.addEventListener("mousedown", panBegin2, false); // mouse panning
+			document.addEventListener("mousemove", panMove2, false); // mouse panning
+			document.addEventListener("mouseup", panEnd2, false); // mouse panning
 		}
 		
 		try{
 			scrollSensitivity = JSON.parse(response["store.settings.scrollSensitivity"]);
 			invertScroll = JSON.parse(response["store.settings.invertScroll"]);
-		    svgDocument.addEventListener("mousewheel", doScroll, false); // scroll zooming
+		    document.addEventListener("mousewheel", doScroll, false); // scroll zooming
 		} catch(e){
 			// with defaults
-		    svgDocument.addEventListener("mousewheel", doScroll, false); // scroll zooming
+		    document.addEventListener("mousewheel", doScroll, false); // scroll zooming
 		}
 
 		try{
 			debugMode = JSON.parse(response["store.settings.showDebugInfo"]);
+		    if(debugMode){
+		        document.addEventListener("mousemove", mouseMoveEvent, false);
+		    }
 		    printDebugInfo();
 		} catch(e){
 			// with defaults
@@ -193,7 +204,7 @@ function zoomMouseDown(evt) {
 	//if the left click is down and the control and shift keys are NOT depressed, sets top left of zoombox and flag
     if(!(panAction_Spacebar || panAction_Mouse) && zoomRectangle && !evt.ctrlKey && !evt.shiftKey) { // zoom
         zoomAction = true;
-        var p = document.documentElement.createSVGPoint();
+        var p = svgDocElement.createSVGPoint();
         p.x = evt.clientX;
         p.y = evt.clientY;
         
@@ -231,7 +242,7 @@ function zoomMouseDown(evt) {
 // blue zoombox drawn as mouse is moved across screen
 function zoomMouseMove(evt) {
     if(zoomAction) {
-        var p = document.documentElement.createSVGPoint();
+        var p = svgDocElement.createSVGPoint();
         p.x = evt.clientX;
         p.y = evt.clientY;
         
@@ -285,21 +296,6 @@ function zoomMouseUp(evt) {
             
             svgDocument.setAttribute("viewBox", format);
             printDebugInfo();
-            
-            //            // test to see new viewbox by drawing rectangle
-            //            var viewboxRect = document.createElementNS(svgNS, "rect");
-            //            viewboxRect.setAttributeNS(null, "x", viewBoxX);
-            //            viewboxRect.setAttributeNS(null, "y", viewBoxY);
-            //            viewboxRect.setAttributeNS(null, "rx", 0.01);
-            //            viewboxRect.setAttributeNS(null, "width", viewBoxWidth);
-            //            viewboxRect.setAttributeNS(null, "height", viewBoxHeight);
-            //            viewboxRect.setAttributeNS(null, "opacity", 1);
-            //            viewboxRect.setAttributeNS(null, "stroke", "green");
-            //            viewboxRect.setAttributeNS(null, "stroke-width", 1.0);
-            //            viewboxRect.setAttributeNS(null, "fill", "green");
-            //            viewboxRect.setAttributeNS(null, "fill-opacity", 0.05);
-            //            //    viewboxRect.setAttributeNS(null, "shape-rendering", "crispEdges");
-            //            svgDocument.appendChild(viewboxRect);
         }
     }
     
@@ -355,10 +351,6 @@ function zoomOut(evt){
             
             // make new viewbox and insert it into the svg
             var format = formatViewBox(newViewBoxX, newViewBoxY, newViewBoxWidth, newViewBoxHeight);
-            //            newViewBoxX + ' ' +
-            //            newViewBoxY + ' ' +
-            //            newViewBoxWidth + ' ' +
-            //            newViewBoxHeight;
             svgDocument.setAttribute("viewBox", format);
             printDebugInfo();
         }
@@ -415,7 +407,7 @@ function panMove(evt) {
     if(panStart_Spacebar && panAction_Spacebar){
         panAction_Spacebar = true;
         panStart_Spacebar = false;
-        var p = document.documentElement.createSVGPoint();
+        var p = svgDocElement.createSVGPoint();
         p.x = evt.clientX;
         p.y = evt.clientY;
         var m = svgDocument.getScreenCTM();
@@ -434,7 +426,7 @@ function panMove(evt) {
         panViewBoxHeight = parseFloat(token[3]);
     }
     if(panAction_Spacebar && !panStart_Spacebar) {
-        var p = document.documentElement.createSVGPoint();
+        var p = svgDocElement.createSVGPoint();
         p.x = evt.clientX;
         p.y = evt.clientY;
         var m = svgDocument.getScreenCTM();
@@ -459,11 +451,6 @@ function panMove(evt) {
         
         
         var format = formatViewBox(newViewBoxX, newViewBoxY, panViewBoxWidth, panViewBoxHeight);
-        //        parseFloat(newViewBoxX) + ' ' +
-        //        parseFloat(newViewBoxY) + ' ' +
-        //        parseFloat(panViewBoxWidth) + ' ' +
-        //        parseFloat(panViewBoxHeight);
-        
         svgDocument.setAttribute("viewBox", format);
         printDebugInfo();
     }
@@ -474,7 +461,7 @@ function panMove2(evt) {
     if(panStart_Mouse && panAction_Mouse){
         panAction_Mouse = true;
         panStart_Mouse = false;
-        var p = document.documentElement.createSVGPoint();
+        var p = svgDocElement.createSVGPoint();
         p.x = evt.clientX;
         p.y = evt.clientY;
         var m = svgDocument.getScreenCTM();
@@ -493,7 +480,7 @@ function panMove2(evt) {
         panViewBoxHeight = parseFloat(token[3]);
     }
     if(panAction_Mouse && !panStart_Mouse) {
-        var p = document.documentElement.createSVGPoint();
+        var p = svgDocElement.createSVGPoint();
         p.x = evt.clientX;
         p.y = evt.clientY;
         var m = svgDocument.getScreenCTM();
@@ -518,11 +505,6 @@ function panMove2(evt) {
         
         
         var format = formatViewBox(newViewBoxX, newViewBoxY, panViewBoxWidth, panViewBoxHeight);
-        //        parseFloat(newViewBoxX) + ' ' +
-        //        parseFloat(newViewBoxY) + ' ' +
-        //        parseFloat(panViewBoxWidth) + ' ' +
-        //        parseFloat(panViewBoxHeight);
-        
         svgDocument.setAttribute("viewBox", format);
         printDebugInfo();
     }
@@ -601,7 +583,7 @@ function doScroll(evt){
         // scrolling in makes viewbox smaller, so zoomAmount is smaller
         var zoomAmount = scrollAmountNormalized < 0 ? -1 * scrollAmountNormalized + 1.005 : -0.99 * scrollAmountNormalized + 0.995 ; // zoom out : zoom in; (1, 5) : (0, 1)
         
-        var p = document.documentElement.createSVGPoint();
+        var p = svgDocElement.createSVGPoint();
         p.x = evt.clientX;
         p.y = evt.clientY;
         
@@ -636,10 +618,6 @@ function doScroll(evt){
         
         // make new viewbox and insert it into the svg
         var format = formatViewBox(newViewBoxX, newViewBoxY, newViewBoxWidth, newViewBoxHeight);
-        //        newViewBoxX + ' ' +
-        //        newViewBoxY + ' ' +
-        //        newViewBoxWidth + ' ' +
-        //        newViewBoxHeight;
         svgDocument.setAttribute("viewBox", format);
         printDebugInfo();
     }
@@ -725,6 +703,7 @@ function fillViewBoxToScreen(){
 }
 
 function mouseMoveEvent(evt){
+	console.log("mouseMoveEvent called, evt: ", evt);
     mouseEvent = evt;
     printDebugInfo();
 }
@@ -740,43 +719,31 @@ function printDebugInfo(){
         var viewBoxHeight = parseFloat(token[3]);
         
         if(!debugTextElement){
-            debugTextElement = document.createElementNS(svgNS, "text");
-            debugTextElement.setAttribute("font-family", "monospace");
-            debugTextElement.setAttribute("dy", "1em");
-            debugTextElement.appendChild(document.createElementNS(svgNS, "tspan")); // to bump down next text
-            
-            var textLines = 7; // number of lines to display in debug info
+            debugTextElement = htmlDoc.createElement("div");
+            var textLines = 9; // number of lines to display in debug info
             for(var count = 0; count < textLines; count++){
-                debugChildren[count] = document.createElementNS(svgNS, "tspan");
-                debugChildren[count].setAttribute("dy", "1em");
+                debugChildren[count] = htmlDoc.createElement("div");
                 debugTextElement.appendChild(debugChildren[count]);
             }
-            
-            debugBoundingBox = document.createElementNS(svgNS, "rect");
-            svgDocument.appendChild(debugTextElement);
+			debugTextElement.style.position = "fixed";
+			debugTextElement.style.top = "5px";
+			debugTextElement.style.left = "5px";
+			debugTextElement.style["pointer-events"] = "none";
+			debugTextElement.style.padding = "5px";
+			debugTextElement.style.background = "white";
+			debugTextElement.style.border = "1px solid #BBB";
+			debugTextElement.style["border-radius"] = "3px";
+            document.body.appendChild(debugTextElement); // add to DOM
         }
-        debugTextElement.setAttribute("id", "debugText");
-        debugTextElement.setAttribute("x", viewBoxX);
-        debugTextElement.setAttribute("y", viewBoxY);
-        debugTextElement.setAttribute("transform",
-                                      "translate(" + (viewBoxX) + " " + (viewBoxY) + ") " +
-                                      "scale(" + viewBoxWidth/getWidth() + " " + viewBoxHeight/getHeight() + ") " +
-                                      "translate(" + (-viewBoxX) + " " + (-viewBoxY) + ")");
-        debugTextElement.setAttribute("font-size", "12pt");
-        
-        for(var count = 0; count < debugChildren.length; count++){
-            debugChildren[count].setAttribute("x", viewBoxX);
-        }
-        
-        debugChildren[0].textContent = "Debug Info:";
-        debugChildren[1].textContent = "ViewBox X: " + viewBoxX;
-        debugChildren[2].textContent = "ViewBox Y: " + viewBoxY;
-        debugChildren[3].textContent = "ViewBox Width: " + viewBoxWidth;
-        debugChildren[4].textContent = "ViewBox Height: " + viewBoxHeight;
-        
-        debugChildren[5].textContent = "Client X: " + mouseEvent.clientX;
-        debugChildren[6].textContent = "Client Y: " + mouseEvent.clientY;
-        
+        debugChildren[0].innerHTML = "Debug Info:";
+        debugChildren[1].innerHTML = "ViewBox X: " + viewBoxX;
+        debugChildren[2].innerHTML = "ViewBox Y: " + viewBoxY;
+        debugChildren[3].innerHTML = "ViewBox Width: " + viewBoxWidth;
+        debugChildren[4].innerHTML = "ViewBox Height: " + viewBoxHeight;
+        debugChildren[5].innerHTML = "CurrentVBW/InitVBW: " + viewBoxWidth/origSVGWidth;
+        debugChildren[6].innerHTML = "CurrentVBH/InitVBH: " + viewBoxHeight/origSVGHeight;
+        debugChildren[7].innerHTML = "Client X: " + mouseEvent.clientX;
+        debugChildren[8].innerHTML = "Client Y: " + mouseEvent.clientY;
     }
 }
 
@@ -788,43 +755,3 @@ function formatViewBox(x, y, width, height){
     parseFloat(width) + ' ' +
     parseFloat(height);
 }
-
-// try to capture shift to prevent chrome's shift panning
-// unsuccessful for now
-//function shiftKeyDown(evt){
-//    if(evt.type == "keydown"){
-//        if (evt.charCode) {
-//            var charCode = evt.charCode;
-//            //console.log("charCode");
-//        } else {
-//            var charCode = evt.keyCode;
-//            //console.log("keyCode");
-//        }
-//
-//        // shift
-//        if (charCode == 16) {
-//            zoomDisable = true;
-//            //console.log("shift");
-//        }
-//    }
-//}
-
-// allow zooming after shift key goes up
-//function shiftKeyUp(evt){
-//    if(evt.type == "keyup"){
-//        if (evt.charCode) {
-//            var charCode = evt.charCode;
-//            //console.log("charCode");
-//
-//        } else {
-//            var charCode = evt.keyCode;
-//            //console.log("keyCode");
-//        }
-//        
-//        // shift
-//        if (charCode == 16) {
-//            zoomDisable = false;
-//            //console.log("shift");
-//        }
-//    }
-//}

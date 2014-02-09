@@ -1,4 +1,4 @@
-SVG Navigator - Chrome Extension
+SVG Navigator
 ====================
 
 Description
