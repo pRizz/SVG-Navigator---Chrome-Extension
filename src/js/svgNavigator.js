@@ -718,6 +718,7 @@ function printDebugInfo(){
             var textLines = 9; // number of lines to display in debug info
             for(var count = 0; count < textLines; count++){
                 debugChildren[count] = htmlDoc.createElement("div");
+				debugChildren[count].style.padding = "1px 3px";
                 debugTextElement.appendChild(debugChildren[count]);
             }
 			debugTextElement.style.position = "fixed";
@@ -725,10 +726,10 @@ function printDebugInfo(){
 			debugTextElement.style.left = "5px";
 			debugTextElement.style["pointer-events"] = "none";
 			debugTextElement.style.padding = "5px";
-			debugTextElement.style.background = "rgba(255, 255, 255, 0.8)";
+			debugTextElement.style.background = "rgba(0, 0, 0, 0.8)";
 			debugTextElement.style.border = "1px solid #BBB";
 			debugTextElement.style["border-radius"] = "3px";
-			debugTextElement.style.color = "#555";
+			debugTextElement.style.color = "white";
 			debugTextElement.style["font-family"] = "'Lucida Grande', sans-serif";
 			
             document.body.appendChild(debugTextElement); // add to DOM
