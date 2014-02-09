@@ -233,7 +233,6 @@ function zoomMouseDown(evt) {
         }
         var relativeStrokeWidth = viewBoxWidth/clientWidth;
         
-        //        console.log("zoom rect stroke width: " + relativeStrokeWidth);
         zoomRectangle.setAttributeNS(null, "stroke-width", relativeStrokeWidth);
         zoomRectangle.setAttributeNS(null, "rx", relativeStrokeWidth);
     }
@@ -310,7 +309,6 @@ function zoomMouseUp(evt) {
 
 // zoom out when user presses alt key
 function zoomOut(evt){
-    //    console.log("evt.clientX: " + evt.clientX);
     if(!zoomAction && !(panAction_Spacebar || panAction_Mouse) && evt.type == "keyup"){
         if (evt.charCode) {
             var charCode = evt.charCode;
@@ -430,7 +428,6 @@ function panMove(evt) {
         p.x = evt.clientX;
         p.y = evt.clientY;
         var m = svgDocument.getScreenCTM();
-        //        console.log(m);
         p = p.matrixTransform(m.inverse());
         
         panNewX = p.x;
@@ -484,7 +481,6 @@ function panMove2(evt) {
         p.x = evt.clientX;
         p.y = evt.clientY;
         var m = svgDocument.getScreenCTM();
-        //        console.log(m);
         p = p.matrixTransform(m.inverse());
         
         panNewX = p.x;
@@ -703,7 +699,6 @@ function fillViewBoxToScreen(){
 }
 
 function mouseMoveEvent(evt){
-	console.log("mouseMoveEvent called, evt: ", evt);
     mouseEvent = evt;
     printDebugInfo();
 }
@@ -730,9 +725,12 @@ function printDebugInfo(){
 			debugTextElement.style.left = "5px";
 			debugTextElement.style["pointer-events"] = "none";
 			debugTextElement.style.padding = "5px";
-			debugTextElement.style.background = "white";
+			debugTextElement.style.background = "rgba(255, 255, 255, 0.8)";
 			debugTextElement.style.border = "1px solid #BBB";
 			debugTextElement.style["border-radius"] = "3px";
+			debugTextElement.style.color = "#555";
+			debugTextElement.style["font-family"] = "'Lucida Grande', sans-serif";
+			
             document.body.appendChild(debugTextElement); // add to DOM
         }
         debugChildren[0].innerHTML = "Debug Info:";
