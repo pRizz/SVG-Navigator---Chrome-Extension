@@ -23,6 +23,7 @@
     {
         "matches": ["http://*/*.svg", "https://*/*.svg", "ftp://*/*.svg", "file://*/*.svg"],
         "js": ["options_custom/js/defaultSettings.js", "js/svgNavigator.js"],
+        "css": ["css/svgNavigator.css"],
         "run_at": "document_end"
     }
     ],

@@ -122,6 +122,46 @@ if(baseURI && baseURI.indexOf(".svg", baseURI.length - 4) !== -1){
     addEventListeners();
     
     disableSelection();
+    
+    // add the toolbar
+    var toolbarContainer = htmlDoc.createElement("div");
+    toolbarContainer.className = "toolbarcontainer";
+    
+    var toolbarDiv = htmlDoc.createElement("div");
+    toolbarDiv.className = "toolbar";
+    toolbarContainer.appendChild(toolbarDiv);
+
+    var plusButton = htmlDoc.createElement("div");
+    plusButton.innerHTML = "+";
+    plusButton.className = "toolbarbutton toolbarbuttonborder"
+    plusButton.onclick = function(evt){
+        zoomBy(0.8);
+    }
+    toolbarDiv.appendChild(plusButton);
+
+    var minusButton = htmlDoc.createElement("div");
+    minusButton.innerHTML = "-";
+    minusButton.className = "toolbarbutton toolbarbuttonborder"
+    minusButton.onclick = function(evt){
+        zoomOut(true);
+    }
+    toolbarDiv.appendChild(minusButton);
+    
+    var resetButton = htmlDoc.createElement("div");
+    resetButton.innerHTML = "Reset";
+    resetButton.className = "toolbarbutton"
+    resetButton.onclick = function(evt){
+        zoomOriginal(true)
+    }
+    toolbarDiv.appendChild(resetButton);
+    
+    document.body.appendChild(toolbarContainer); // add to DOM
+    
+    // make the toolbar fadeout after 5 seconds
+    toolbarContainer.style.opacity = 1;
+    setTimeout(function(){
+        toolbarContainer.style.opacity = null;
+    }, 5000);
 }
 
 // insert a rectangle object into the svg, acting as the zoom rectangle
@@ -143,12 +183,11 @@ function insertZoomRect(){
 
 function addEventListeners(){
     // event listeners
-
-    document.addEventListener("keydown", panBegin, false); // spacebar panning
-    document.addEventListener("mousemove", panMove, false); // spacebar panning
-    document.addEventListener("keyup", panEnd, false); // spacebar panning
-    document.addEventListener("keyup", zoomOut, false); // alt key zoom out
-    document.addEventListener("keyup", zoomOriginal, false); // escape key zoom out
+    svgDocument.addEventListener("keydown", panBegin, false); // spacebar panning
+    svgDocument.addEventListener("mousemove", panMove, false); // spacebar panning
+    svgDocument.addEventListener("keyup", panEnd, false); // spacebar panning
+    svgDocument.addEventListener("keyup", zoomOut, false); // alt key zoom out
+    svgDocument.addEventListener("keyup", zoomOriginal, false); // escape key zoom out
 	// retrieve options from stored settings
 	chrome.extension.sendRequest("localStorage",
 	function(response){
@@ -156,38 +195,38 @@ function addEventListeners(){
 		try{
 			var clickAndDragBehavior = JSON.parse(response["store.settings.clickAndDragBehavior"]);
 			if(clickAndDragBehavior == "pan"){
-				document.addEventListener("mousedown", panBegin2, false); // mouse panning
-				document.addEventListener("mousemove", panMove2, false); // mouse panning
-				document.addEventListener("mouseup", panEnd2, false); // mouse panning
+				svgDocument.addEventListener("mousedown", panBegin2, false); // mouse panning
+				svgDocument.addEventListener("mousemove", panMove2, false); // mouse panning
+				svgDocument.addEventListener("mouseup", panEnd2, false); // mouse panning
 			} else if(clickAndDragBehavior == "zoomBox"){
-				document.addEventListener("mousedown", zoomMouseDown, false); // zoom box
-				document.addEventListener("mousemove", zoomMouseMove, false); // zoom box
-				document.addEventListener("mouseup", zoomMouseUp, false); // zoom box
+				svgDocument.addEventListener("mousedown", zoomMouseDown, false); // zoom box
+				svgDocument.addEventListener("mousemove", zoomMouseMove, false); // zoom box
+				svgDocument.addEventListener("mouseup", zoomMouseUp, false); // zoom box
 			} else { // default to mouse panning									
-				document.addEventListener("mousedown", panBegin2, false); // mouse panning
-				document.addEventListener("mousemove", panMove2, false); // mouse panning
-				document.addEventListener("mouseup", panEnd2, false); // mouse panning
+				svgDocument.addEventListener("mousedown", panBegin2, false); // mouse panning
+				svgDocument.addEventListener("mousemove", panMove2, false); // mouse panning
+				svgDocument.addEventListener("mouseup", panEnd2, false); // mouse panning
 			}
 		} catch(e){
 			// default to mouse panning
-			document.addEventListener("mousedown", panBegin2, false); // mouse panning
-			document.addEventListener("mousemove", panMove2, false); // mouse panning
-			document.addEventListener("mouseup", panEnd2, false); // mouse panning
+			svgDocument.addEventListener("mousedown", panBegin2, false); // mouse panning
+			svgDocument.addEventListener("mousemove", panMove2, false); // mouse panning
+			svgDocument.addEventListener("mouseup", panEnd2, false); // mouse panning
 		}
 		
 		try{
 			scrollSensitivity = JSON.parse(response["store.settings.scrollSensitivity"]);
 			invertScroll = JSON.parse(response["store.settings.invertScroll"]);
-		    document.addEventListener("mousewheel", doScroll, false); // scroll zooming
+		    svgDocument.addEventListener("mousewheel", doScroll, false); // scroll zooming
 		} catch(e){
 			// with defaults
-		    document.addEventListener("mousewheel", doScroll, false); // scroll zooming
+		    svgDocument.addEventListener("mousewheel", doScroll, false); // scroll zooming
 		}
 
 		try{
 			debugMode = JSON.parse(response["store.settings.showDebugInfo"]);
 		    if(debugMode){
-		        document.addEventListener("mousemove", mouseMoveEvent, false);
+		        svgDocument.addEventListener("mousemove", mouseMoveEvent, false);
 		    }
 		    printDebugInfo();
 		} catch(e){
@@ -309,7 +348,7 @@ function zoomMouseUp(evt) {
 
 // zoom out when user presses alt key
 function zoomOut(evt){
-    if(!zoomAction && !(panAction_Spacebar || panAction_Mouse) && evt.type == "keyup"){
+    if(!zoomAction && !(panAction_Spacebar || panAction_Mouse) && evt.type == "keyup" || evt === true){
         if (evt.charCode) {
             var charCode = evt.charCode;
         } else {
@@ -317,55 +356,54 @@ function zoomOut(evt){
         }
         
         // alt key
-        if (charCode == 18) {
-            var zoomAmount = 1.2;
-            
-            var newViewBox = svgDocument.getAttribute("viewBox");
-            var tokens = newViewBox;
-            var token = tokens.split(" ");
-            var viewBoxX = parseFloat(token[0]);
-            var viewBoxY = parseFloat(token[1]);
-            var viewBoxWidth = parseFloat(token[2]);
-            var viewBoxHeight = parseFloat(token[3]);
-            
-            var viewBoxCenterX = viewBoxX + viewBoxWidth/2;
-            var viewBoxCenterY = viewBoxY + viewBoxHeight/2;
-            
-            // algorithm to zoom in and gravitate towards cursor scroll
-            var newViewBoxWidth = viewBoxWidth*zoomAmount;
-            var newViewBoxHeight = viewBoxHeight*zoomAmount;
-            
-            var midX = viewBoxWidth/2 + viewBoxX;
-            var midY = viewBoxHeight/2 + viewBoxY;
-            // these should always turn out positive, because client cursor must be within svg x to x+width and y to y+height
-            var fracOfSVGX = (midX - viewBoxX)/viewBoxWidth;
-            var fracOfSVGY = (midY - viewBoxY)/viewBoxHeight;
-            
-            var leftWidth = fracOfSVGX*newViewBoxWidth; // offset to new x
-            var upperHeight = fracOfSVGY*newViewBoxHeight; // offset to new y
-            
-            var newViewBoxX = midX - leftWidth;
-            var newViewBoxY = midY - upperHeight;
-            
-            // make new viewbox and insert it into the svg
-            var format = formatViewBox(newViewBoxX, newViewBoxY, newViewBoxWidth, newViewBoxHeight);
-            svgDocument.setAttribute("viewBox", format);
-            printDebugInfo();
+        if (charCode == 18 || evt === true) {
+            zoomBy(1.25)
         }
     }
 }
 
+// positive for zoom out, neg else
+function zoomBy(zoomAmount){
+    var newViewBox = svgDocument.getAttribute("viewBox");
+    var tokens = newViewBox;
+    var token = tokens.split(" ");
+    var viewBoxX = parseFloat(token[0]);
+    var viewBoxY = parseFloat(token[1]);
+    var viewBoxWidth = parseFloat(token[2]);
+    var viewBoxHeight = parseFloat(token[3]);
+    
+    var viewBoxCenterX = viewBoxX + viewBoxWidth/2;
+    var viewBoxCenterY = viewBoxY + viewBoxHeight/2;
+    
+    // algorithm to zoom in and gravitate towards cursor scroll
+    var newViewBoxWidth = viewBoxWidth*zoomAmount;
+    var newViewBoxHeight = viewBoxHeight*zoomAmount;
+    
+    var midX = viewBoxWidth/2 + viewBoxX;
+    var midY = viewBoxHeight/2 + viewBoxY;
+    // these should always turn out positive, because client cursor must be within svg x to x+width and y to y+height
+    var fracOfSVGX = (midX - viewBoxX)/viewBoxWidth;
+    var fracOfSVGY = (midY - viewBoxY)/viewBoxHeight;
+    
+    var leftWidth = fracOfSVGX*newViewBoxWidth; // offset to new x
+    var upperHeight = fracOfSVGY*newViewBoxHeight; // offset to new y
+    
+    var newViewBoxX = midX - leftWidth;
+    var newViewBoxY = midY - upperHeight;
+    
+    // make new viewbox and insert it into the svg
+    var format = formatViewBox(newViewBoxX, newViewBoxY, newViewBoxWidth, newViewBoxHeight);
+    svgDocument.setAttribute("viewBox", format);
+    printDebugInfo();
+}
+
 // zoom back to original view when escape button is clicked
 function zoomOriginal(evt){
-    if(!zoomAction && !(panAction_Spacebar || panAction_Mouse) && evt.type == "keyup"){
-        if (evt.charCode) {
-            var charCode = evt.charCode;
-        } else {
-            var charCode = evt.keyCode;
-        }
+    if(!zoomAction && !(panAction_Spacebar || panAction_Mouse) && evt.type == "keyup" || evt === true){
+        var charCode = evt.charCode || evt.keyCode;
         
         // escape key
-        if (charCode == 27) {
+        if (charCode == 27 || evt === true) {
             var format =  origViewBox;
             svgDocument.setAttribute("viewBox", origViewBox);
             printDebugInfo();
@@ -445,8 +483,6 @@ function panMove(evt) {
         var newViewBoxX = parseFloat(panViewBoxX - (panNewX - panOldX));
         var newViewBoxY = parseFloat(panViewBoxY - (panNewY - panOldY));
         
-        
-        
         var format = formatViewBox(newViewBoxX, newViewBoxY, panViewBoxWidth, panViewBoxHeight);
         svgDocument.setAttribute("viewBox", format);
         printDebugInfo();
@@ -497,8 +533,6 @@ function panMove2(evt) {
         
         var newViewBoxX = parseFloat(panViewBoxX - (panNewX - panOldX));
         var newViewBoxY = parseFloat(panViewBoxY - (panNewY - panOldY));
-        
-        
         
         var format = formatViewBox(newViewBoxX, newViewBoxY, panViewBoxWidth, panViewBoxHeight);
         svgDocument.setAttribute("viewBox", format);
@@ -553,13 +587,11 @@ function panEnd2(evt){
             panStart_Mouse = true;
             panAction_Mouse = false;
     }
-//        }
-//    }
 }
 
 // implementation for scroll zooming
 // the area pointed to by the cursor will always stay under the cursor while scrolling/zooming in or out, just like google maps does
-// might be different scroll direction on macs with "natural scroll" vs windows
+// might be different scroll direction on Macs with "natural scroll" vs Windows
 function doScroll(evt){
     if(!zoomAction && !(panAction_Spacebar || panAction_Mouse)){
         evt.preventDefault(); // prevent default scroll action in chrome
@@ -651,15 +683,8 @@ function getWidth()
 
 // to prevent selection of text; prevent text Ibar cursor when dragging
 function disableSelection(){
-    var target = svgDocument;
-    if (typeof target.onselectstart != "undefined"){ //IE route
-        target.onselectstart = function(){return false}
-    } else if (typeof target.style.MozUserSelect!="undefined"){ //Firefox route
-        target.style.MozUserSelect="none"
-    } else { //All other route (ie: Opera)
-        target.onmousedown=function(){return false}
-        target.style.cursor = "default"
-    }
+    document.onselectstart = function(){return false}
+    document.body.style.cursor = "default"
 }
 
 // make aspect ratio of new viewbox match the screen aspect ratio; useful later, when adding debug info to corner of screen
@@ -676,9 +701,6 @@ function fillViewBoxToScreen(){
     var newViewBoxY = viewBoxY;
     var newViewBoxWidth = viewBoxWidth;
     var newViewBoxHeight = viewBoxHeight;
-    
-    //    var zoomRectX = zoomRectangle.getAttribute("x");
-    //    var zoomRectY = zoomRectangle.getAttribute("y");
     
     var viewBoxAspectRatio = viewBoxWidth/viewBoxHeight;
     
@@ -728,7 +750,7 @@ function printDebugInfo(){
 			debugTextElement.style.padding = "5px";
 			debugTextElement.style.background = "rgba(0, 0, 0, 0.8)";
 			debugTextElement.style.border = "1px solid #BBB";
-			debugTextElement.style["border-radius"] = "3px";
+			debugTextElement.style["border-radius"] = "5px";
 			debugTextElement.style.color = "white";
 			debugTextElement.style["font-family"] = "'Lucida Grande', sans-serif";
 			
