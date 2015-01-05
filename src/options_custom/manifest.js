@@ -1,6 +1,6 @@
 // SAMPLE
 this.manifest = {
-    "name": "My Extension",
+    "name": "SVG Navigator",
     "icon": "icon_sans_38.png",
     "settings": [
 		{
