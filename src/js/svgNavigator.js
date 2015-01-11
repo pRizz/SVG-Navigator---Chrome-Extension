@@ -23,14 +23,15 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
  
-/*
+/**
  * svgNavigator.js
+ * Contains all the logic for panning, zooming, and other controls.
  */
 
 // define svg namespace
 var svgNS = "http://www.w3.org/2000/svg";
 
-var baseURI = document.rootElement ? document.rootElement.baseURI : undefined;
+var baseURI = document.rootElement && document.rootElement.baseURI || undefined;
 if(baseURI && baseURI.indexOf(".svg", baseURI.length - 4) !== -1){
 	// wrap the svg document in an html document
 	var svgDoc = document;
@@ -41,7 +42,7 @@ if(baseURI && baseURI.indexOf(".svg", baseURI.length - 4) !== -1){
 	document.replaceChild(htmlDoc.documentElement, svgDoc.documentElement);
 
 	// the htmlDoc is the new document object
-	document.body.appendChild(svgDocElement)
+	document.body.appendChild(svgDocElement);
 	document.body.style.margin = 0;
 
 	// document variables
@@ -53,12 +54,12 @@ if(baseURI && baseURI.indexOf(".svg", baseURI.length - 4) !== -1){
     var svgDocument = svgElements[0];
     
     // keep aspect ratio; just remove attribute if it exists
-    svgDocument.hasAttribute("preserveAspectRatio") ? svgDocument.removeAttribute("preserveAspectRatio") : null;
+    svgDocument.hasAttribute("preserveAspectRatio") && svgDocument.removeAttribute("preserveAspectRatio");
     
     // save original svg width and height
     // TODO problematic when width or height contain percent character
-    var origSVGWidth = svgDocument.hasAttribute("width") ? svgDocument.getAttribute("width"): getWidth();
-    var origSVGHeight = svgDocument.hasAttribute("height") ? svgDocument.getAttribute("height"): getHeight();
+    var origSVGWidth = parseFloat(svgDocument.getAttribute("width") || getWidth());
+    var origSVGHeight = parseFloat(svgDocument.getAttribute("height") || getHeight());
     // make width and height 100% to fill client web browser
     svgDocument.setAttribute("width", "100%");
     svgDocument.setAttribute("height", "100%");
@@ -73,13 +74,12 @@ if(baseURI && baseURI.indexOf(".svg", baseURI.length - 4) !== -1){
         var format = formatViewBox(0, 0, origSVGWidth, origSVGHeight);
         
         svgDocument.setAttribute("viewBox", format);
-        //        fillViewBoxToScreen();
-        //        origViewBox = svgDocument.getAttribute("viewBox");
     }
     fillViewBoxToScreen();
     origViewBox = svgDocument.getAttribute("viewBox");
-    //    var newViewBox = svgDocument.getAttribute("viewBox");
-    
+    // this variable should always be up to date and set the real viewbox when it changes
+    var viewBox = getViewBox();
+
     // global variables for zooming
     var zoomAction = false;
     var zoomX1 = 0;
@@ -103,9 +103,7 @@ if(baseURI && baseURI.indexOf(".svg", baseURI.length - 4) !== -1){
     var panOldY = 0;
     var panNewX = 0;
     var panNewY = 0;
-    //    var newViewBoxX = 0;
-    //    var newViewBoxY = 0;
-	
+
 	// global settings, defaults
 	var clickAndDragBehavior = SVGNavigatorDefaultSettings.clickAndDragBehavior;
 	var scrollSensitivity = SVGNavigatorDefaultSettings.scrollSensitivity;
@@ -114,7 +112,6 @@ if(baseURI && baseURI.indexOf(".svg", baseURI.length - 4) !== -1){
     
     // for debugging
     var debugTextElement;
-    var debugBoundingBox;
     var debugChildren = [];
     var debugMode = showDebugInfo;
     var mouseEvent = {clientX:0, clientY:0};
@@ -133,26 +130,26 @@ if(baseURI && baseURI.indexOf(".svg", baseURI.length - 4) !== -1){
 
     var plusButton = htmlDoc.createElement("div");
     plusButton.innerHTML = "+";
-    plusButton.className = "toolbarbutton toolbarbuttonborder"
+    plusButton.className = "toolbarbutton toolbarbuttonborder";
     plusButton.onclick = function(evt){
         zoomBy(0.8);
-    }
+    };
     toolbarDiv.appendChild(plusButton);
 
     var minusButton = htmlDoc.createElement("div");
     minusButton.innerHTML = "-";
-    minusButton.className = "toolbarbutton toolbarbuttonborder"
+    minusButton.className = "toolbarbutton toolbarbuttonborder";
     minusButton.onclick = function(evt){
         zoomOut(true);
-    }
+    };
     toolbarDiv.appendChild(minusButton);
     
     var resetButton = htmlDoc.createElement("div");
     resetButton.innerHTML = "Reset";
-    resetButton.className = "toolbarbutton"
+    resetButton.className = "toolbarbutton";
     resetButton.onclick = function(evt){
         zoomOriginal(true)
-    }
+    };
     toolbarDiv.appendChild(resetButton);
     
     document.body.appendChild(toolbarContainer); // add to DOM
@@ -257,10 +254,8 @@ function zoomMouseDown(evt) {
         // re-set zoom rectangle stroke width
         var strokeWidth = 1;
         
-        var tokens  = svgDocument.getAttribute("viewBox");
-        var token = tokens.split(" ");
-        var viewBoxWidth = parseFloat(token[2]);
-        var viewBoxHeight = parseFloat(token[3]);
+        var viewBoxWidth = viewBox.width;
+        var viewBoxHeight = viewBox.height;
         var viewBoxAspectRatio = viewBoxWidth/viewBoxHeight;
         
         var clientWidth = getWidth();
@@ -289,8 +284,8 @@ function zoomMouseMove(evt) {
         
         zoomX2 = p.x;
         zoomY2 = p.y;
-        zoomWidth=Math.abs(zoomX2 - zoomX1)
-        zoomHeight=Math.abs(zoomY2 - zoomY1)
+        zoomWidth = Math.abs(zoomX2 - zoomX1);
+        zoomHeight = Math.abs(zoomY2 - zoomY1);
         
         // set top left corner point of zoom rectangle
         zoomX1 < zoomX2 ? zoomRectangle.setAttribute("x", zoomX1) : zoomRectangle.setAttribute("x", zoomX2);
@@ -312,28 +307,22 @@ function zoomMouseUp(evt) {
             var zoomRectX = zoomRectangle.getAttribute("x");
             var zoomRectY = zoomRectangle.getAttribute("y");
             
-            var viewBoxX = zoomRectX;
-            var viewBoxY = zoomRectY;
-            var viewBoxWidth = zoomRectWidth;
-            var viewBoxHeight = zoomRectHeight;
-            var viewBoxAspectRatio = viewBoxWidth/viewBoxHeight;
+            viewBox.x = zoomRectX;
+            viewBox.y = zoomRectY;
+            viewBox.width = zoomRectWidth;
+            viewBox.height = zoomRectHeight;
+            var viewBoxAspectRatio = viewBox.width/viewBox.height;
             
-            var clientWidth = getWidth();
-            var clientHeight = getHeight();
-            var clientAspectRatio = clientWidth/clientHeight;
+            var clientAspectRatio = getWidth()/getHeight();
             
             if(viewBoxAspectRatio < clientAspectRatio){
-                viewBoxWidth = viewBoxHeight*clientAspectRatio;
-                viewBoxX = zoomRectX - (viewBoxWidth-zoomRectWidth)/2;
+                viewBox.width = viewBox.height*clientAspectRatio;
+                viewBox.x = zoomRectX - (viewBox.width-zoomRectWidth)/2;
             } else {
-                viewBoxHeight = viewBoxWidth/clientAspectRatio;
-                viewBoxY = zoomRectY - (viewBoxHeight-zoomRectHeight)/2;
+                viewBox.height = viewBox.width/clientAspectRatio;
+                viewBox.y = zoomRectY - (viewBox.height-zoomRectHeight)/2;
             }
-            
-            var format = formatViewBox(viewBoxX, viewBoxY, viewBoxWidth, viewBoxHeight);
-            
-            svgDocument.setAttribute("viewBox", format);
-            printDebugInfo();
+            setViewBox();
         }
     }
     
@@ -352,7 +341,7 @@ function zoomOut(evt){
         if (evt.charCode) {
             var charCode = evt.charCode;
         } else {
-            var charCode = evt.keyCode;
+            charCode = evt.keyCode;
         }
         
         // alt key
@@ -364,37 +353,23 @@ function zoomOut(evt){
 
 // positive for zoom out, neg else
 function zoomBy(zoomAmount){
-    var newViewBox = svgDocument.getAttribute("viewBox");
-    var tokens = newViewBox;
-    var token = tokens.split(" ");
-    var viewBoxX = parseFloat(token[0]);
-    var viewBoxY = parseFloat(token[1]);
-    var viewBoxWidth = parseFloat(token[2]);
-    var viewBoxHeight = parseFloat(token[3]);
-    
-    var viewBoxCenterX = viewBoxX + viewBoxWidth/2;
-    var viewBoxCenterY = viewBoxY + viewBoxHeight/2;
-    
-    // algorithm to zoom in and gravitate towards cursor scroll
-    var newViewBoxWidth = viewBoxWidth*zoomAmount;
-    var newViewBoxHeight = viewBoxHeight*zoomAmount;
-    
-    var midX = viewBoxWidth/2 + viewBoxX;
-    var midY = viewBoxHeight/2 + viewBoxY;
+    var oldViewBoxWidth = viewBox.width;
+    var oldViewBoxHeight = viewBox.height;
+
+    // algorithm to zoom in and gravitate towards center
+    viewBox.width = viewBox.width * zoomAmount;
+    viewBox.height = viewBox.height * zoomAmount;
+    var midX = oldViewBoxWidth / 2 + viewBox.x;
+    var midY = oldViewBoxHeight / 2 + viewBox.y;
+
     // these should always turn out positive, because client cursor must be within svg x to x+width and y to y+height
-    var fracOfSVGX = (midX - viewBoxX)/viewBoxWidth;
-    var fracOfSVGY = (midY - viewBoxY)/viewBoxHeight;
-    
-    var leftWidth = fracOfSVGX*newViewBoxWidth; // offset to new x
-    var upperHeight = fracOfSVGY*newViewBoxHeight; // offset to new y
-    
-    var newViewBoxX = midX - leftWidth;
-    var newViewBoxY = midY - upperHeight;
-    
-    // make new viewbox and insert it into the svg
-    var format = formatViewBox(newViewBoxX, newViewBoxY, newViewBoxWidth, newViewBoxHeight);
-    svgDocument.setAttribute("viewBox", format);
-    printDebugInfo();
+    var fracOfSVGX = (midX - viewBox.x) / oldViewBoxWidth;
+    var fracOfSVGY = (midY - viewBox.y) / oldViewBoxHeight;
+    var leftWidth = fracOfSVGX * viewBox.width; // offset to new x
+    var upperHeight = fracOfSVGY * viewBox.height; // offset to new y
+    viewBox.x = midX - leftWidth;
+    viewBox.y = midY - upperHeight;
+    setViewBox();
 }
 
 // zoom back to original view when escape button is clicked
@@ -404,9 +379,8 @@ function zoomOriginal(evt){
         
         // escape key
         if (charCode == 27 || evt === true) {
-            var format =  origViewBox;
-            svgDocument.setAttribute("viewBox", origViewBox);
-            printDebugInfo();
+            viewBox = getViewBox(origViewBox);
+            setViewBox();
         }
     }
 }
@@ -416,7 +390,7 @@ function panBegin(evt){
         if (evt.charCode) {
             var charCode = evt.charCode;
         } else {
-            var charCode = evt.keyCode;
+            charCode = evt.keyCode;
         }
         
         // spacebar
@@ -452,40 +426,29 @@ function panMove(evt) {
         panOldX = p.x;
         panOldY = p.y;
         
-        var newViewBox = svgDocument.getAttribute("viewBox");
-        
-        var tokens = newViewBox;
-        var token = tokens.split(" ");
-        panViewBoxX = parseFloat(token[0]);
-        panViewBoxY = parseFloat(token[1]);
-        panViewBoxWidth = parseFloat(token[2]);
-        panViewBoxHeight = parseFloat(token[3]);
+        panViewBoxX = viewBox.x;
+        panViewBoxY = viewBox.y;
+        panViewBoxWidth = viewBox.width;
+        panViewBoxHeight = viewBox.height;
     }
     if(panAction_Spacebar && !panStart_Spacebar) {
-        var p = svgDocElement.createSVGPoint();
+        p = svgDocElement.createSVGPoint();
         p.x = evt.clientX;
         p.y = evt.clientY;
-        var m = svgDocument.getScreenCTM();
+        m = svgDocument.getScreenCTM();
         p = p.matrixTransform(m.inverse());
         
         panNewX = p.x;
         panNewY = p.y;
         
-        var newViewBox = svgDocument.getAttribute("viewBox");
-        
-        var tokens = newViewBox;
-        var token = tokens.split(" ");
-        panViewBoxX = parseFloat(token[0]);
-        panViewBoxY = parseFloat(token[1]);
-        panViewBoxWidth = parseFloat(token[2]);
-        panViewBoxHeight = parseFloat(token[3]);
-        
-        var newViewBoxX = parseFloat(panViewBoxX - (panNewX - panOldX));
-        var newViewBoxY = parseFloat(panViewBoxY - (panNewY - panOldY));
-        
-        var format = formatViewBox(newViewBoxX, newViewBoxY, panViewBoxWidth, panViewBoxHeight);
-        svgDocument.setAttribute("viewBox", format);
-        printDebugInfo();
+        panViewBoxX = viewBox.x;
+        panViewBoxY = viewBox.y;
+        panViewBoxWidth = viewBox.width;
+        panViewBoxHeight = viewBox.height;
+
+        viewBox.x = parseFloat(panViewBoxX - (panNewX - panOldX));
+        viewBox.y = parseFloat(panViewBoxY - (panNewY - panOldY));
+        setViewBox();
     }
 }
 
@@ -503,40 +466,29 @@ function panMove2(evt) {
         panOldX = p.x;
         panOldY = p.y;
         
-        var newViewBox = svgDocument.getAttribute("viewBox");
-        
-        var tokens = newViewBox;
-        var token = tokens.split(" ");
-        panViewBoxX = parseFloat(token[0]);
-        panViewBoxY = parseFloat(token[1]);
-        panViewBoxWidth = parseFloat(token[2]);
-        panViewBoxHeight = parseFloat(token[3]);
+        panViewBoxX = viewBox.x;
+        panViewBoxY = viewBox.y;
+        panViewBoxWidth = viewBox.width;
+        panViewBoxHeight = viewBox.height;
     }
     if(panAction_Mouse && !panStart_Mouse) {
-        var p = svgDocElement.createSVGPoint();
+        p = svgDocElement.createSVGPoint();
         p.x = evt.clientX;
         p.y = evt.clientY;
-        var m = svgDocument.getScreenCTM();
+        m = svgDocument.getScreenCTM();
         p = p.matrixTransform(m.inverse());
         
         panNewX = p.x;
         panNewY = p.y;
         
-        var newViewBox = svgDocument.getAttribute("viewBox");
-        
-        var tokens = newViewBox;
-        var token = tokens.split(" ");
-        panViewBoxX = parseFloat(token[0]);
-        panViewBoxY = parseFloat(token[1]);
-        panViewBoxWidth = parseFloat(token[2]);
-        panViewBoxHeight = parseFloat(token[3]);
-        
-        var newViewBoxX = parseFloat(panViewBoxX - (panNewX - panOldX));
-        var newViewBoxY = parseFloat(panViewBoxY - (panNewY - panOldY));
-        
-        var format = formatViewBox(newViewBoxX, newViewBoxY, panViewBoxWidth, panViewBoxHeight);
-        svgDocument.setAttribute("viewBox", format);
-        printDebugInfo();
+        panViewBoxX = viewBox.x;
+        panViewBoxY = viewBox.y;
+        panViewBoxWidth = viewBox.width;
+        panViewBoxHeight = viewBox.height;
+
+        viewBox.x = parseFloat(panViewBoxX - (panNewX - panOldX));
+        viewBox.y = parseFloat(panViewBoxY - (panNewY - panOldY));
+        setViewBox();
     }
 }
 
@@ -546,22 +498,11 @@ function panEnd(evt){
         if (evt.charCode) {
             var charCode = evt.charCode;
         } else {
-            var charCode = evt.keyCode;
+            charCode = evt.keyCode;
         }
         
         // spacebar
         if (charCode == 32) {
-            var panViewBoxX = 0;
-            var panViewBoxY = 0;
-            var panViewBoxWidth = 0;
-            var panViewBoxHeight = 0;
-            var panOldX = 0;
-            var panOldY = 0;
-            var panNewX = 0;
-            var panNewY = 0;
-            var newViewBoxX = 0;
-            var newViewBoxY = 0;
-            
             svgDocument.style.cursor = 'default';
             panStart_Spacebar = true;
             panAction_Spacebar = false;
@@ -572,17 +513,6 @@ function panEnd(evt){
 // pan with mouse down
 function panEnd2(evt){
     if(panAction_Mouse && !panStart_Mouse) {
-            var panViewBoxX = 0;
-            var panViewBoxY = 0;
-            var panViewBoxWidth = 0;
-            var panViewBoxHeight = 0;
-            var panOldX = 0;
-            var panOldY = 0;
-            var panNewX = 0;
-            var panNewY = 0;
-            var newViewBoxX = 0;
-            var newViewBoxY = 0;
-            
             svgDocument.style.cursor = 'default';
             panStart_Mouse = true;
             panAction_Mouse = false;
@@ -617,30 +547,22 @@ function doScroll(evt){
         var m = svgDocument.getScreenCTM();
         p = p.matrixTransform(m.inverse());
         
-        var token = svgDocument.getAttribute("viewBox").split(" ");
-        var viewBoxX = parseFloat(token[0]);
-        var viewBoxY = parseFloat(token[1]);
-        var viewBoxWidth = parseFloat(token[2]);
-        var viewBoxHeight = parseFloat(token[3]);
-
         // algorithm to zoom in and gravitate towards cursor scroll
-        var newViewBoxWidth = viewBoxWidth*zoomAmount;
-        var newViewBoxHeight = viewBoxHeight*zoomAmount;
+        var newViewBoxWidth = viewBox.width * zoomAmount;
+        var newViewBoxHeight = viewBox.height * zoomAmount;
         
         // these should always turn out positive and between 0 and 1.0, because client cursor must be within svg x to x+width and y to y+height
-        var fracOfSVGX = (p.x - viewBoxX)/viewBoxWidth;
-        var fracOfSVGY = (p.y - viewBoxY)/viewBoxHeight;
+        var fracOfSVGX = (p.x - viewBox.x) / viewBox.width;
+        var fracOfSVGY = (p.y - viewBox.y) / viewBox.height;
         
-        var leftWidth = fracOfSVGX*newViewBoxWidth; // offset to new x
-        var upperHeight = fracOfSVGY*newViewBoxHeight; // offset to new y
-        
-        var newViewBoxX = p.x - leftWidth;
-        var newViewBoxY = p.y - upperHeight;
-        
-        // make new viewbox and insert it into the svg
-        var format = formatViewBox(newViewBoxX, newViewBoxY, newViewBoxWidth, newViewBoxHeight);
-        svgDocument.setAttribute("viewBox", format);
-        printDebugInfo();
+        var leftWidth = fracOfSVGX * newViewBoxWidth; // offset to new x
+        var upperHeight = fracOfSVGY * newViewBoxHeight; // offset to new y
+
+        viewBox.x = p.x - leftWidth;
+        viewBox.y = p.y - upperHeight;
+        viewBox.width = newViewBoxWidth;
+        viewBox.height = newViewBoxHeight;
+        setViewBox();
     }
 }
 
@@ -657,19 +579,17 @@ function getWidth() {
 
 // to prevent selection of text; prevent text Ibar cursor when dragging
 function disableSelection(){
-    document.onselectstart = function(){return false}
+    document.onselectstart = function(){return false};
     document.body.style.cursor = "default"
 }
 
 // make aspect ratio of new viewbox match the screen aspect ratio; useful later, when adding debug info to corner of screen
 function fillViewBoxToScreen(){
-    var newViewBox = svgDocument.getAttribute("viewBox");
-    var tokens = newViewBox;
-    var token = tokens.split(" ");
-    var viewBoxX = parseFloat(token[0]);
-    var viewBoxY = parseFloat(token[1]);
-    var viewBoxWidth = parseFloat(token[2]);
-    var viewBoxHeight = parseFloat(token[3]);
+    var viewBox = getViewBox();
+    var viewBoxX = viewBox.x;
+    var viewBoxY = viewBox.y;
+    var viewBoxWidth = viewBox.width;
+    var viewBoxHeight = viewBox.height;
     
     var newViewBoxX = viewBoxX;
     var newViewBoxY = viewBoxY;
@@ -690,7 +610,7 @@ function fillViewBoxToScreen(){
         newViewBoxY = viewBoxY - (newViewBoxHeight - viewBoxHeight)/2;
     }
     var format = formatViewBox(newViewBoxX, newViewBoxY, newViewBoxWidth, newViewBoxHeight);
-    
+
     svgDocument.setAttribute("viewBox", format);
 }
 
@@ -701,14 +621,6 @@ function mouseMoveEvent(evt){
 
 function printDebugInfo(){
     if(debugMode){
-        var viewBox = svgDocument.getAttribute("viewBox");
-        var tokens = viewBox;
-        var token = tokens.split(" ");
-        var viewBoxX = parseFloat(token[0]);
-        var viewBoxY = parseFloat(token[1]);
-        var viewBoxWidth = parseFloat(token[2]);
-        var viewBoxHeight = parseFloat(token[3]);
-        
         if(!debugTextElement){
             debugTextElement = htmlDoc.createElement("div");
             var textLines = 9; // number of lines to display in debug info
@@ -731,12 +643,12 @@ function printDebugInfo(){
             document.body.appendChild(debugTextElement); // add to DOM
         }
         debugChildren[0].innerHTML = "Debug Info:";
-        debugChildren[1].innerHTML = "ViewBox X: " + viewBoxX;
-        debugChildren[2].innerHTML = "ViewBox Y: " + viewBoxY;
-        debugChildren[3].innerHTML = "ViewBox Width: " + viewBoxWidth;
-        debugChildren[4].innerHTML = "ViewBox Height: " + viewBoxHeight;
-        debugChildren[5].innerHTML = "CurrentVBW/InitVBW: " + viewBoxWidth/origSVGWidth;
-        debugChildren[6].innerHTML = "CurrentVBH/InitVBH: " + viewBoxHeight/origSVGHeight;
+        debugChildren[1].innerHTML = "ViewBox X: " + viewBox.x;
+        debugChildren[2].innerHTML = "ViewBox Y: " + viewBox.y;
+        debugChildren[3].innerHTML = "ViewBox Width: " + viewBox.width;
+        debugChildren[4].innerHTML = "ViewBox Height: " + viewBox.height;
+        debugChildren[5].innerHTML = "CurrentVBW/InitVBW: " + viewBox.width/origSVGWidth;
+        debugChildren[6].innerHTML = "CurrentVBH/InitVBH: " + viewBox.height/origSVGHeight;
         debugChildren[7].innerHTML = "Client X: " + mouseEvent.clientX;
         debugChildren[8].innerHTML = "Client Y: " + mouseEvent.clientY;
     }
@@ -749,4 +661,20 @@ function formatViewBox(x, y, width, height){
     parseFloat(y) + ' ' +
     parseFloat(width) + ' ' +
     parseFloat(height);
+}
+
+// helper to parse the viewbox frame
+function getViewBox(viewBoxText){
+    var tokens = viewBoxText && viewBoxText.split(" ") || svgDocument.getAttribute("viewBox").split(" ");
+    return {
+        x: parseFloat(tokens[0]),
+        y: parseFloat(tokens[1]),
+        width: parseFloat(tokens[2]),
+        height: parseFloat(tokens[3])
+    };
+}
+
+function setViewBox(){
+    svgDocument.setAttribute("viewBox", formatViewBox(viewBox.x, viewBox.y, viewBox.width, viewBox.height));
+    printDebugInfo();
 }
