@@ -194,7 +194,7 @@ function addEventListeners(){
 			if(clickAndDragBehavior == "pan"){
                 svgDocument.addEventListener("mousedown", panBegin2, false); // mouse panning
 				document.addEventListener("mousemove", panMove2, false); // mouse panning
-                svgDocument.addEventListener("mouseup", panEnd2, false); // mouse panning
+                document.addEventListener("mouseup", panEnd2, false); // mouse panning
 			} else if(clickAndDragBehavior == "zoomBox"){
 				svgDocument.addEventListener("mousedown", zoomMouseDown, false); // zoom box
 				svgDocument.addEventListener("mousemove", zoomMouseMove, false); // zoom box
@@ -202,13 +202,13 @@ function addEventListeners(){
 			} else { // default to mouse panning									
 				svgDocument.addEventListener("mousedown", panBegin2, false); // mouse panning
                 document.addEventListener("mousemove", panMove2, false); // mouse panning
-				svgDocument.addEventListener("mouseup", panEnd2, false); // mouse panning
+                document.addEventListener("mouseup", panEnd2, false); // mouse panning
 			}
 		} catch(e){
 			// default to mouse panning
 			svgDocument.addEventListener("mousedown", panBegin2, false); // mouse panning
             document.addEventListener("mousemove", panMove2, false); // mouse panning
-			svgDocument.addEventListener("mouseup", panEnd2, false); // mouse panning
+            document.addEventListener("mouseup", panEnd2, false); // mouse panning
 		}
 		
 		try{
