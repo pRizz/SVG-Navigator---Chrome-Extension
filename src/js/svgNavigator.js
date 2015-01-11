@@ -183,11 +183,11 @@ function insertZoomRect(){
 
 function addEventListeners(){
     // event listeners
-    svgDocument.addEventListener("keydown", panBegin, false); // spacebar panning
-    svgDocument.addEventListener("mousemove", panMove, false); // spacebar panning
-    svgDocument.addEventListener("keyup", panEnd, false); // spacebar panning
-    svgDocument.addEventListener("keyup", zoomOut, false); // alt key zoom out
-    svgDocument.addEventListener("keyup", zoomOriginal, false); // escape key zoom out
+    document.addEventListener("keydown", panBegin, false); // spacebar panning
+    document.addEventListener("mousemove", panMove, false); // spacebar panning
+    document.addEventListener("keyup", panEnd, false); // spacebar panning
+    document.addEventListener("keyup", zoomOut, false); // alt key zoom out
+    document.addEventListener("keyup", zoomOriginal, false); // escape key zoom out
 	// retrieve options from stored settings
 	chrome.extension.sendRequest("localStorage",
 	function(response){

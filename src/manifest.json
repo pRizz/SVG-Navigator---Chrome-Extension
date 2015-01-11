@@ -1,7 +1,7 @@
 {
     "name": "SVG Navigator",
     "description": "This extension extends the built in SVG viewer in Chrome by adding zooming and panning capabilities.",
-    "version": "2.3.1",
+    "version": "2.3.2",
     "icons": {
         "16": "icon_sans_16.png",
         "48": "icon_sans_48.png",
@@ -20,12 +20,12 @@
     },
     
     "content_scripts": [
-    {
-        "matches": ["http://*/*.svg", "https://*/*.svg", "ftp://*/*.svg", "file://*/*.svg"],
-        "js": ["options_custom/js/defaultSettings.js", "js/svgNavigator.js"],
-        "css": ["css/svgNavigator.css"],
-        "run_at": "document_end"
-    }
+        {
+            "matches": ["http://*/*.svg", "https://*/*.svg", "ftp://*/*.svg", "file://*/*.svg"],
+            "js": ["options_custom/js/defaultSettings.js", "js/svgNavigator.js"],
+            "css": ["css/svgNavigator.css"],
+            "run_at": "document_end"
+        }
     ],
     
     "manifest_version": 2,
