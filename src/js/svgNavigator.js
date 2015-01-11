@@ -377,8 +377,8 @@ function zoomOriginal(evt){
     if(!zoomAction && !(panAction_Spacebar || panAction_Mouse) && evt.type == "keyup" || evt === true){
         var charCode = evt.charCode || evt.keyCode;
         
-        // escape key
-        if (charCode == 27 || evt === true) {
+        // escape key or Reset button pressed or ctrl-0
+        if (charCode == 27 || evt === true || (evt.ctrlKey && charCode == 48)) {
             viewBox = getViewBox(origViewBox);
             setViewBox();
         }
