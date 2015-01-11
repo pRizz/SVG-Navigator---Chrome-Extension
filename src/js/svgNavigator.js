@@ -596,7 +596,7 @@ function doScroll(evt){
     if(!zoomAction && !(panAction_Spacebar || panAction_Mouse)){
         evt.preventDefault(); // prevent default scroll action in chrome
 
-		var maxWheelDelta = 2700; // ad hoc limit
+		var maxWheelDelta = 1200; // ad hoc limit
 		var wheelDelta = evt.wheelDelta;
 		var wheelDeltaNormalized = wheelDelta/maxWheelDelta; // [-1, 1]
 		if(wheelDeltaNormalized > 1){
@@ -609,8 +609,7 @@ function doScroll(evt){
 		var maxScrollSensitivity = 10; // check this matches the manifest.js max for scrollSensitivity
 		var scrollAmountNormalized = scrollAmount/maxScrollSensitivity; // [-1, 1]
         // scrolling in makes viewbox smaller, so zoomAmount is smaller
-        var zoomAmount = scrollAmountNormalized < 0 ? -1 * scrollAmountNormalized + 1.005 : -0.99 * scrollAmountNormalized + 0.995 ; // zoom out : zoom in; (1, 5) : (0, 1)
-        
+        var zoomAmount = scrollAmountNormalized < 0 ? 1 + (-scrollAmountNormalized + 0.01) : 1 / (1 + (scrollAmountNormalized + 0.01)) ; // zoom out : zoom in; (1, 2) : (0, 0.5)
         var p = svgDocElement.createSVGPoint();
         p.x = evt.clientX;
         p.y = evt.clientY;
@@ -618,19 +617,13 @@ function doScroll(evt){
         var m = svgDocument.getScreenCTM();
         p = p.matrixTransform(m.inverse());
         
-        var newViewBox = svgDocument.getAttribute("viewBox");
-        var tokens = newViewBox;
-        var token = tokens.split(" ");
+        var token = svgDocument.getAttribute("viewBox").split(" ");
         var viewBoxX = parseFloat(token[0]);
         var viewBoxY = parseFloat(token[1]);
         var viewBoxWidth = parseFloat(token[2]);
         var viewBoxHeight = parseFloat(token[3]);
-        
-        var viewBoxCenterX = viewBoxX + viewBoxWidth/2;
-        var viewBoxCenterY = viewBoxY + viewBoxHeight/2;
-        
+
         // algorithm to zoom in and gravitate towards cursor scroll
-        // zoom 10% towards cursor
         var newViewBoxWidth = viewBoxWidth*zoomAmount;
         var newViewBoxHeight = viewBoxHeight*zoomAmount;
         
@@ -651,33 +644,14 @@ function doScroll(evt){
     }
 }
 
-
 // function to get the height of the window containing the svg in pixels; this is not the same as the svg viewbox or screen resolution
-function getHeight()
-{
-    var y = 0;
-    if (self.innerHeight){
-        y = self.innerHeight;
-    } else if (document.documentElement && document.documentElement.clientHeight){
-        y = document.documentElement.clientHeight;
-    } else if (document.body){
-        y = document.body.clientHeight;
-    }
-    return y;
+function getHeight() {
+    return self.innerHeight;
 }
 
 // function to get the width of the window containing the svg in pixels; this is not the same as the svg viewbox or screen resolution
-function getWidth()
-{
-    var x = 0;
-    if (self.innerHeight){
-        x = self.innerWidth;
-    } else if (document.documentElement && document.documentElement.clientHeight){
-        x = document.documentElement.clientWidth;
-    } else if (document.body){
-        x = document.body.clientWidth;
-    }
-    return x;
+function getWidth() {
+    return self.innerWidth;
 }
 
 
