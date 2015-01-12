@@ -646,7 +646,7 @@ function printDebugInfo(){
 			debugTextElement.style.border = "1px solid #BBB";
 			debugTextElement.style["border-radius"] = "5px";
 			debugTextElement.style.color = "white";
-			debugTextElement.style["font-family"] = "'Lucida Grande', sans-serif";
+			debugTextElement.style["font-family"] = "'Consolas', 'Lucida Grande', sans-serif";
 			
             document.body.appendChild(debugTextElement); // add to DOM
         }

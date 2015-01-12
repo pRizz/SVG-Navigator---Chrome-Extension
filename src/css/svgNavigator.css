@@ -16,7 +16,7 @@
     background: rgba(0, 0, 0, 0.0);
     border: 1px solid #BBB;
     border-radius: 5px;
-    font-family: 'Lucida Grande', sans-serif;
+    font-family: 'Consolas', 'Lucida Grande', Helvetica, Arial, Verdana, sans-serif;
     overflow: hidden;
 }
 
