@@ -185,6 +185,7 @@ function addEventListeners(){
     document.addEventListener("keyup", panEnd, false); // spacebar panning
     document.addEventListener("keyup", zoomOut, false); // alt key zoom out
     document.addEventListener("keyup", zoomOriginal, false); // escape key zoom out
+    document.addEventListener("keyup", zoomCtrlKeys, false); // ctrl key zoom in/out
 	// retrieve options from stored settings
 	chrome.extension.sendRequest("localStorage",
 	function(response){
@@ -338,12 +339,8 @@ function zoomMouseUp(evt) {
 // zoom out when user presses alt key
 function zoomOut(evt){
     if(!zoomAction && !(panAction_Spacebar || panAction_Mouse) && evt.type == "keyup" || evt === true){
-        if (evt.charCode) {
-            var charCode = evt.charCode;
-        } else {
-            charCode = evt.keyCode;
-        }
-        
+        var charCode = evt.charCode || evt.keyCode;
+
         // alt key
         if (charCode == 18 || evt === true) {
             zoomBy(1.25)
@@ -372,15 +369,26 @@ function zoomBy(zoomAmount){
     setViewBox();
 }
 
-// zoom back to original view when escape button is clicked
+// zoom back to original view when escape button is clicked or Reset button pressed
 function zoomOriginal(evt){
-    if(!zoomAction && !(panAction_Spacebar || panAction_Mouse) && evt.type == "keyup" || evt === true){
+    var charCode = evt.charCode || evt.keyCode;
+    if(!zoomAction && !(panAction_Spacebar || panAction_Mouse) && ((evt.type == "keyup" && charCode == 27) || evt === true)){
+        viewBox = getViewBox(origViewBox);
+        setViewBox();
+    }
+}
+
+// zoom according to ctrl keys
+function zoomCtrlKeys(evt){
+    if(!zoomAction && !(panAction_Spacebar || panAction_Mouse) && evt.type == "keyup" && evt.ctrlKey){
         var charCode = evt.charCode || evt.keyCode;
-        
-        // escape key or Reset button pressed or ctrl-0
-        if (charCode == 27 || evt === true || (evt.ctrlKey && charCode == 48)) {
+        if (charCode == 48) { // ctrl-0, reset zoom
             viewBox = getViewBox(origViewBox);
             setViewBox();
+        } else if (charCode == 187) { // ctrl-+, zoom in
+            zoomBy(0.8)
+        } else if (charCode == 189) { // ctrl--, zoom out
+            zoomBy(1.25)
         }
     }
 }
