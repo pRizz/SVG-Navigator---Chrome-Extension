@@ -34,12 +34,11 @@ var svgNS = "http://www.w3.org/2000/svg";
 var baseURI = document.rootElement && document.rootElement.baseURI || undefined;
 if(baseURI && baseURI.indexOf(".svg", baseURI.length - 4) !== -1){
 	// wrap the svg document in an html document
-	var svgDoc = document;
-	var svgDocElement = svgDoc.documentElement;
+	var svgDocElement = document.documentElement;
 	var htmlDoc = document.implementation.createHTMLDocument();
 
 	svgContext = svgDocElement;
-	document.replaceChild(htmlDoc.documentElement, svgDoc.documentElement);
+	document.replaceChild(htmlDoc.documentElement, svgDocElement);
 
 	// the htmlDoc is the new document object
 	document.body.appendChild(svgDocElement);
@@ -187,8 +186,7 @@ function addEventListeners(){
     document.addEventListener("keyup", zoomOriginal, false); // escape key zoom out
     document.addEventListener("keyup", zoomCtrlKeys, false); // ctrl key zoom in/out
 	// retrieve options from stored settings
-	chrome.extension.sendRequest("localStorage",
-	function(response){
+	chrome.extension.sendRequest("localStorage", function(response){
 		// settings were stored as JSON in store.js
 		try{
 			var clickAndDragBehavior = JSON.parse(response["store.settings.clickAndDragBehavior"]);
@@ -395,12 +393,7 @@ function zoomCtrlKeys(evt){
 
 function panBegin(evt){
     if(!panAction_Mouse && !zoomAction && evt.type == "keydown"){
-        if (evt.charCode) {
-            var charCode = evt.charCode;
-        } else {
-            charCode = evt.keyCode;
-        }
-        
+        var charCode = evt.charCode || evt.keyCode;
         // spacebar
         if (charCode == 32 && panStart_Spacebar == true) {
             //alert("start");
@@ -502,13 +495,8 @@ function panMove2(evt) {
 
 
 function panEnd(evt){
-    if(panAction_Spacebar && !panStart_Spacebar && evt.type == "keyup"){
-        if (evt.charCode) {
-            var charCode = evt.charCode;
-        } else {
-            charCode = evt.keyCode;
-        }
-        
+    if(evt.type == "keyup"){
+        var charCode = evt.charCode || evt.keyCode;
         // spacebar
         if (charCode == 32) {
             svgDocument.style.cursor = 'default';
@@ -520,11 +508,9 @@ function panEnd(evt){
 
 // pan with mouse down
 function panEnd2(evt){
-    if(panAction_Mouse && !panStart_Mouse) {
-            svgDocument.style.cursor = 'default';
-            panStart_Mouse = true;
-            panAction_Mouse = false;
-    }
+    svgDocument.style.cursor = 'default';
+    panStart_Mouse = true;
+    panAction_Mouse = false;
 }
 
 // implementation for scroll zooming
