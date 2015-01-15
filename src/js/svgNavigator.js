@@ -222,7 +222,7 @@ function addEventListeners(){
 		try{
 			debugMode = JSON.parse(response["store.settings.showDebugInfo"]);
 		    if(debugMode){
-		        svgDocument.addEventListener("mousemove", mouseMoveEvent, false);
+		        document.addEventListener("mousemove", mouseMoveEvent, false);
 		    }
 		    printDebugInfo();
 		} catch(e){
