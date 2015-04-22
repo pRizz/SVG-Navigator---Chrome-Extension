@@ -13,14 +13,14 @@ this.manifest = {
                 "values": [
                     {
                         "value": "pan",
-                        "text": "Pan",
+                        "text": "Pan"
                     },
                     {
                         "value": "zoomBox",
-                        "text": "Zoom Box",
+                        "text": "Zoom Box"
                     }
-                ],
-            },
+                ]
+            }
 			
 		},
 		{
@@ -42,22 +42,36 @@ this.manifest = {
 			"group": i18n.get("Behaviors"),
 			"name": "invertScroll",
             "type": "checkbox",
-            "label": "Invert scroll",			
+            "label": "Invert scroll"
 		},
 		{
 			"tab": i18n.get("Settings"),
 			"group": i18n.get("Behaviors"),
 			"name": "resetBehaviors",
             "type": "button",
-            "text": "Reset Behaviors to Defaults",			
+            "text": "Reset Behaviors to Defaults"
 		},
 		{
 			"tab": i18n.get("Settings"),
-			"group": i18n.get("Debug"),
-			"name": "showDebugInfo",
+			"group": i18n.get("Toolbar"),
+			"name": "toolbarAutoHide",
             "type": "checkbox",
-            "label": "Show Debugging Info",			
+            "label": "Auto hide"
 		},
+        {
+            "tab": i18n.get("Settings"),
+            "group": i18n.get("Toolbar"),
+            "name": "toolbarEnabled",
+            "type": "checkbox",
+            "label": "Enabled"
+        },
+        {
+            "tab": i18n.get("Settings"),
+            "group": i18n.get("Debug"),
+            "name": "showDebugInfo",
+            "type": "checkbox",
+            "label": "Show Debugging Info",
+        },
         {
             "tab": i18n.get("information"),
             "group": "Description",
@@ -92,7 +106,7 @@ this.manifest = {
             "name": "Acknowledgements",
             "type": "description",
             "text": i18n.get("Acknowledgements")
-        },
+        }
     ],
     "alignment": [
     ]

@@ -4,5 +4,7 @@ this.SVGNavigatorDefaultSettings = {
 	"clickAndDragBehavior": "pan",
 	"scrollSensitivity": 7,
 	"invertScroll": false,
-	"showDebugInfo": false,
+	"toolbarAutoHide": true,
+	"toolbarEnabled": true,
+	"showDebugInfo": false
 };

@@ -4,6 +4,9 @@ this.i18n = {
         "en": "Settings",
         "de": "Optionen"
     },
+    "toolbar": {
+        "en": "Settings"
+    },
     "search": {
         "en": "Search",
         "de": "Suche"
@@ -57,5 +60,5 @@ this.i18n = {
     "Acknowledgements": {
         "en": "Concept originally created by Asad Akram, Ryan Oblenida aka Mr. O, and Peter Ryszkiewicz at the Illinois Institute of Technology. Adapted as a Google Chrome extension by Peter Ryszkiewicz. Work was inspired by Kevin Lindsey at <a href=\"http://www.kevlindev.com/index.htm\">http://www.kevlindev.com/index.htm</a>.",
         "de": ""
-    },
+    }
 };

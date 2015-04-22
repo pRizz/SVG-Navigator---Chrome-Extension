@@ -107,57 +107,77 @@ if(baseURI && baseURI.indexOf(".svg", baseURI.length - 4) !== -1){
 	var clickAndDragBehavior = SVGNavigatorDefaultSettings.clickAndDragBehavior;
 	var scrollSensitivity = SVGNavigatorDefaultSettings.scrollSensitivity;
 	var invertScroll = SVGNavigatorDefaultSettings.invertScroll;
-	var showDebugInfo = SVGNavigatorDefaultSettings.showDebugInfo;    
-    
+	var toolbarAutoHide = SVGNavigatorDefaultSettings.toolbarAutoHide;
+	var toolbarEnabled = SVGNavigatorDefaultSettings.toolbarEnabled;
+	var showDebugInfo = SVGNavigatorDefaultSettings.showDebugInfo;
+
     // for debugging
     var debugTextElement;
     var debugChildren = [];
     var debugMode = showDebugInfo;
-    var mouseEvent = {clientX:0, clientY:0};
+    var mouseEvent = {
+        clientX:0,
+        clientY:0
+    };
     
     addEventListeners();
-    
+    addToolbar();
     disableSelection();
-    
-    // add the toolbar
-    var toolbarContainer = htmlDoc.createElement("div");
-    toolbarContainer.className = "toolbarcontainer";
-    
-    var toolbarDiv = htmlDoc.createElement("div");
-    toolbarDiv.className = "toolbar";
-    toolbarContainer.appendChild(toolbarDiv);
+}
 
-    var plusButton = htmlDoc.createElement("div");
-    plusButton.innerHTML = "+";
-    plusButton.className = "toolbarbutton toolbarbuttonborder";
-    plusButton.onclick = function(evt){
-        zoomBy(0.8);
-    };
-    toolbarDiv.appendChild(plusButton);
+function addToolbar() {
+    chrome.extension.sendRequest("localStorage", function(response) {
+        try{
+            toolbarAutoHide = JSON.parse(response["store.settings.toolbarAutoHide"]);
+            toolbarEnabled = JSON.parse(response["store.settings.toolbarEnabled"]);
+        } catch(e){
+            // with defaults
+            console.error("Couldn't read settings: " + e);
+        }
 
-    var minusButton = htmlDoc.createElement("div");
-    minusButton.innerHTML = "-";
-    minusButton.className = "toolbarbutton toolbarbuttonborder";
-    minusButton.onclick = function(evt){
-        zoomOut(true);
-    };
-    toolbarDiv.appendChild(minusButton);
-    
-    var resetButton = htmlDoc.createElement("div");
-    resetButton.innerHTML = "Reset";
-    resetButton.className = "toolbarbutton";
-    resetButton.onclick = function(evt){
-        zoomOriginal(true)
-    };
-    toolbarDiv.appendChild(resetButton);
-    
-    document.body.appendChild(toolbarContainer); // add to DOM
-    
-    // make the toolbar fadeout after 5 seconds
-    toolbarContainer.style.opacity = 1;
-    setTimeout(function(){
-        toolbarContainer.style.opacity = null;
-    }, 5000);
+        if(toolbarEnabled) {
+            var toolbarContainer = htmlDoc.createElement("div");
+            toolbarContainer.className = "toolbarcontainer";
+
+            var toolbarDiv = htmlDoc.createElement("div");
+            toolbarDiv.className = "toolbar";
+            toolbarContainer.appendChild(toolbarDiv);
+
+            var plusButton = htmlDoc.createElement("div");
+            plusButton.innerHTML = "+";
+            plusButton.className = "toolbarbutton toolbarbuttonborder";
+            plusButton.onclick = function(evt){
+                zoomBy(0.8);
+            };
+            toolbarDiv.appendChild(plusButton);
+
+            var minusButton = htmlDoc.createElement("div");
+            minusButton.innerHTML = "-";
+            minusButton.className = "toolbarbutton toolbarbuttonborder";
+            minusButton.onclick = function(evt){
+                zoomOut(true);
+            };
+            toolbarDiv.appendChild(minusButton);
+
+            var resetButton = htmlDoc.createElement("div");
+            resetButton.innerHTML = "Reset";
+            resetButton.className = "toolbarbutton";
+            resetButton.onclick = function(evt){
+                zoomOriginal(true)
+            };
+            toolbarDiv.appendChild(resetButton);
+
+            document.body.appendChild(toolbarContainer); // add to DOM
+
+            // make the toolbar fadeout after 5 seconds
+            toolbarContainer.style.opacity = 1;
+            if(toolbarAutoHide) {
+                setTimeout(function(){
+                    toolbarContainer.style.opacity = null;
+                }, 5000);
+            }
+        }
+    });
 }
 
 // insert a rectangle object into the svg, acting as the zoom rectangle
