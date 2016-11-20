@@ -40,4 +40,6 @@ Useful Links
 
 Acknowledgements
 -----------------------------
-Concept originally created by Asad Akram, Ryan Oblenida aka Mr. O, and Peter Ryszkiewicz at the Illinois Institute of Technology. Adapted as a Google Chrome extension by Peter Ryszkiewicz. Work was inspired by Kevin Lindsey at http://www.kevlindev.com/index.htm.
+Concept originally created by Asad Akram, Ryan Oblenida aka Mr. O, and Peter Ryszkiewicz at the Illinois Institute of Technology.
+Adapted as a Google Chrome extension by Peter Ryszkiewicz. Work was inspired by Kevin Lindsey at http://www.kevlindev.com/index.htm.
+Illustrations by Cara Stemo.
