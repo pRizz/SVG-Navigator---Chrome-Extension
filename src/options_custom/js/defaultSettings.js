@@ -6,5 +6,6 @@ this.SVGNavigatorDefaultSettings = {
 	"invertScroll": false,
 	"toolbarAutoHide": true,
 	"toolbarEnabled": true,
-	"showDebugInfo": false
+	"showDebugInfo": false,
+	"svgBackgroundColor": "white"
 };

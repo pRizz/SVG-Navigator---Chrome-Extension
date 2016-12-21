@@ -110,6 +110,7 @@ if(baseURI && baseURI.indexOf(".svg", baseURI.length - 4) !== -1){
 	var toolbarAutoHide = SVGNavigatorDefaultSettings.toolbarAutoHide;
 	var toolbarEnabled = SVGNavigatorDefaultSettings.toolbarEnabled;
 	var showDebugInfo = SVGNavigatorDefaultSettings.showDebugInfo;
+    var svgBackgroundColor = SVGNavigatorDefaultSettings.svgBackgroundColor;
 
     // for debugging
     var debugTextElement;
@@ -249,7 +250,15 @@ function addEventListeners(){
 			// with defaults
 		    printDebugInfo();
 		}
-	});
+
+        try{
+            svgBackgroundColor = JSON.parse(response["store.settings.svgBackgroundColor"]);
+            document.body.style.backgroundColor = svgBackgroundColor;
+        } catch(e){
+            // with defaults
+            document.body.style.backgroundColor = svgBackgroundColor;
+        }
+    });
 }
 
 /* Zoom Functions */

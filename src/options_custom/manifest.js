@@ -1,7 +1,7 @@
 // SAMPLE
 this.manifest = {
     "name": "SVG Navigator",
-    "icon": "icon_sans_38.png",
+    "icon": "icon_38.png",
     "settings": [
 		{
 			"tab": i18n.get("Settings"),
@@ -71,6 +71,20 @@ this.manifest = {
             "name": "showDebugInfo",
             "type": "checkbox",
             "label": "Show Debugging Info",
+        },
+        {
+            "tab": i18n.get("Settings"),
+            "group": i18n.get("Background"),
+            "name": "svgBackgroundColor",
+            "type": "text",
+            "label": "Background Color (any valid CSS color)",
+        },
+        {
+            "tab": i18n.get("Settings"),
+            "group": i18n.get("Background"),
+            "name": "resetBackgroundColor",
+            "type": "button",
+            "text": "Reset Background Color to Default (white)"
         },
         {
             "tab": i18n.get("information"),

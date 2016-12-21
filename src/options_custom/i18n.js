@@ -20,7 +20,10 @@ this.i18n = {
         "de": "Information"
     },
     "Description": {
-        "en": "SVG Navigator is an extension for Google Chrome that adds pan and zoom features to existing SVG files on the web.",
+        "en": "SVG Navigator is an extension for Google Chrome that adds pan and zoom features to existing SVG files on the web.\
+<br>If you like this extension and want to support its development, please consider donating at:\
+<br><a href=\"https://paypal.me/PeterRyszkiewicz/2\">https://paypal.me/PeterRyszkiewicz/2</a>\
+<br><a href=\"https://cash.me/$PeterRyszkiewicz/2\">https://cash.me/$PeterRyszkiewicz/2</a>",
         "de": ""
     },
     "Usage": {
@@ -58,7 +61,7 @@ this.i18n = {
         "de": ""
     },
     "Acknowledgements": {
-        "en": "Concept originally created by Asad Akram, Ryan Oblenida aka Mr. O, and Peter Ryszkiewicz at the Illinois Institute of Technology. Adapted as a Google Chrome extension by Peter Ryszkiewicz. Work was inspired by Kevin Lindsey at <a href=\"http://www.kevlindev.com/index.htm\">http://www.kevlindev.com/index.htm</a>.",
+        "en": "Concept originally created by Asad Akram, Ryan Oblenida aka Mr. O, and Peter Ryszkiewicz at the Illinois Institute of Technology. Adapted as a Google Chrome extension by Peter Ryszkiewicz. Work was inspired by Kevin Lindsey at <a href=\"http://www.kevlindev.com/index.htm\">http://www.kevlindev.com/index.htm</a>. Illustrations by Cara Stemo.",
         "de": ""
     }
 };

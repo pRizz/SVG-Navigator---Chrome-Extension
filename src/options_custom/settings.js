@@ -7,6 +7,10 @@ window.addEvent("domready", function () {
 			settings.manifest.scrollSensitivity.set(SVGNavigatorDefaultSettings.scrollSensitivity);
 			settings.manifest.invertScroll.set(SVGNavigatorDefaultSettings.invertScroll);
         });
+        settings.manifest.resetBackgroundColor.addEvent("action", function () {
+            // reset the background color to default
+            settings.manifest.svgBackgroundColor.set(SVGNavigatorDefaultSettings.svgBackgroundColor);
+        });
     });
     
     // Option 2: Do everything manually:
