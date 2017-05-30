@@ -28,42 +28,102 @@
  * Contains all the logic for panning, zooming, and other controls.
  */
 
+// TODO: Reduce the need for globals
+
 // define svg namespace
 var svgNS = "http://www.w3.org/2000/svg";
+var svgDocument;
 
-var baseURI = document.rootElement && document.rootElement.baseURI || undefined;
-if(baseURI && baseURI.indexOf(".svg", baseURI.length - 4) !== -1){
-	// wrap the svg document in an html document
-	var svgDocElement = document.documentElement;
-	var htmlDoc = document.implementation.createHTMLDocument();
+// wrap the svg document in an html document
+var svgDocElement;
+var htmlDoc;
+var origSVGWidth;
+var origSVGHeight;
+var origViewBox;
+var viewBox;
 
-	svgContext = svgDocElement;
-	document.replaceChild(htmlDoc.documentElement, svgDocElement);
+// global variables for zooming
+var zoomAction = false;
+var zoomX1 = 0;
+var zoomY1 = 0;
+var zoomX2 = 0;
+var zoomY2 = 0;
+var zoomWidth = 0;
+var zoomHeight = 0;
+var zoomRectangle;
 
-	// the htmlDoc is the new document object
-	document.body.appendChild(svgDocElement);
-	document.body.style.margin = 0;
+// global variables for panning
+var panStart_Spacebar = true; // TODO try to not need these separate variables
+var panAction_Spacebar = false; // TODO try to not need these separate variables
+var panStart_Mouse = true; // TODO try to not need these separate variables
+var panAction_Mouse = false; // TODO try to not need these separate variables
+var panViewBoxX = 0;
+var panViewBoxY = 0;
+var panViewBoxWidth = 0;
+var panViewBoxHeight = 0;
+var panOldX = 0;
+var panOldY = 0;
+var panNewX = 0;
+var panNewY = 0;
 
-	// document variables
-	var svgElements = document.getElementsByTagName("svg");
-	
+// global settings, defaults
+var clickAndDragBehavior = SVGNavigatorDefaultSettings.clickAndDragBehavior;
+var scrollSensitivity = SVGNavigatorDefaultSettings.scrollSensitivity;
+var invertScroll = SVGNavigatorDefaultSettings.invertScroll;
+var toolbarAutoHide = SVGNavigatorDefaultSettings.toolbarAutoHide;
+var toolbarEnabled = SVGNavigatorDefaultSettings.toolbarEnabled;
+var showDebugInfo = SVGNavigatorDefaultSettings.showDebugInfo;
+var svgBackgroundColor = SVGNavigatorDefaultSettings.svgBackgroundColor;
+
+// for debugging
+var debugTextElement;
+var debugChildren = [];
+var debugMode = showDebugInfo;
+var mouseEvent = {
+    clientX: 0,
+    clientY: 0
+};
+
+main();
+
+function main() {
+    "use strict";
+
+    if(!isFileCompatible()) { return }
+
+    // wrap the svg document in an html document
+    svgDocElement = document.documentElement;
+    htmlDoc = document.implementation.createHTMLDocument();
+
+    document.replaceChild(htmlDoc.documentElement, svgDocElement);
+
+    // the htmlDoc is the new document object
+    document.body.appendChild(svgDocElement);
+    document.body.style.margin = 0;
+
+    // document variables
+    var svgElements = document.getElementsByTagName("svg");
+
     // send request to apply svg nav icon to tab, as page action
+    // FIXME: using deprecated api
     chrome.extension.sendRequest("showIcon", function(response){});
-    
-    var svgDocument = svgElements[0];
-    
+
+    svgDocument = svgElements[0];
+
+    zoomRectangle = insertZoomRect();
+
     // keep aspect ratio; just remove attribute if it exists
     svgDocument.hasAttribute("preserveAspectRatio") && svgDocument.removeAttribute("preserveAspectRatio");
-    
+
     // save original svg width and height
     // TODO problematic when width or height contain percent character
-    var origSVGWidth = parseFloat(svgDocument.getAttribute("width") || getWidth());
-    var origSVGHeight = parseFloat(svgDocument.getAttribute("height") || getHeight());
+    origSVGWidth = parseFloat(svgDocument.getAttribute("width") || getWidth());
+    origSVGHeight = parseFloat(svgDocument.getAttribute("height") || getHeight());
     // make width and height 100% to fill client web browser
     svgDocument.setAttribute("width", "100%");
     svgDocument.setAttribute("height", "100%");
-    
-    var origViewBox = svgDocument.getAttribute("viewBox");
+
+    origViewBox = svgDocument.getAttribute("viewBox");
     // check if the svg document had a viewbox
     if(origViewBox == null){
         console.warn("SVG Navigator: warning: SVG had no viewbox attribute. Making new viewbox attribute.");
@@ -71,56 +131,14 @@ if(baseURI && baseURI.indexOf(".svg", baseURI.length - 4) !== -1){
         // unfortunatley, chrome's getBBox() is bugged for some SVG documents, ex: http://upload.wikimedia.org/wikipedia/commons/d/dc/USA_orthographic.svg
         // so we make the viewbox at 0,0 with width and height of client browser
         var format = formatViewBox(0, 0, origSVGWidth, origSVGHeight);
-        
+
         svgDocument.setAttribute("viewBox", format);
     }
     fillViewBoxToScreen();
     origViewBox = svgDocument.getAttribute("viewBox");
     // this variable should always be up to date and set the real viewbox when it changes
-    var viewBox = getViewBox();
+    viewBox = getViewBox();
 
-    // global variables for zooming
-    var zoomAction = false;
-    var zoomX1 = 0;
-    var zoomY1 = 0;
-    var zoomX2 = 0;
-    var zoomY2 = 0;
-    var zoomWidth = 0;
-    var zoomHeight = 0;
-    var zoomRectangle = insertZoomRect();
-    
-    // global variables for panning
-    var panStart_Spacebar = true; // TODO try to not need these separate variables
-    var panAction_Spacebar = false; // TODO try to not need these separate variables
-    var panStart_Mouse = true; // TODO try to not need these separate variables
-    var panAction_Mouse = false; // TODO try to not need these separate variables
-    var panViewBoxX = 0;
-    var panViewBoxY = 0;
-    var panViewBoxWidth = 0;
-    var panViewBoxHeight = 0;
-    var panOldX = 0;
-    var panOldY = 0;
-    var panNewX = 0;
-    var panNewY = 0;
-
-	// global settings, defaults
-	var clickAndDragBehavior = SVGNavigatorDefaultSettings.clickAndDragBehavior;
-	var scrollSensitivity = SVGNavigatorDefaultSettings.scrollSensitivity;
-	var invertScroll = SVGNavigatorDefaultSettings.invertScroll;
-	var toolbarAutoHide = SVGNavigatorDefaultSettings.toolbarAutoHide;
-	var toolbarEnabled = SVGNavigatorDefaultSettings.toolbarEnabled;
-	var showDebugInfo = SVGNavigatorDefaultSettings.showDebugInfo;
-    var svgBackgroundColor = SVGNavigatorDefaultSettings.svgBackgroundColor;
-
-    // for debugging
-    var debugTextElement;
-    var debugChildren = [];
-    var debugMode = showDebugInfo;
-    var mouseEvent = {
-        clientX:0,
-        clientY:0
-    };
-    
     addEventListeners();
     addToolbar();
     disableSelection();
@@ -700,4 +718,10 @@ function getViewBox(viewBoxText){
 function setViewBox(){
     svgDocument.setAttribute("viewBox", formatViewBox(viewBox.x, viewBox.y, viewBox.width, viewBox.height));
     printDebugInfo();
+}
+
+function isFileCompatible() {
+    const baseURI = document.rootElement && document.rootElement.baseURI || undefined;
+    if(!baseURI) { return false }
+    return baseURI.endsWith(".svg") || baseURI.endsWith(".svgz")
 }
