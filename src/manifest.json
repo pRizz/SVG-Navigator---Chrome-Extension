@@ -1,7 +1,7 @@
 {
     "name": "SVG Navigator",
     "short_name": "SVG Nav",
-    "description": "This extension adds zooming and panning capabilities to SVG files viewed in Chrome.",
+    "description": "Adds zooming and panning capabilities to SVG files",
     "version": "2.4.3",
     "icons": {
         "16": "icon_16.png",
