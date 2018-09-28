@@ -22,7 +22,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
- 
+
 /**
  * svgNavigator.js
  * Contains all the logic for panning, zooming, and other controls.
@@ -100,6 +100,7 @@ function main() {
     // the htmlDoc is the new document object
     document.body.appendChild(svgDocElement);
     document.body.style.margin = 0;
+    document.body.style['overflow-y'] = 'scroll'
 
     // document variables
     var svgElements = document.getElementsByTagName("svg");
@@ -237,7 +238,7 @@ function addEventListeners(){
 				svgDocument.addEventListener("mousedown", zoomMouseDown, false); // zoom box
 				svgDocument.addEventListener("mousemove", zoomMouseMove, false); // zoom box
 				svgDocument.addEventListener("mouseup", zoomMouseUp, false); // zoom box
-			} else { // default to mouse panning									
+			} else { // default to mouse panning
 				svgDocument.addEventListener("mousedown", panBegin2, false); // mouse panning
                 document.addEventListener("mousemove", panMove2, false); // mouse panning
                 document.addEventListener("mouseup", panEnd2, false); // mouse panning
@@ -248,7 +249,7 @@ function addEventListeners(){
             document.addEventListener("mousemove", panMove2, false); // mouse panning
             document.addEventListener("mouseup", panEnd2, false); // mouse panning
 		}
-		
+
 		try{
 			scrollSensitivity = JSON.parse(response["store.settings.scrollSensitivity"]);
 			invertScroll = JSON.parse(response["store.settings.invertScroll"]);
@@ -289,30 +290,30 @@ function zoomMouseDown(evt) {
         var p = svgDocElement.createSVGPoint();
         p.x = evt.clientX;
         p.y = evt.clientY;
-        
+
         var m = zoomRectangle.getScreenCTM();
         p = p.matrixTransform(m.inverse());
         zoomRectangle.setAttribute("x", p.x);
         zoomRectangle.setAttribute("y", p.y);
         zoomX1 = p.x;
         zoomY1 = p.y;
-        
+
         // re-set zoom rectangle stroke width
         var strokeWidth = 1;
-        
+
         var viewBoxWidth = viewBox.width;
         var viewBoxHeight = viewBox.height;
         var viewBoxAspectRatio = viewBoxWidth/viewBoxHeight;
-        
+
         var clientWidth = getWidth();
         var clientHeight = getHeight();
         var clientAspectRatio = clientWidth/clientHeight;
-        
+
         if(viewBoxAspectRatio < clientAspectRatio){
             viewBoxWidth = viewBoxHeight*clientAspectRatio;
         }
         var relativeStrokeWidth = viewBoxWidth/clientWidth;
-        
+
         zoomRectangle.setAttributeNS(null, "stroke-width", relativeStrokeWidth);
         zoomRectangle.setAttributeNS(null, "rx", relativeStrokeWidth);
     }
@@ -324,19 +325,19 @@ function zoomMouseMove(evt) {
         var p = svgDocElement.createSVGPoint();
         p.x = evt.clientX;
         p.y = evt.clientY;
-        
+
         var m = zoomRectangle.getScreenCTM();
         p = p.matrixTransform(m.inverse());
-        
+
         zoomX2 = p.x;
         zoomY2 = p.y;
         zoomWidth = Math.abs(zoomX2 - zoomX1);
         zoomHeight = Math.abs(zoomY2 - zoomY1);
-        
+
         // set top left corner point of zoom rectangle
         zoomX1 < zoomX2 ? zoomRectangle.setAttribute("x", zoomX1) : zoomRectangle.setAttribute("x", zoomX2);
         zoomY1 < zoomY2 ? zoomRectangle.setAttribute("y", zoomY1) : zoomRectangle.setAttribute("y", zoomY2);
-        
+
         zoomRectangle.setAttribute("width", zoomWidth);
         zoomRectangle.setAttribute("height", zoomHeight);
     }
@@ -352,15 +353,15 @@ function zoomMouseUp(evt) {
             // make aspect ratio of new viewbox match the screen aspect ratio; useful later, when adding debug info to corner of screen
             var zoomRectX = zoomRectangle.getAttribute("x");
             var zoomRectY = zoomRectangle.getAttribute("y");
-            
+
             viewBox.x = zoomRectX;
             viewBox.y = zoomRectY;
             viewBox.width = zoomRectWidth;
             viewBox.height = zoomRectHeight;
             var viewBoxAspectRatio = viewBox.width/viewBox.height;
-            
+
             var clientAspectRatio = getWidth()/getHeight();
-            
+
             if(viewBoxAspectRatio < clientAspectRatio){
                 viewBox.width = viewBox.height*clientAspectRatio;
                 viewBox.x = zoomRectX - (viewBox.width-zoomRectWidth)/2;
@@ -371,13 +372,13 @@ function zoomMouseUp(evt) {
             setViewBox();
         }
     }
-    
+
     // reset zoom rectangle members
     zoomX1 = 0;
     zoomY1 = 0;
     zoomRectangle.setAttribute("width", 0);
     zoomRectangle.setAttribute("height", 0);
-    
+
     zoomAction = false;
 }
 
@@ -470,10 +471,10 @@ function panMove(evt) {
         p.y = evt.clientY;
         var m = svgDocument.getScreenCTM();
         p = p.matrixTransform(m.inverse());
-        
+
         panOldX = p.x;
         panOldY = p.y;
-        
+
         panViewBoxX = viewBox.x;
         panViewBoxY = viewBox.y;
         panViewBoxWidth = viewBox.width;
@@ -485,10 +486,10 @@ function panMove(evt) {
         p.y = evt.clientY;
         m = svgDocument.getScreenCTM();
         p = p.matrixTransform(m.inverse());
-        
+
         panNewX = p.x;
         panNewY = p.y;
-        
+
         panViewBoxX = viewBox.x;
         panViewBoxY = viewBox.y;
         panViewBoxWidth = viewBox.width;
@@ -510,10 +511,10 @@ function panMove2(evt) {
         p.y = evt.clientY;
         var m = svgDocument.getScreenCTM();
         p = p.matrixTransform(m.inverse());
-        
+
         panOldX = p.x;
         panOldY = p.y;
-        
+
         panViewBoxX = viewBox.x;
         panViewBoxY = viewBox.y;
         panViewBoxWidth = viewBox.width;
@@ -525,10 +526,10 @@ function panMove2(evt) {
         p.y = evt.clientY;
         m = svgDocument.getScreenCTM();
         p = p.matrixTransform(m.inverse());
-        
+
         panNewX = p.x;
         panNewY = p.y;
-        
+
         panViewBoxX = viewBox.x;
         panViewBoxY = viewBox.y;
         panViewBoxWidth = viewBox.width;
@@ -571,11 +572,11 @@ function doScroll(evt){
 		var wheelDelta = evt.wheelDelta;
 		var wheelDeltaNormalized = wheelDelta/maxWheelDelta; // [-1, 1]
 		if(wheelDeltaNormalized > 1){
-			wheelDeltaNormalized = 1;			
+			wheelDeltaNormalized = 1;
 		} else if(wheelDeltaNormalized < -1){
 			wheelDeltaNormalized = -1;
 		}
-        
+
         var scrollAmount = wheelDeltaNormalized * scrollSensitivity * (invertScroll ? -1 : 1); // neg scroll in; pos scroll out; [-scrollSensitivity, scrollSensitivity]
 		var maxScrollSensitivity = 10; // check this matches the manifest.js max for scrollSensitivity
 		var scrollAmountNormalized = scrollAmount/maxScrollSensitivity; // [-1, 1]
@@ -584,18 +585,18 @@ function doScroll(evt){
         var p = svgDocElement.createSVGPoint();
         p.x = evt.clientX;
         p.y = evt.clientY;
-        
+
         var m = svgDocument.getScreenCTM();
         p = p.matrixTransform(m.inverse());
-        
+
         // algorithm to zoom in and gravitate towards cursor scroll
         var newViewBoxWidth = viewBox.width * zoomAmount;
         var newViewBoxHeight = viewBox.height * zoomAmount;
-        
+
         // these should always turn out positive and between 0 and 1.0, because client cursor must be within svg x to x+width and y to y+height
         var fracOfSVGX = (p.x - viewBox.x) / viewBox.width;
         var fracOfSVGY = (p.y - viewBox.y) / viewBox.height;
-        
+
         var leftWidth = fracOfSVGX * newViewBoxWidth; // offset to new x
         var upperHeight = fracOfSVGY * newViewBoxHeight; // offset to new y
 
@@ -631,18 +632,18 @@ function fillViewBoxToScreen(){
     var viewBoxY = viewBox.y;
     var viewBoxWidth = viewBox.width;
     var viewBoxHeight = viewBox.height;
-    
+
     var newViewBoxX = viewBoxX;
     var newViewBoxY = viewBoxY;
     var newViewBoxWidth = viewBoxWidth;
     var newViewBoxHeight = viewBoxHeight;
-    
+
     var viewBoxAspectRatio = viewBoxWidth/viewBoxHeight;
-    
+
     var clientWidth = getWidth();
     var clientHeight = getHeight();
     var clientAspectRatio = clientWidth/clientHeight;
-    
+
     if(viewBoxAspectRatio < clientAspectRatio){
         newViewBoxWidth = viewBoxHeight*clientAspectRatio;
         newViewBoxX = viewBoxX - (newViewBoxWidth - viewBoxWidth)/2;
@@ -680,7 +681,7 @@ function printDebugInfo(){
 			debugTextElement.style["border-radius"] = "5px";
 			debugTextElement.style.color = "white";
 			debugTextElement.style["font-family"] = "'Consolas', 'Lucida Grande', sans-serif";
-			
+
             document.body.appendChild(debugTextElement); // add to DOM
         }
         debugChildren[0].innerHTML = "Debug Info:";
