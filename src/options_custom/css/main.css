@@ -57,6 +57,7 @@
     overflow-y: auto;
     overflow-x: hidden;
     text-align: right;
+    display: none;
 }
 
 #tab-container .tab {
@@ -100,7 +101,7 @@ body.searching #tab-container .tab.active {
 #content {
     position: absolute;
     top: 0;
-    left: 220px;
+    left: 0;
     right: 0;
     bottom: 0;
     overflow: auto;
@@ -109,7 +110,7 @@ body.searching #tab-container .tab.active {
 .tab-content {
     display: none;
     position: absolute;
-    width: 840px;
+    width: 420px;
     top: 0;
     left: 0;
     bottom: 0;

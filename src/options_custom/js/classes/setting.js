@@ -7,7 +7,7 @@
     var settings,
         Bundle;
 	
-    settings = new Store("settings", SVGNavigatorDefaultSettings);
+    settings = new Store(SVGNavigatorDefaultSettings);
     Bundle = new Class({
         // Attributes:
         // - tab
@@ -37,7 +37,9 @@
             }
             
             if (this.params.name !== undefined) {
-                this.set(settings.get(this.params.name), true);
+                settings.get(this.params.name, (result) => {
+                    this.set(result, true);
+                })
             }
             
             this.params.searchString = this.params.searchString.toLowerCase();
@@ -297,7 +299,9 @@
             this.addEvents();
             
             if (this.params.name !== undefined) {
-                this.set((settings.get(this.params.name) || 0), true);
+                settings.get(this.params.name, (result) => {
+                    this.set(result || 0, true);
+                })
             } else {
                 this.set(0, true);
             }

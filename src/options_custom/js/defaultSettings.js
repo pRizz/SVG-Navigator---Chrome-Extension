@@ -1,13 +1,13 @@
 // Default settings
     
-// this.SVGNavigatorDefaultSettings = {
-// 	"clickAndDragBehavior": "pan",
-// 	"scrollSensitivity": 7,
-// 	"invertScroll": false,
-// 	"toolbarAutoHide": true,
-// 	"toolbarEnabled": true,
-// 	"showDebugInfo": false,
-// 	"svgBackgroundColor": "white"
-// };
+this.SVGNavigatorDefaultSettings = {
+	"clickAndDragBehavior": "pan",
+	"scrollSensitivity": 7,
+	"invertScroll": false,
+	"toolbarAutoHide": true,
+	"toolbarEnabled": true,
+	"showDebugInfo": false,
+	"svgBackgroundColor": "white"
+};
 
 console.log("Default settings loaded");
