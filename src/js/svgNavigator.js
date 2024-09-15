@@ -66,12 +66,23 @@ var panOldY = 0;
 var panNewX = 0;
 var panNewY = 0;
 
+// FIXME: options don't have common access to these settings
+const SVGNavigatorDefaultSettings = {
+	"clickAndDragBehavior": "pan",
+	"scrollSensitivity": 7,
+	"invertScroll": false,
+	"toolbarAutoHide": true,
+	"toolbarEnabled": true,
+	"showDebugInfo": false,
+	"svgBackgroundColor": "white"
+}
+
 // global settings, defaults
 var clickAndDragBehavior = SVGNavigatorDefaultSettings.clickAndDragBehavior;
 var scrollSensitivity = SVGNavigatorDefaultSettings.scrollSensitivity;
 var invertScroll = SVGNavigatorDefaultSettings.invertScroll;
-var toolbarAutoHide = SVGNavigatorDefaultSettings.toolbarAutoHide;
-var toolbarEnabled = SVGNavigatorDefaultSettings.toolbarEnabled;
+let toolbarAutoHide = SVGNavigatorDefaultSettings.toolbarAutoHide;
+let toolbarEnabled = SVGNavigatorDefaultSettings.toolbarEnabled;
 var showDebugInfo = SVGNavigatorDefaultSettings.showDebugInfo;
 var svgBackgroundColor = SVGNavigatorDefaultSettings.svgBackgroundColor;
 
@@ -79,14 +90,16 @@ var svgBackgroundColor = SVGNavigatorDefaultSettings.svgBackgroundColor;
 var debugTextElement;
 var debugChildren = [];
 var debugMode = showDebugInfo;
-var mouseEvent = {
+var debugMouseEvent = {
     clientX: 0,
     clientY: 0
 };
 
-main();
+main().then(() => {
+    console.log("SVG Navigator loaded");
+});
 
-function main() {
+async function main() {
     "use strict";
 
     if(!isFileCompatible()) { return }
@@ -107,7 +120,13 @@ function main() {
 
     // send request to apply svg nav icon to tab, as page action
     // FIXME: using deprecated api
-    chrome.extension.sendRequest("showIcon", function(response){});
+    // chrome.action.setIcon({
+    //     path: {
+    //         "16": "path/to/icon16.png",
+    //         "48": "path/to/icon48.png",
+    //         "128": "path/to/icon128.png"
+    //     }
+    // });
 
     svgDocument = svgElements[0];
 
@@ -141,63 +160,74 @@ function main() {
     viewBox = getViewBox();
 
     addEventListeners();
-    addToolbar();
+    await maybeAddToolbar();
     disableSelection();
 }
 
-function addToolbar() {
-    chrome.extension.sendRequest("localStorage", function(response) {
-        try{
-            toolbarAutoHide = JSON.parse(response["store.settings.toolbarAutoHide"]);
-            toolbarEnabled = JSON.parse(response["store.settings.toolbarEnabled"]);
-        } catch(e){
-            // with defaults
-            console.error("Couldn't read settings: " + e);
-        }
+async function getSyncOrDefault(key) {
+    const data = await chrome.storage.sync.get(key);
+    return data[key] || SVGNavigatorDefaultSettings[key];
+}
 
-        if(toolbarEnabled) {
-            var toolbarContainer = htmlDoc.createElement("div");
-            toolbarContainer.className = "toolbarcontainer";
+async function maybeAddToolbar() {
+    toolbarAutoHide = await getSyncOrDefault("toolbarAutoHide");
+    toolbarEnabled = await getSyncOrDefault("toolbarEnabled");
 
-            var toolbarDiv = htmlDoc.createElement("div");
-            toolbarDiv.className = "toolbar";
-            toolbarContainer.appendChild(toolbarDiv);
+    // chrome.extension.sendRequest("localStorage", function(response) {
+    //     try{
+    //         toolbarAutoHide = JSON.parse(response["store.settings.toolbarAutoHide"]);
+    //         toolbarEnabled = JSON.parse(response["store.settings.toolbarEnabled"]);
+    //     } catch(e){
+    //         // with defaults
+    //         console.error("Couldn't read settings: " + e);
+    //     }
+    if(!toolbarEnabled){
+        return;
+    }
 
-            var plusButton = htmlDoc.createElement("div");
-            plusButton.innerHTML = "+";
-            plusButton.className = "toolbarbutton toolbarbuttonborder";
-            plusButton.onclick = function(evt){
-                zoomBy(0.8);
-            };
-            toolbarDiv.appendChild(plusButton);
+        // if(toolbarEnabled) {
+    var toolbarContainer = htmlDoc.createElement("div");
+    toolbarContainer.className = "toolbarcontainer";
 
-            var minusButton = htmlDoc.createElement("div");
-            minusButton.innerHTML = "-";
-            minusButton.className = "toolbarbutton toolbarbuttonborder";
-            minusButton.onclick = function(evt){
-                zoomOut(true);
-            };
-            toolbarDiv.appendChild(minusButton);
+    var toolbarDiv = htmlDoc.createElement("div");
+    toolbarDiv.className = "toolbar";
+    toolbarContainer.appendChild(toolbarDiv);
 
-            var resetButton = htmlDoc.createElement("div");
-            resetButton.innerHTML = "Reset";
-            resetButton.className = "toolbarbutton";
-            resetButton.onclick = function(evt){
-                zoomOriginal(true)
-            };
-            toolbarDiv.appendChild(resetButton);
+    var plusButton = htmlDoc.createElement("div");
+    plusButton.innerHTML = "+";
+    plusButton.className = "toolbarbutton toolbarbuttonborder";
+    plusButton.onclick = function(evt){
+        zoomBy(0.8);
+    };
+    toolbarDiv.appendChild(plusButton);
 
-            document.body.appendChild(toolbarContainer); // add to DOM
+    var minusButton = htmlDoc.createElement("div");
+    minusButton.innerHTML = "-";
+    minusButton.className = "toolbarbutton toolbarbuttonborder";
+    minusButton.onclick = function(evt){
+        zoomOut(true);
+    };
+    toolbarDiv.appendChild(minusButton);
 
-            // make the toolbar fadeout after 5 seconds
-            toolbarContainer.style.opacity = 1;
-            if(toolbarAutoHide) {
-                setTimeout(function(){
-                    toolbarContainer.style.opacity = null;
-                }, 5000);
-            }
-        }
-    });
+    var resetButton = htmlDoc.createElement("div");
+    resetButton.innerHTML = "Reset";
+    resetButton.className = "toolbarbutton";
+    resetButton.onclick = function(evt){
+        zoomOriginal(true)
+    };
+    toolbarDiv.appendChild(resetButton);
+
+    document.body.appendChild(toolbarContainer); // add to DOM
+
+    // make the toolbar fadeout after 5 seconds
+    toolbarContainer.style.opacity = 1;
+    if(toolbarAutoHide) {
+        setTimeout(function(){
+            toolbarContainer.style.opacity = null;
+        }, 5000);
+    }
+        // }
+    // });
 }
 
 // insert a rectangle object into the svg, acting as the zoom rectangle
@@ -217,7 +247,30 @@ function insertZoomRect(){
     return zoomRectangle;
 }
 
-function addEventListeners(){
+function getChromeLocalStorage() {
+    return new Promise((resolve, reject) => {
+        chrome.storage.local.get(null, (result) => {
+            if (chrome.runtime.lastError) {
+                reject(chrome.runtime.lastError);
+            } else {
+                resolve(result);
+            }
+        });
+    });
+}
+
+chrome.storage.onChanged.addListener((changes, namespace) => {
+    console.log("storage changed");
+    for (let [key, { oldValue, newValue }] of Object.entries(changes)) {
+        console.log(
+        `Storage key "${key}" in namespace "${namespace}" changed.`,
+        `Old value was "${oldValue}", new value is "${newValue}".`
+        );
+    }
+});
+console.log("added storage listener");
+
+async function addEventListeners(){
     // event listeners
     document.addEventListener("keydown", panBegin, false); // spacebar panning
     document.addEventListener("mousemove", panMove, false); // spacebar panning
@@ -226,10 +279,11 @@ function addEventListeners(){
     document.addEventListener("keyup", zoomOriginal, false); // escape key zoom out
     document.addEventListener("keyup", zoomCtrlKeys, false); // ctrl key zoom in/out
 	// retrieve options from stored settings
-	chrome.extension.sendRequest("localStorage", function(response){
+	// chrome.extension.sendRequest("localStorage", function(response){
 		// settings were stored as JSON in store.js
 		try{
-			var clickAndDragBehavior = JSON.parse(response["store.settings.clickAndDragBehavior"]);
+			// var clickAndDragBehavior = JSON.parse(response["store.settings.clickAndDragBehavior"]);
+            const clickAndDragBehavior = await getSyncOrDefault("clickAndDragBehavior");
 			if(clickAndDragBehavior == "pan"){
                 svgDocument.addEventListener("mousedown", panBegin2, false); // mouse panning
 				document.addEventListener("mousemove", panMove2, false); // mouse panning
@@ -251,8 +305,10 @@ function addEventListeners(){
 		}
 
 		try{
-			scrollSensitivity = JSON.parse(response["store.settings.scrollSensitivity"]);
-			invertScroll = JSON.parse(response["store.settings.invertScroll"]);
+			// scrollSensitivity = JSON.parse(response["store.settings.scrollSensitivity"]);
+            scrollSensitivity = await getSyncOrDefault("scrollSensitivity");
+			// invertScroll = JSON.parse(response["store.settings.invertScroll"]);
+            invertScroll = await getSyncOrDefault("invertScroll");
 		    svgDocument.addEventListener("mousewheel", doScroll, false); // scroll zooming
 		} catch(e){
 			// with defaults
@@ -260,9 +316,12 @@ function addEventListeners(){
 		}
 
 		try{
-			debugMode = JSON.parse(response["store.settings.showDebugInfo"]);
+            debugMode = await getSyncOrDefault("showDebugInfo");
 		    if(debugMode){
-		        document.addEventListener("mousemove", mouseMoveEvent, false);
+		        document.addEventListener("mousemove", (e) => {
+                    debugMouseEvent = e;
+                    printDebugInfo();
+                }, false);
 		    }
 		    printDebugInfo();
 		} catch(e){
@@ -271,13 +330,13 @@ function addEventListeners(){
 		}
 
         try{
-            svgBackgroundColor = JSON.parse(response["store.settings.svgBackgroundColor"]);
+            svgBackgroundColor = await getSyncOrDefault("svgBackgroundColor");
             document.body.style.backgroundColor = svgBackgroundColor;
         } catch(e){
             // with defaults
             document.body.style.backgroundColor = svgBackgroundColor;
         }
-    });
+    // });
 }
 
 /* Zoom Functions */
@@ -577,6 +636,7 @@ function doScroll(evt){
 			wheelDeltaNormalized = -1;
 		}
 
+        // scrollSensitivity and invertScroll are not initialized properly
         var scrollAmount = wheelDeltaNormalized * scrollSensitivity * (invertScroll ? -1 : 1); // neg scroll in; pos scroll out; [-scrollSensitivity, scrollSensitivity]
 		var maxScrollSensitivity = 10; // check this matches the manifest.js max for scrollSensitivity
 		var scrollAmountNormalized = scrollAmount/maxScrollSensitivity; // [-1, 1]
@@ -656,11 +716,6 @@ function fillViewBoxToScreen(){
     svgDocument.setAttribute("viewBox", format);
 }
 
-function mouseMoveEvent(evt){
-    mouseEvent = evt;
-    printDebugInfo();
-}
-
 function printDebugInfo(){
     if(debugMode){
         if(!debugTextElement){
@@ -691,8 +746,8 @@ function printDebugInfo(){
         debugChildren[4].innerHTML = "ViewBox Height: " + viewBox.height;
         debugChildren[5].innerHTML = "CurrentVBW/InitVBW: " + viewBox.width/origSVGWidth;
         debugChildren[6].innerHTML = "CurrentVBH/InitVBH: " + viewBox.height/origSVGHeight;
-        debugChildren[7].innerHTML = "Client X: " + mouseEvent.clientX;
-        debugChildren[8].innerHTML = "Client Y: " + mouseEvent.clientY;
+        debugChildren[7].innerHTML = "Client X: " + debugMouseEvent.clientX;
+        debugChildren[8].innerHTML = "Client Y: " + debugMouseEvent.clientY;
     }
 }
 
