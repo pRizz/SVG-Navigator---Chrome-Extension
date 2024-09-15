@@ -4,96 +4,52 @@
 // License: MIT-license
 //
 (function () {
-    var Store = this.Store = function (name, defaults) {
-        var key;
-        this.name = name;
+    var Store = this.Store = function (defaults) {
+        if (defaults == undefined) {
+            return;
+        }
         
-        if (defaults !== undefined) {
-            for (key in defaults) {
-                if (defaults.hasOwnProperty(key) && this.get(key) === undefined) {
-                    this.set(key, defaults[key]);
+        for (let [key, defaultValue] of Object.entries(defaults)) {
+            this.get(key, (result) => {
+                if (result === undefined) {
+                    this.set(key, defaultValue);
                 }
-            }
+            });
         }
+        
     };
-    
-    Store.prototype.get = function (name) {
-        name = "store." + this.name + "." + name;
-        if (localStorage.getItem(name) === null) { return undefined; }
-        try {
-            return JSON.parse(localStorage.getItem(name));
-        } catch (e) {
-            return null;
-        }
-    };
-    
-    Store.prototype.set = function (name, value) {
-        if (value === undefined) {
-            this.remove(name);
-        } else {
-            if (typeof value === "function") {
-                value = null;
+
+    Store.prototype.get = function (key, callback) {
+        chrome.storage.sync.get(key, function (result) {
+            if (chrome.runtime.lastError) {
+                callback(null);
             } else {
-                try {
-                    value = JSON.stringify(value);
-                } catch (e) {
-                    value = null;
-                }
+                callback(result[key]);
             }
-            
-            localStorage.setItem("store." + this.name + "." + name, value);
-        }
-        
-        return this;
+        });
     };
-    
+
+    Store.prototype.set = function (key, value) {
+        var obj = {};
+        obj[key] = value;
+        chrome.storage.sync.set(obj, function () {
+            if (chrome.runtime.lastError) {
+                // Handle error
+                // callback(false);
+            } else {
+                // callback(true);
+            }
+        });
+    };
+
     Store.prototype.remove = function (name) {
-        localStorage.removeItem("store." + this.name + "." + name);
-        return this;
-    };
-    
-    Store.prototype.removeAll = function () {
-        var name,
-            i;
-        
-        name = "store." + this.name + ".";
-        for (i = (localStorage.length - 1); i >= 0; i--) {
-            if (localStorage.key(i).substring(0, name.length) === name) {
-                localStorage.removeItem(localStorage.key(i));
+        chrome.storage.sync.remove(name, function () {
+            if (chrome.runtime.lastError) {
+                // Handle error
+                // callback(false);
+            } else {
+                // callback(true);
             }
-        }
-        
-        return this;
-    };
-    
-    Store.prototype.toObject = function () {
-        var values,
-            name,
-            i,
-            key,
-            value;
-        
-        values = {};
-        name = "store." + this.name + ".";
-        for (i = (localStorage.length - 1); i >= 0; i--) {
-            if (localStorage.key(i).substring(0, name.length) === name) {
-                key = localStorage.key(i).substring(name.length);
-                value = this.get(key);
-                if (value !== undefined) { values[key] = value; }
-            }
-        }
-        
-        return values;
-    };
-    
-    Store.prototype.fromObject = function (values, merge) {
-        if (merge !== true) { this.removeAll(); }
-        for (var key in values) {
-            if (values.hasOwnProperty(key)) {
-                this.set(key, values[key]);
-            }
-        }
-        
-        return this;
+        });
     };
 }());

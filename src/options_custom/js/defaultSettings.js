@@ -9,3 +9,5 @@ this.SVGNavigatorDefaultSettings = {
 	"showDebugInfo": false,
 	"svgBackgroundColor": "white"
 };
+
+console.log("Default settings loaded");
