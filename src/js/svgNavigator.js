@@ -769,7 +769,19 @@ function setViewBox(){
 }
 
 function isFileCompatible() {
-    const baseURI = document.rootElement && document.rootElement.baseURI || undefined;
-    if(!baseURI) { return false }
-    return baseURI.endsWith(".svg") || baseURI.endsWith(".svgz")
+    const baseURI = (document.rootElement && document.rootElement.baseURI) || undefined
+    if (!baseURI) { return false }
+    return baseURI.endsWith(".svg") || baseURI.endsWith(".svgz") || 
+        // @since 2.6
+        // Check id the the actual document content is svg not only by extension.
+        isSVGDocument(document)
+}
+
+// @since 2.6
+function isSVGDocument(document) {
+    // Expect the document root to be a svg element.
+    const isTopLevelSVG = document.documentElement.tagName.toLowerCase() === "svg"
+    
+    // Could comfortably  add other edge cases here if needed.
+    return isTopLevelSVG
 }
