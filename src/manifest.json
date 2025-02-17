@@ -22,7 +22,8 @@
                 "http://*/*.svgz",
                 "https://*/*.svgz",
                 "ftp://*/*.svgz",
-                "file://*/*.svgz"
+                "file://*/*.svgz",
+                "https://*/*"
             ],
             "js": ["options_custom/js/defaultSettings.js", "js/svgNavigator.js"],
             "css": ["css/svgNavigator.css"]
