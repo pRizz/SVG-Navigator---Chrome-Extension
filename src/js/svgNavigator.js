@@ -125,6 +125,18 @@ async function main() {
         return;
     }
 
+    // @since 2.6
+    // Remove of the SVG element `style` `width` and `height` in case 
+    // these limit the visible SVG area.
+    if (svgDocument.getAttribute("style")) {
+        // Do not expose const `style` to keep outer scope cleaner.
+        // Thus call `svgDocument.getAttribute` twice.
+        const style = svgDocument.getAttribute("style");
+        const newStyle = style.replace(/(?:\s*width\s*:\s*[^;]+;\s*)|(?:\s*height\s*:\s*[^;]+;\s*)/g, '');
+        svgDocument.setAttribute("style", newStyle);
+    }
+    // end @since
+
     zoomRectangle = insertZoomRect();
 
     // keep aspect ratio; just remove attribute if it exists
