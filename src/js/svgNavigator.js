@@ -128,11 +128,23 @@ async function main() {
     // @since 2.6
     // Remove of the SVG element `style` `width` and `height` in case 
     // these limit the visible SVG area.
+    // See `examples/plantuml.html` and `examples/githubsvg.html` for the use case.
     if (svgDocument.getAttribute("style")) {
         // Do not expose const `style` to keep outer scope cleaner.
         // Thus call `svgDocument.getAttribute` twice.
         const style = svgDocument.getAttribute("style");
-        const newStyle = style.replace(/(?:\s*width\s*:\s*[^;]+;\s*)|(?:\s*height\s*:\s*[^;]+;\s*)/g, '');
+
+        // Define regex patterns for width and height separately
+        const widthRegex = /(\s*width\s*:\s*[^;]+;\s*)/g;
+        const heightRegex = /(\s*height\s*:\s*[^;]+;\s*)/g;
+
+        // Remove 'width' properties from the style attribute
+        let newStyle = style.replace(widthRegex, '');
+
+        // Remove 'height' properties from the style attribute
+        newStyle = newStyle.replace(heightRegex, '');
+
+        // Update the 'style' attribute of the SVG element with the modified value
         svgDocument.setAttribute("style", newStyle);
     }
     // end @since
