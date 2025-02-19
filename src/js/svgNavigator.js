@@ -804,7 +804,7 @@ function isFileCompatible() {
 // @since 2.6
 function isSVGDocument(document) {
     // Expect the document root to be a svg element.
-    const isTopLevelSVG = document.documentElement.tagName.toLowerCase() === "svg"
+    const isTopLevelSVG = document?.documentElement?.tagName?.toLowerCase() === "svg"
     
     // Could comfortably  add other edge cases here if needed.
     return isTopLevelSVG
