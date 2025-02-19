@@ -38,7 +38,7 @@ Try Testing Out These SVGs
 
 No `svg` extension pages (e.g. GitHub and PlantUML)
 
-* https://editor.plantuml.com/uml/SoWkIImgAStDuNBAJrBGjLDmpCbCJbMmKiX8pSd9vt98pKi1IW80
+* https://img.plantuml.biz/plantuml/svg/SoWkIImgAStDuNBAJrBGjLDmpCbCJbMmKiX8pSd9vt98pKi1IW80
 
 Useful Links
 ------------------------------
