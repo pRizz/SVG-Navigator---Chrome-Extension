@@ -793,7 +793,7 @@ function setViewBox(){
 }
 
 function isFileCompatible() {
-    const baseURI = (document.rootElement && document.rootElement.baseURI) || undefined
+    const baseURI = document.rootElement && document.rootElement.baseURI || undefined
     if (!baseURI) { return false }
     return baseURI.endsWith(".svg") || baseURI.endsWith(".svgz") || 
         // @since 2.6
