@@ -95,9 +95,7 @@ var debugMouseEvent = {
     clientY: 0
 };
 
-main().then(() => {
-    console.log("SVG Navigator loaded");
-});
+main().then(() => {});
 
 async function main() {
     "use strict";
@@ -182,6 +180,8 @@ async function main() {
     addEventListeners();
     maybeAddToolbar();
     disableSelection();
+
+    console.log("SVG Navigator loaded");
 }
 
 async function getSyncOrDefault(key) {
@@ -269,12 +269,7 @@ function getChromeLocalStorage() {
 }
 
 chrome.storage.onChanged.addListener((changes, namespace) => {
-    console.log("storage changed");
     for (let [key, { oldValue, newValue }] of Object.entries(changes)) {
-        console.log(
-        `Storage key "${key}" in namespace "${namespace}" changed.`,
-        `Old value was "${oldValue}", new value is "${newValue}".`
-        );
         if(key == "showDebugInfo"){
             debugMode = showDebugInfo = new Boolean(newValue).valueOf();
             maybePrintDebugInfo();
@@ -285,7 +280,6 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
         }
     }
 });
-console.log("added storage listener");
 
 async function addEventListeners(){
     // event listeners
