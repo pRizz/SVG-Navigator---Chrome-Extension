@@ -36,6 +36,10 @@ Try Testing Out These SVGs
 * Simple Mandelbrot: http://upload.wikimedia.org/wikipedia/commons/3/3c/Mandelbrot_Components.svg
 * Animated Digitial Clock: http://www.bogotobogo.com/svg_source/SVGDigitalClock.svg
 
+No `svg` extension pages (e.g. GitHub and PlantUML)
+
+* https://img.plantuml.biz/plantuml/svg/SoWkIImgAStDuNBAJrBGjLDmpCbCJbMmKiX8pSd9vt98pKi1IW80
+
 Useful Links
 ------------------------------
 * SVG 1.1 Second Edition Specifications: http://www.w3.org/TR/SVG11/
