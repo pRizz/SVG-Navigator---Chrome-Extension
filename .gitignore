@@ -4,3 +4,4 @@ src/.DS_Store
 .idea
 src.zip
 extension.zip
+node_modules
