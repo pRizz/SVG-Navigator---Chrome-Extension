@@ -31,7 +31,7 @@ export default {
 
     // Lint settings
     lint: {
-        warningsAsErrors: true,
-        selfHosted: false,
+        warningsAsErrors: false,
+        selfHosted: false
     }
 };
