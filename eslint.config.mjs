@@ -8,14 +8,14 @@ export default [
     },
     {
         files: ['**/*.js'],
-        languageOptions: {sourceType: 'script'}
+        languageOptions: { sourceType: 'script' }
     },
     {
-        languageOptions: { 
+        languageOptions: {
             globals: {
                 ...globals.browser,
                 ...globals.webextensions  // This adds chrome and other WebExtension APIs
-            } 
+            }
         }
     },
     pluginJs.configs.recommended,
@@ -37,6 +37,24 @@ export default [
             'no-var': 'error',
             'object-shorthand': ['error', 'always'],
             'prefer-template': 'error',
+
+            // Custom
+            // Space before blocks
+            'space-before-blocks': ['error', 'always'],
+            // Space before function parentheses
+            'space-before-function-paren': ['error', {
+                'anonymous': 'always',
+                'named': 'never',
+                'asyncArrow': 'always'
+            }],
+            // No multiple empty lines
+            'no-multiple-empty-lines': ['error', { max: 2, maxEOF: 1 }],
+            // Space inside braces
+            'object-curly-spacing': ['error', 'always'],
+            // Consistent spacing in comments
+            'spaced-comment': ['error', 'always'],
+            // No trailing spaces
+            'no-trailing-spaces': 'error'
         }
     }
 ];
