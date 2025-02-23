@@ -722,15 +722,15 @@ function maybePrintDebugInfo() {
 
             document.body.appendChild(debugTextElement); // add to DOM
         }
-        debugChildren[0].innerHTML = 'Debug Info:';
-        debugChildren[1].innerHTML = `ViewBox X: ${  viewBox.x}`;
-        debugChildren[2].innerHTML = `ViewBox Y: ${  viewBox.y}`;
-        debugChildren[3].innerHTML = `ViewBox Width: ${  viewBox.width}`;
-        debugChildren[4].innerHTML = `ViewBox Height: ${  viewBox.height}`;
-        debugChildren[5].innerHTML = `CurrentVBW/InitVBW: ${  viewBox.width/origSVGWidth}`;
-        debugChildren[6].innerHTML = `CurrentVBH/InitVBH: ${  viewBox.height/origSVGHeight}`;
-        debugChildren[7].innerHTML = `Client X: ${  debugMouseEvent.clientX}`;
-        debugChildren[8].innerHTML = `Client Y: ${  debugMouseEvent.clientY}`;
+        debugChildren[0].textContent = 'Debug Info:';
+        debugChildren[1].textContent = `ViewBox X: ${viewBox.x}`;
+        debugChildren[2].textContent = `ViewBox Y: ${viewBox.y}`;
+        debugChildren[3].textContent = `ViewBox Width: ${viewBox.width}`;
+        debugChildren[4].textContent = `ViewBox Height: ${viewBox.height}`;
+        debugChildren[5].textContent = `CurrentVBW/InitVBW: ${viewBox.width/origSVGWidth}`;
+        debugChildren[6].textContent = `CurrentVBH/InitVBH: ${viewBox.height/origSVGHeight}`;
+        debugChildren[7].textContent = `Client X: ${debugMouseEvent.clientX}`;
+        debugChildren[8].textContent = `Client Y: ${debugMouseEvent.clientY}`;
     } else {
         if(debugTextElement) {
             document.body.removeChild(debugTextElement);
