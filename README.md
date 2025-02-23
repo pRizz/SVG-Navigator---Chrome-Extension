@@ -24,9 +24,7 @@ Try Testing Out These SVGs
 ---------------------------------
 * Vector vs Raster: http://upload.wikimedia.org/wikipedia/commons/6/6b/Bitmap_VS_SVG.svg
 * World Map: http://upload.wikimedia.org/wikipedia/commons/1/17/World.svg
-* Animated world landmarks: http://svg.kvalitne.cz/worldlandmarks/worldlandmarks.svg
 * Map of the United States of America: http://upload.wikimedia.org/wikipedia/commons/d/dc/USA_orthographic.svg
-* Another USA map: http://upload.wikimedia.org/wikipedia/commons/3/32/Blank_US_Map.svg
 * Constellation Orion: http://upload.wikimedia.org/wikipedia/commons/f/ff/Orion_IAU.svg
 * Bertrand's Chords: http://upload.wikimedia.org/wikipedia/commons/9/91/Bertrand3-chords.svg
 * P and N type Silicon: http://upload.wikimedia.org/wikipedia/commons/2/20/CellStructure-SiCrystal-eng-vect.svg

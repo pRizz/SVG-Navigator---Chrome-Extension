@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "description": "SVG Navigator is an extension for Google Chrome that adds pan and zoom features to existing SVG files on the web.",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "bundle": "zip -r extension.zip src",
+    "build:chrome": "zip -r extension.zip src",
+    "build:firefox": "web-ext build --source-dir src",
     "lint": "eslint . --max-warnings 0",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "web-ext:lint": "web-ext lint --source-dir src"
   },
   "repository": {
     "type": "git",
@@ -24,6 +25,7 @@
   "devDependencies": {
     "@eslint/js": "^9.21.0",
     "eslint": "^9.21.0",
-    "globals": "^16.0.0"
+    "globals": "^16.0.0",
+    "web-ext": "^8.4.0"
   }
 }
