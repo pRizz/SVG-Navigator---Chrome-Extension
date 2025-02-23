@@ -298,14 +298,14 @@ async function addEventListeners() {
         document.addEventListener('mouseup', panEnd2, false); // mouse panning
     }
 
-    try{
+    try {
         scrollSensitivity = await getSyncOrDefault('scrollSensitivity');
         invertScroll = await getSyncOrDefault('invertScroll');
-        svgDocument.addEventListener('mousewheel', doScroll, false); // scroll zooming
+        svgDocument.addEventListener('wheel', doScroll, { passive: false }); // Standard event for all modern browsers
     } catch(e) {
         console.warn('Error getting scrollSensitivity', e);
         // with defaults
-        svgDocument.addEventListener('mousewheel', doScroll, false); // scroll zooming
+        svgDocument.addEventListener('wheel', doScroll, { passive: false }); // Standard event for all modern browsers
     }
 
     try{
@@ -608,10 +608,10 @@ function panEnd2() {
 // might be different scroll direction on Macs with "natural scroll" vs Windows
 function doScroll(evt) {
     if(!zoomAction && !(panAction_Spacebar || panAction_Mouse)) {
-        evt.preventDefault(); // prevent default scroll action in chrome
+        evt.preventDefault(); // prevent default scroll action
 
         const maxWheelDelta = 1200; // ad hoc limit
-        const wheelDelta = evt.wheelDelta;
+        const wheelDelta = -evt.deltaY * 10; // Standard wheel event delta
         let wheelDeltaNormalized = wheelDelta/maxWheelDelta; // [-1, 1]
         if(wheelDeltaNormalized > 1) {
             wheelDeltaNormalized = 1;
@@ -623,6 +623,7 @@ function doScroll(evt) {
         const scrollAmount = wheelDeltaNormalized * scrollSensitivity * (invertScroll ? -1 : 1); // neg scroll in; pos scroll out; [-scrollSensitivity, scrollSensitivity]
         const maxScrollSensitivity = 10; // check this matches the manifest.js max for scrollSensitivity
         const scrollAmountNormalized = scrollAmount/maxScrollSensitivity; // [-1, 1]
+
         // scrolling in makes viewbox smaller, so zoomAmount is smaller
         const zoomAmount = scrollAmountNormalized < 0 ? 1 + (-scrollAmountNormalized + 0.01) : 1 / (1 + (scrollAmountNormalized + 0.01)) ; // zoom out : zoom in; (1, 2) : (0, 0.5)
         let p = svgDocElement.createSVGPoint();
@@ -647,6 +648,7 @@ function doScroll(evt) {
         viewBox.y = p.y - upperHeight;
         viewBox.width = newViewBoxWidth;
         viewBox.height = newViewBoxHeight;
+
         setViewBox();
     }
 }
