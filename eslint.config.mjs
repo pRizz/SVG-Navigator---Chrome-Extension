@@ -4,7 +4,7 @@ import pluginJs from '@eslint/js';
 /** @type {import('eslint').Linter.Config[]} */
 export default [
     {
-        ignores: ['src/options_custom/**/*']
+        ignores: ['src/options_custom/**/*', 'web-ext-artifacts/**/*']
     },
     {
         files: ['**/*.js'],

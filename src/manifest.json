@@ -8,10 +8,6 @@
         "48": "icon_48.png",
         "128": "icon_128.png"
     },
-    "background": {
-        "service_worker": "service_worker.js",
-        "type": "module"
-    },
     "content_scripts": [
         {
             "matches": [
@@ -35,5 +31,10 @@
     },
     "permissions": [
         "storage"
-    ]
+    ],
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "svg-navigator@prizzventuresllc.com"
+        }
+    }
 }
