@@ -9,4 +9,4 @@ const buildInfo = `export const BUILD_TIMESTAMP = ${JSON.stringify(new Date().to
 `;
 
 const buildInfoPath = join(__dirname, '../src/js/buildInfo.js');
-writeFileSync(buildInfoPath, buildInfo); 
+writeFileSync(buildInfoPath, buildInfo);

@@ -4,7 +4,14 @@ import pluginJs from '@eslint/js';
 /** @type {import('eslint').Linter.Config[]} */
 export default [
     {
-        ignores: ['src/options_custom/**/*', 'web-ext-artifacts/**/*']
+        ignores: [
+            'src/options_custom/**/*',
+            'web-ext-artifacts/**/*',
+            'src/js/buildInfo.js',
+            'node_modules/**/*',
+            'dist/**/*',
+            'packages/**/*'
+        ]
     },
     {
         files: ['**/*.js'],
@@ -12,6 +19,7 @@ export default [
     },
     {
         languageOptions: {
+            sourceType: 'module',
             globals: {
                 ...globals.browser,
                 ...globals.webextensions  // This adds chrome and other WebExtension APIs
