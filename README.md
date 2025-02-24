@@ -49,3 +49,72 @@ Acknowledgements
 Concept originally created by Asad Akram, Ryan Oblenida aka Mr. O, and Peter Ryszkiewicz at the Illinois Institute of Technology.
 Adapted as a Google Chrome extension by Peter Ryszkiewicz. Work was inspired by Kevin Lindsey at http://www.kevlindev.com/index.htm.
 Illustrations by Cara Stemo.
+
+Build Instructions
+--------------------------------
+### Requirements
+- Operating System: Windows, macOS, or Linux
+- Node.js 18.x or later
+- npm 9.x or later
+- pnpm 8.x or later (required package manager)
+
+### Installation
+1. Install Node.js and npm from [nodejs.org](https://nodejs.org/)
+2. Install pnpm:
+   ```bash
+   npm install -g pnpm
+   ```
+3. Clone the repository:
+   ```bash
+   git clone https://github.com/pRizz/SVG-Navigator---Chrome-Extension.git
+   cd SVG-Navigator---Chrome-Extension
+   ```
+4. Install dependencies:
+    ```bash
+    pnpm install
+    ```
+
+### Building
+
+1. Build the extension:
+   ```bash
+   pnpm build:all
+   ```
+
+The built extensions will be available in:
+- Chrome: `dist/chrome/`
+- Firefox: `dist/firefox/`
+- Safari: `dist/safari/`
+
+The packaged extensions will be available in:
+- Chrome: `packages/svg-navigator...chrome.zip`
+- Firefox: `packages/svg-navigator...firefox.xpi`
+- Safari: `packages/svg-navigator...safari.zip`
+
+### Development
+
+For development with hot-reload:
+
+- Chrome:
+  ```bash
+  pnpm start:chrome
+  ```
+
+- Firefox:
+  ```bash
+  pnpm start:firefox
+  ```
+
+- Safari:
+  ```bash
+  pnpm start:safari
+  ```
+
+These commands will build the extension and start a development server that watches for changes.
+
+### Linting
+
+To run linting:
+```bash
+pnpm lint
+```
