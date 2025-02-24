@@ -1,0 +1,19 @@
+{
+  "manifest_version": 2,
+  "name": "SVG Navigator",
+  "version": "1.0.0",
+  "description": "Adds pan and zoom features to existing SVG files on the web",
+  "author": "Peter Ryszkiewicz",
+  "background": {
+    "scripts": ["js/buildInfo.js", "js/svgNavigator.js"],
+    "persistent": false
+  },
+  "permissions": [
+    "activeTab"
+  ],
+  "icons": {
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "options_page": "options_custom/index.html"
+} 
