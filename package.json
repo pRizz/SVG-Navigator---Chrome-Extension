@@ -15,7 +15,8 @@
     "start:firefox": "pnpm run prebuild && web-ext run",
     "start:chrome": "pnpm run prebuild && webextension-toolbox dev chrome --src src",
     "start:safari": "pnpm run prebuild && webextension-toolbox dev safari --src src",
-    "build:all": "pnpm run build:chrome && pnpm run build:firefox && pnpm run build:safari"
+    "build:all": "pnpm run build:chrome && pnpm run build:firefox && pnpm run build:safari",
+    "zip:source": "zip -r svg-navigator-source.zip src scripts eslint.config.mjs package.json pnpm-lock.yaml .eslintrc.json README.md web-ext-config.mjs LICENSE -x \"**/node_modules/*\""
   },
   "repository": {
     "type": "git",
