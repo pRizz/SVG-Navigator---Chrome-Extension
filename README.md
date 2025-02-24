@@ -44,6 +44,11 @@ Useful Links
 * Official Google Chrome extension page: https://chrome.google.com/webstore/detail/svg-navigator/pefngfjmidahdaahgehodmfodhhhofkl
 * Github Repository: https://github.com/pRizz/SVG-Navigator---Chrome-Extension
 
+Extension Store Links
+------------------------------
+* Chrome Web Store: https://chromewebstore.google.com/detail/svg-navigator/pefngfjmidahdaahgehodmfodhhhofkl
+* Firefox Add-ons: https://addons.mozilla.org/en-US/firefox/addon/svg-navigator/
+
 Acknowledgements
 -----------------------------
 Concept originally created by Asad Akram, Ryan Oblenida aka Mr. O, and Peter Ryszkiewicz at the Illinois Institute of Technology.
