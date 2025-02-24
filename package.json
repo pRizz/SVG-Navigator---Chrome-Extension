@@ -6,8 +6,8 @@
   "scripts": {
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
-    "postinstall": "node scripts/generateBuildInfo.js",
-    "prebuild": "node scripts/generateBuildInfo.js",
+    "prebuild": "node scripts/generateBuildInfo.mjs",
+    "postinstall": "pnpm run prebuild",
     "build:chrome": "pnpm run prebuild && webextension-toolbox build chrome --src src",
     "build:firefox": "pnpm run prebuild && webextension-toolbox build firefox --src src",
     "web-ext:lint": "web-ext lint",
