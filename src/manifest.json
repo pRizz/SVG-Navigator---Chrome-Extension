@@ -2,7 +2,7 @@
     "name": "SVG Navigator",
     "short_name": "SVG Nav",
     "description": "Adds zooming and panning capabilities to SVG files",
-    "version": "2.9",
+    "version": "2.10",
     "icons": {
         "16": "icon_16.png",
         "48": "icon_48.png",
