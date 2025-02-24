@@ -11,8 +11,8 @@
     "build:chrome": "pnpm run prebuild && webextension-toolbox build chrome --src src",
     "build:firefox": "pnpm run prebuild && webextension-toolbox build firefox --src src",
     "web-ext:lint": "web-ext lint",
-    "start:firefox": "web-ext run",
-    "start:chrome": "webextension-toolbox dev chrome --src src",
+    "start:firefox": "pnpm run prebuild && web-ext run",
+    "start:chrome": "pnpm run prebuild && webextension-toolbox dev chrome --src src",
     "build:all": "pnpm run build:chrome && pnpm run build:firefox"
   },
   "repository": {
