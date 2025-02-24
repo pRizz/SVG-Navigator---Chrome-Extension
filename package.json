@@ -5,10 +5,13 @@
   "scripts": {
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
-    "build:chrome": "zip -r extension.zip src",
-    "build:firefox": "web-ext build",
+    "prebuild": "node scripts/generateBuildInfo.js",
+    "build:chrome": "pnpm run prebuild && webextension-toolbox build chrome --src src",
+    "build:firefox": "pnpm run prebuild && webextension-toolbox build firefox --src src",
     "web-ext:lint": "web-ext lint",
-    "start:firefox": "web-ext run"
+    "start:firefox": "web-ext run",
+    "start:chrome": "webextension-toolbox dev chrome --src src",
+    "build:all": "pnpm run build:chrome && pnpm run build:firefox"
   },
   "repository": {
     "type": "git",
@@ -26,6 +29,8 @@
   "devDependencies": {
     "@eslint/js": "^9.21.0",
     "@webextension-toolbox/webextension-toolbox": "^7.1.1",
+    "babel": "^6.23.0",
+    "babel-loader": "^9.2.1",
     "eslint": "^9.21.0",
     "globals": "^16.0.0",
     "web-ext": "^8.4.0"

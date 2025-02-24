@@ -28,6 +28,8 @@
  * Contains all the logic for panning, zooming, and other controls.
  */
 
+import { BUILD_TIMESTAMP } from './buildInfo.js';
+
 // TODO: Reduce the need for globals
 
 // define svg namespace
@@ -705,7 +707,7 @@ function maybePrintDebugInfo() {
     if(debugMode) {
         if(!debugTextElement) {
             debugTextElement = htmlDoc.createElement('div');
-            const textLines = 9; // number of lines to display in debug info
+            const textLines = 11;
             for(let count = 0; count < textLines; count++) {
                 debugChildren[count] = htmlDoc.createElement('div');
                 debugChildren[count].style.padding = '1px 3px';
@@ -733,6 +735,8 @@ function maybePrintDebugInfo() {
         debugChildren[6].textContent = `CurrentVBH/InitVBH: ${viewBox.height/origSVGHeight}`;
         debugChildren[7].textContent = `Client X: ${debugMouseEvent.clientX}`;
         debugChildren[8].textContent = `Client Y: ${debugMouseEvent.clientY}`;
+        debugChildren[9].textContent = `SVG Navigator Version: ${getVersion()}`;
+        debugChildren[10].textContent = `Built at: ${BUILD_TIMESTAMP}`;
     } else {
         if(debugTextElement) {
             document.body.removeChild(debugTextElement);

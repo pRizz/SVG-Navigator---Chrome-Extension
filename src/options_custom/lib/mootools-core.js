@@ -1704,6 +1704,7 @@ function parser(
 // Slick NS
 
 var Slick = (this.Slick || {});
+window.Slick = Slick;
 
 Slick.parse = function(expression){
 	return parse(expression);
@@ -2732,6 +2733,8 @@ var Element = function(tag, props){
 };
 
 if (Browser.Element) Element.prototype = Browser.Element.prototype;
+
+window.Element = Element;
 
 new Type('Element', Element).mirror(function(name){
 	if (Array.prototype[name]) return;

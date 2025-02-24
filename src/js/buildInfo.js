@@ -1,0 +1,1 @@
+export const BUILD_TIMESTAMP = new Date().toISOString(); 

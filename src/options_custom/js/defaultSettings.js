@@ -1,6 +1,5 @@
-// Default settings
-    
-this.SVGNavigatorDefaultSettings = {
+// Default settings for SVG Navigator
+export const SVGNavigatorDefaultSettings = {
 	"clickAndDragBehavior": "pan",
 	"scrollSensitivity": 7,
 	"invertScroll": false,
@@ -9,3 +8,5 @@ this.SVGNavigatorDefaultSettings = {
 	"showDebugInfo": false,
 	"svgBackgroundColor": "white"
 };
+
+window.SVGNavigatorDefaultSettings = SVGNavigatorDefaultSettings;

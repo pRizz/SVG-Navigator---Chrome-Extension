@@ -1,5 +1,5 @@
-// SAMPLE
-this.manifest = {
+
+export const manifest = {
     "name": "SVG Navigator",
     "icon": "icon_38.png",
     "settings": [
@@ -125,3 +125,5 @@ this.manifest = {
     "alignment": [
     ]
 };
+
+window.manifest = manifest;
