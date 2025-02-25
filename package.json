@@ -4,6 +4,9 @@
   "sourceType": "module",
   "description": "SVG Navigator is a browser extension that adds pan and zoom features to existing SVG files on the web.",
   "scripts": {
+    "start:chrome": "pnpm run prebuild && webextension-toolbox dev chrome --src src",
+    "start:firefox": "pnpm run prebuild && web-ext run",
+    "start:safari": "pnpm run prebuild && webextension-toolbox dev safari --src src",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
     "prebuild": "node scripts/generateBuildInfo.mjs",
@@ -13,9 +16,6 @@
     "build:safari": "pnpm run prebuild && webextension-toolbox build safari --src src",
     "build:all": "pnpm run build:chrome && pnpm run build:firefox && pnpm run build:safari",
     "web-ext:lint": "web-ext lint",
-    "start:firefox": "pnpm run prebuild && web-ext run",
-    "start:chrome": "pnpm run prebuild && webextension-toolbox dev chrome --src src",
-    "start:safari": "pnpm run prebuild && webextension-toolbox dev safari --src src",
     "zip:source": "zip -r svg-navigator-source.zip src scripts eslint.config.mjs package.json pnpm-lock.yaml .eslintrc.json README.md web-ext-config.mjs LICENSE -x \"**/node_modules/*\""
   },
   "repository": {

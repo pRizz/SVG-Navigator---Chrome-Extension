@@ -4,7 +4,7 @@ function addVersionInfo() {
     const version = chrome.runtime.getManifest().version;
     const footer = document.createElement('div');
     footer.style.position = 'fixed';
-    footer.style.bottom = '8px';
+    footer.style.bottom = '18px';
     footer.style.left = '10px';
     footer.style.right = '10px';
     footer.style.color = '#666';
