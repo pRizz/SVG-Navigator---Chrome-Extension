@@ -99,6 +99,8 @@ chrome.runtime.onMessage.addListener((message) => {
     if (message.type === 'backgroundColorChanged') {
         svgBackgroundColor = message.color;
         document.body.style.backgroundColor = svgBackgroundColor;
+    } else if (message.type === 'scrollSensitivityChanged') {
+        scrollSensitivity = message.value;
     }
 });
 

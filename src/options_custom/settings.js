@@ -26,6 +26,20 @@ window.addEvent("domready", function () {
                 });
             });
         });
+
+        // Add listener for scroll sensitivity changes
+        settings.manifest.scrollSensitivity.addEvent("action", function (value) {
+            console.log("scrollSensitivityChanged", value);
+            // Send message to all tabs
+            chrome.tabs.query({}, function(tabs) {
+                tabs.forEach(function(tab) {
+                    chrome.tabs.sendMessage(tab.id, {
+                        type: 'scrollSensitivityChanged',
+                        value: value
+                    });
+                });
+            });
+        });
     });
     
     // Option 2: Do everything manually:
