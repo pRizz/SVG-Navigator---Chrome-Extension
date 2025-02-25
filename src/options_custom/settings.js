@@ -13,6 +13,19 @@ window.addEvent("domready", function () {
             // reset the background color to default
             settings.manifest.svgBackgroundColor.set(SVGNavigatorDefaultSettings.svgBackgroundColor);
         });
+
+        // Add listener for background color changes
+        settings.manifest.svgBackgroundColor.addEvent("action", function (color) {
+            // Send message to all tabs
+            chrome.tabs.query({}, function(tabs) {
+                tabs.forEach(function(tab) {
+                    chrome.tabs.sendMessage(tab.id, {
+                        type: 'backgroundColorChanged',
+                        color: color
+                    });
+                });
+            });
+        });
     });
     
     // Option 2: Do everything manually:

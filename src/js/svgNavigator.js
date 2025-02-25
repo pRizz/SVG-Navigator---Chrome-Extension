@@ -94,6 +94,14 @@ let debugMouseEvent = {
     clientY: 0
 };
 
+// Listen for messages from the options page
+chrome.runtime.onMessage.addListener((message) => {
+    if (message.type === 'backgroundColorChanged') {
+        svgBackgroundColor = message.color;
+        document.body.style.backgroundColor = svgBackgroundColor;
+    }
+});
+
 main().then(() => {});
 
 async function main() {
