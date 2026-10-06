@@ -29,8 +29,8 @@ export default [
         }
     },
     {
-        // Node-side tooling: E2E tests and config files.
-        files: ['test/**/*.mjs', '**/*.cjs'],
+        // Node-side tooling: tests, build/release scripts, and config files.
+        files: ['test/**/*.mjs', 'scripts/**/*.mjs', '**/*.cjs'],
         languageOptions: { globals: { ...globals.node } }
     },
     {

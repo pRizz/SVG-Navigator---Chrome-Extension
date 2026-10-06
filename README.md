@@ -148,3 +148,41 @@ pnpm test:e2e
 - Screenshots of failing tests are saved to `test-results/e2e-screenshots/`
 
 CI runs these tests on every push and pull request.
+
+### Releasing
+
+Releases are published by the [Release workflow](.github/workflows/release.yml):
+
+1. Bump `version` in `src/manifest.json` (both stores reject a version that isn't higher
+   than the published one) and push to `master`.
+2. Tag the commit and push the tag:
+   ```bash
+   git tag v2.12 && git push origin v2.12
+   ```
+
+The workflow checks that the tag matches the manifest version, builds the release files, runs
+the lint, unit, and UI tests against the exact files it will upload, then submits them to the
+Chrome Web Store and Firefox Add-ons. Both stores review a submission before users get it.
+Running the workflow manually (Actions → Release → Run workflow) is a dry run that builds and
+tests the release files without publishing.
+
+#### One-time credential setup
+
+Add these as repository secrets (Settings → Secrets and variables → Actions) or as secrets of
+the `release` environment, which the publish jobs use:
+
+| Secret | Where it comes from |
+|---|---|
+| `CWS_SERVICE_ACCOUNT_KEY` | In [Google Cloud Console](https://console.cloud.google.com): enable the *Chrome Web Store API*, [create a service account](https://console.cloud.google.com/iam-admin/serviceaccounts) (no roles needed), and create a JSON key for it. Paste the whole JSON file. Then add the service account's email under **Account** in the [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole) (one service account per publisher). |
+| `CWS_PUBLISHER_ID` | Developer Dashboard → **Publisher** → **Settings**. |
+| `AMO_JWT_ISSUER` | [AMO API keys page](https://addons.mozilla.org/developers/addon/api/key/): the *JWT issuer*. |
+| `AMO_JWT_SECRET` | Same page: the *JWT secret*. |
+
+With the [GitHub CLI](https://cli.github.com), for example:
+```bash
+gh secret set CWS_SERVICE_ACCOUNT_KEY < path/to/service-account-key.json
+```
+
+Firefox requires source code for bundled add-ons, so the workflow uploads `pnpm zip:source`'s
+archive with each version. Reviewers can rebuild with
+`PUPPETEER_SKIP_DOWNLOAD=true pnpm install && pnpm build:firefox` (output in `dist/firefox`).

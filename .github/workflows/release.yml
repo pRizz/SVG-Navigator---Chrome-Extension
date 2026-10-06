@@ -1,0 +1,175 @@
+name: Release
+
+# Pushing a tag like `v2.11` (matching src/manifest.json's version) builds the
+# extension, runs every test against the exact files that will be uploaded, and
+# submits them to the Chrome Web Store and Firefox Add-ons. Both stores still
+# review the submission before users get it.
+#
+# Running this workflow manually from a branch is a dry run: it builds and tests
+# the release files but publishes nothing.
+#
+# Required secrets (see README "Releasing"): CWS_SERVICE_ACCOUNT_KEY,
+# CWS_PUBLISHER_ID, AMO_JWT_ISSUER, AMO_JWT_SECRET.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  CWS_EXTENSION_ID: pefngfjmidahdaahgehodmfodhhhofkl
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 10
+        run_install: false
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'pnpm'
+
+    - name: Read and check version
+      id: version
+      run: |
+        version=$(node -p "require('./src/manifest.json').version")
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+        if [[ "$GITHUB_REF" == refs/tags/* && "$GITHUB_REF_NAME" != "v$version" ]]; then
+          echo "::error::Tag $GITHUB_REF_NAME does not match manifest version $version (expected v$version)"
+          exit 1
+        fi
+
+    - name: Cache Puppeteer browsers
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/puppeteer
+        key: puppeteer-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+
+    - name: Install test browsers
+      run: pnpm exec puppeteer browsers install chrome && pnpm exec puppeteer browsers install firefox
+
+    - name: Lint and unit test
+      run: pnpm lint && pnpm test:unit
+
+    - name: Build release files
+      run: pnpm build:all && pnpm zip:source
+
+    - name: Collect release files
+      run: |
+        mkdir release
+        cp "packages/svg-navigator---chrome-extension.v${{ steps.version.outputs.version }}.chrome.zip" release/chrome.zip
+        cp "packages/svg-navigator---chrome-extension.v${{ steps.version.outputs.version }}.firefox.xpi" release/firefox.xpi
+        cp svg-navigator-source.zip release/source.zip
+
+    - name: Run UI tests against the release files
+      run: |
+        unzip -q release/chrome.zip -d unpacked-chrome
+        unzip -q release/firefox.xpi -d unpacked-firefox
+        E2E_CHROME_EXT=unpacked-chrome E2E_FIREFOX_EXT=unpacked-firefox node --test 'test/e2e/**/*.test.mjs'
+
+    - name: Upload failure screenshots
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: e2e-screenshots
+        path: test-results/
+        if-no-files-found: ignore
+
+    - name: Upload release files
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-files
+        path: release/
+        if-no-files-found: error
+
+  publish-chrome:
+    needs: verify
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment: release
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    - name: Download release files
+      uses: actions/download-artifact@v4
+      with:
+        name: release-files
+        path: release
+
+    - name: Upload and submit to the Chrome Web Store
+      env:
+        CWS_SERVICE_ACCOUNT_KEY: ${{ secrets.CWS_SERVICE_ACCOUNT_KEY }}
+        CWS_PUBLISHER_ID: ${{ secrets.CWS_PUBLISHER_ID }}
+      run: node scripts/publishChromeWebStore.mjs release/chrome.zip
+
+  publish-firefox:
+    needs: verify
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment: release
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 10
+        run_install: false
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'pnpm'
+
+    - name: Install dependencies
+      env:
+        PUPPETEER_SKIP_DOWNLOAD: 'true'
+      run: pnpm install --frozen-lockfile
+
+    - name: Download release files
+      uses: actions/download-artifact@v4
+      with:
+        name: release-files
+        path: release
+
+    # web-ext packs a directory itself, so sign the tested xpi's extracted contents.
+    # Approval waiting is off: listed versions go through Mozilla's review, which
+    # can take days. Validation or source-upload failures still fail this step.
+    - name: Submit to Firefox Add-ons
+      env:
+        WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
+        WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+      run: |
+        unzip -q release/firefox.xpi -d unpacked-firefox
+        pnpm exec web-ext sign \
+          --source-dir unpacked-firefox \
+          --channel listed \
+          --upload-source-code release/source.zip \
+          --approval-timeout 0

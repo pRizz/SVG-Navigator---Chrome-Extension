@@ -29,6 +29,9 @@ jobs:
     - name: Run ESLint
       run: pnpm lint
 
+    - name: Run unit tests
+      run: pnpm test:unit
+
   web-ext-lint:
     runs-on: ubuntu-latest
 

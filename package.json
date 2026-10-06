@@ -18,7 +18,8 @@
     "web-ext:lint": "pnpm run build:dev && web-ext lint",
     "zip:source": "zip -r svg-navigator-source.zip src scripts eslint.config.mjs package.json pnpm-lock.yaml README.md web-ext-config.mjs LICENSE.txt -x \"**/node_modules/*\"",
     "build:dev": "pnpm run prebuild && webextension-toolbox build chrome --src src -t .build/chrome -o dev-chrome && webextension-toolbox build firefox --src src -t .build/firefox -o dev-firefox",
-    "test:e2e": "pnpm run build:dev && node --test 'test/e2e/**/*.test.mjs'"
+    "test:e2e": "pnpm run build:dev && node --test 'test/e2e/**/*.test.mjs'",
+    "test:unit": "node --test 'test/unit/**/*.test.mjs'"
   },
   "repository": {
     "type": "git",
