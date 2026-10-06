@@ -3,6 +3,7 @@
  * using the Chrome Web Store API v2 authenticated as a Google service account.
  *
  * Usage: node scripts/publishChromeWebStore.mjs <package.zip>
+ *        node scripts/publishChromeWebStore.mjs --check   (read-only credentials check)
  *
  * Environment:
  *   CWS_SERVICE_ACCOUNT_KEY  the service account's JSON key (file contents, not a path)
@@ -105,6 +106,23 @@ export async function publishToChromeWebStore({
     return published.state;
 }
 
+/**
+ * Read-only: fetches the item's published and pending revision status. Succeeds only
+ * when the credentials, publisher ID and extension ID are all valid.
+ */
+export async function fetchItemStatus({ publisherId, extensionId, accessToken, fetchFn = fetch }) {
+    const response = await fetchFn(`${API_ROOT}/v2/publishers/${publisherId}/items/${extensionId}:fetchStatus`, {
+        headers: { authorization: `Bearer ${accessToken}` },
+    });
+    return parseJsonResponse(response, 'Status check');
+}
+
+function describeRevision(revision) {
+    if (!revision) { return 'none'; }
+    const versions = (revision.distributionChannels ?? []).map((channel) => channel.crxVersion).join(', ');
+    return `${revision.state}${versions ? ` (version ${versions})` : ''}`;
+}
+
 async function parseJsonResponse(response, step) {
     if (!response.ok) {
         throw new Error(`${step} failed: HTTP ${response.status} ${await response.text()}`);
@@ -121,18 +139,24 @@ function requireEnv(name) {
 }
 
 async function main() {
-    const [packagePath] = process.argv.slice(2);
-    if (!packagePath) {
-        throw new Error('Usage: node scripts/publishChromeWebStore.mjs <package.zip>');
+    const [packagePathOrFlag] = process.argv.slice(2);
+    if (!packagePathOrFlag) {
+        throw new Error('Usage: node scripts/publishChromeWebStore.mjs <package.zip> | --check');
     }
     const serviceAccountKey = JSON.parse(requireEnv('CWS_SERVICE_ACCOUNT_KEY'));
-    const accessToken = await getAccessToken(serviceAccountKey);
-    await publishToChromeWebStore({
-        packageBytes: await readFile(packagePath),
+    const item = {
         publisherId: requireEnv('CWS_PUBLISHER_ID'),
         extensionId: requireEnv('CWS_EXTENSION_ID'),
-        accessToken,
-    });
+        accessToken: await getAccessToken(serviceAccountKey),
+    };
+    if (packagePathOrFlag === '--check') {
+        const status = await fetchItemStatus(item);
+        console.log(`Credentials OK for ${serviceAccountKey.client_email}`);
+        console.log(`Published: ${describeRevision(status.publishedItemRevisionStatus)}`);
+        console.log(`Submitted: ${describeRevision(status.submittedItemRevisionStatus)}`);
+        return;
+    }
+    await publishToChromeWebStore({ ...item, packageBytes: await readFile(packagePathOrFlag) });
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {

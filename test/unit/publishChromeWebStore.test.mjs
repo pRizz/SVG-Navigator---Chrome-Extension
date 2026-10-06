@@ -1,7 +1,7 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createVerify, generateKeyPairSync } from 'node:crypto';
-import { getAccessToken, publishToChromeWebStore } from '../../scripts/publishChromeWebStore.mjs';
+import { fetchItemStatus, getAccessToken, publishToChromeWebStore } from '../../scripts/publishChromeWebStore.mjs';
 
 /**
  * A fetch stand-in that answers by the request URL's trailing `:method`
@@ -124,5 +124,22 @@ describe('publishToChromeWebStore', () => {
 
         // Assert
         await assert.rejects(publishing, /Upload failed: HTTP 400 Version must be greater than published/);
+    });
+});
+
+describe('fetchItemStatus', () => {
+    test('reads the item status with a GET and the access token', async () => {
+        // Arrange
+        const status = { publishedItemRevisionStatus: { state: 'PUBLISHED' } };
+        const { fetchFn, calls } = fakeFetch({ ':fetchStatus': [[200, status]] });
+
+        // Act
+        const result = await fetchItemStatus({ ...ITEM, fetchFn });
+
+        // Assert
+        assert.deepEqual(result, status);
+        assert.equal(calls[0].url, 'https://chromewebstore.googleapis.com/v2/publishers/pub-1/items/ext-1:fetchStatus');
+        assert.equal(calls[0].init.method, undefined);
+        assert.equal(calls[0].init.headers.authorization, 'Bearer token-1');
     });
 });

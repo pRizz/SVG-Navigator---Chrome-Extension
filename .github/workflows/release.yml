@@ -6,7 +6,8 @@ name: Release
 # review the submission before users get it.
 #
 # Running this workflow manually from a branch is a dry run: it builds and tests
-# the release files but publishes nothing.
+# the release files and checks the store credentials (read-only), but publishes
+# nothing.
 #
 # Required secrets (see README "Releasing"): CWS_SERVICE_ACCOUNT_KEY,
 # CWS_PUBLISHER_ID, AMO_JWT_ISSUER, AMO_JWT_SECRET.
@@ -100,6 +101,25 @@ jobs:
         name: release-files
         path: release/
         if-no-files-found: error
+
+  check-chrome-credentials:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: release
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    - name: Check Chrome Web Store credentials (read-only)
+      env:
+        CWS_SERVICE_ACCOUNT_KEY: ${{ secrets.CWS_SERVICE_ACCOUNT_KEY }}
+        CWS_PUBLISHER_ID: ${{ secrets.CWS_PUBLISHER_ID }}
+      run: node scripts/publishChromeWebStore.mjs --check
 
   publish-chrome:
     needs: verify

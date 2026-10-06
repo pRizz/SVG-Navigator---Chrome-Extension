@@ -164,7 +164,8 @@ The workflow checks that the tag matches the manifest version, builds the releas
 the lint, unit, and UI tests against the exact files it will upload, then submits them to the
 Chrome Web Store and Firefox Add-ons. Both stores review a submission before users get it.
 Running the workflow manually (Actions → Release → Run workflow) is a dry run that builds and
-tests the release files without publishing.
+tests the release files and checks the Chrome Web Store credentials (read-only), without
+publishing.
 
 #### One-time credential setup
 
