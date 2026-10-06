@@ -1,0 +1,167 @@
+:root {
+    color-scheme: light dark;
+    --text: #222;
+    --muted: #666;
+    --border: #ddd;
+    --accent: #1a73e8;
+    --error: #c5221f;
+    --background: #fff;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --text: #e8eaed;
+        --muted: #9aa0a6;
+        --border: #3c4043;
+        --accent: #8ab4f8;
+        --error: #f28b82;
+        --background: #202124;
+    }
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    width: 480px;
+    margin: 0;
+    padding: 16px 20px 12px;
+    font: 14px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif;
+    color: var(--text);
+    background: var(--background);
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+}
+
+.header-icon {
+    flex: none;
+}
+
+h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 500;
+}
+
+.tabs {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+}
+
+.tab {
+    padding: 6px 10px;
+    border: none;
+    border-radius: 4px;
+    background: none;
+    color: var(--muted);
+    font: inherit;
+    cursor: pointer;
+}
+
+.tab[aria-selected='true'] {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.tab:hover {
+    color: var(--text);
+}
+
+.group {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 12px 0;
+    border: none;
+    border-bottom: 1px solid var(--border);
+}
+
+legend {
+    float: left;
+    padding: 0;
+    margin-bottom: 4px;
+    font-weight: 600;
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+input[type='range'] {
+    flex: 1;
+}
+
+#scrollSensitivityValue {
+    min-width: 3.5em;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+input[type='text'] {
+    flex: 1;
+    padding: 4px 6px;
+    font: inherit;
+}
+
+input[aria-invalid='true'] {
+    outline: 2px solid var(--error);
+}
+
+.swatch {
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+}
+
+button:not(.tab) {
+    justify-self: start;
+    font: inherit;
+}
+
+.status {
+    min-height: 1.4em;
+    margin: 8px 0 0;
+    color: var(--error);
+}
+
+.panel h2 {
+    margin: 14px 0 4px;
+    font-size: 15px;
+}
+
+.panel p,
+.panel ul {
+    margin: 4px 0;
+}
+
+.panel ul {
+    padding-left: 20px;
+}
+
+a {
+    color: var(--accent);
+}
+
+.version {
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+}

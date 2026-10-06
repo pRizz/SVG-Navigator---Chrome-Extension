@@ -1,7 +1,7 @@
 {
   "name": "svg-navigator---chrome-extension",
   "version": "1.0.0",
-  "sourceType": "module",
+  "type": "module",
   "description": "SVG Navigator is a browser extension that adds pan and zoom features to existing SVG files on the web.",
   "scripts": {
     "start:chrome": "pnpm run prebuild && webextension-toolbox dev chrome --src src",
@@ -9,17 +9,18 @@
     "start:safari": "pnpm run prebuild && webextension-toolbox dev safari --src src",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
-    "prebuild": "node scripts/generateBuildInfo.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.node.json",
+    "prebuild": "node scripts/generateBuildInfo.ts",
     "postinstall": "pnpm run prebuild",
     "build:chrome": "pnpm run prebuild && webextension-toolbox build chrome --src src",
     "build:firefox": "pnpm run prebuild && webextension-toolbox build firefox --src src",
     "build:safari": "pnpm run prebuild && webextension-toolbox build safari --src src",
     "build:all": "pnpm run build:chrome && pnpm run build:firefox && pnpm run build:safari",
     "web-ext:lint": "pnpm run build:dev && web-ext lint",
-    "zip:source": "zip -r svg-navigator-source.zip src scripts eslint.config.mjs package.json pnpm-lock.yaml README.md web-ext-config.mjs LICENSE.txt -x \"**/node_modules/*\"",
+    "zip:source": "zip -r svg-navigator-source.zip src scripts eslint.config.mjs tsconfig.json tsconfig.node.json package.json pnpm-lock.yaml README.md web-ext-config.mjs LICENSE.txt -x \"**/node_modules/*\"",
     "build:dev": "pnpm run prebuild && webextension-toolbox build chrome --src src -t .build/chrome -o dev-chrome && webextension-toolbox build firefox --src src -t .build/firefox -o dev-firefox",
-    "test:e2e": "pnpm run build:dev && node --test 'test/e2e/**/*.test.mjs'",
-    "test:unit": "node --test 'test/unit/**/*.test.mjs'"
+    "test:e2e": "pnpm run build:dev && node --test 'test/e2e/**/*.test.ts'",
+    "test:unit": "node --test 'test/unit/**/*.test.ts'"
   },
   "repository": {
     "type": "git",
@@ -36,16 +37,19 @@
   "homepage": "https://github.com/pRizz/SVG-Navigator---Chrome-Extension#readme",
   "devDependencies": {
     "@eslint/js": "^9.21.0",
+    "@types/chrome": "^0.3.4",
+    "@types/node": "^22.20.5",
     "@webextension-toolbox/webextension-toolbox": "^7.1.1",
-    "babel": "^6.23.0",
-    "babel-loader": "^9.2.1",
     "eslint": "^9.21.0",
     "globals": "^16.0.0",
     "puppeteer": "^25.12.0",
+    "ts-loader": "^9.5.2",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.1",
     "web-ext": "^8.4.0"
   },
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=22.18.0"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

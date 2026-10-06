@@ -1,13 +1,13 @@
 import globals from 'globals';
 import pluginJs from '@eslint/js';
+import tseslint from 'typescript-eslint';
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
     {
         ignores: [
-            'src/options_custom/**/*',
             'web-ext-artifacts/**/*',
-            'src/js/buildInfo.js',
+            'src/js/buildInfo.ts',
             'node_modules/**/*',
             'dist/**/*',
             'packages/**/*',
@@ -15,13 +15,25 @@ export default [
             'test-results/**/*'
         ]
     },
-    {
-        files: ['**/*.js'],
-        languageOptions: { sourceType: 'script' }
-    },
+    pluginJs.configs.recommended,
+    ...tseslint.configs.recommendedTypeChecked,
     {
         languageOptions: {
-            sourceType: 'module',
+            parserOptions: {
+                // Extension code and Node code have separate tsconfigs (different globals and module rules).
+                project: ['./tsconfig.json', './tsconfig.node.json'],
+                tsconfigRootDir: import.meta.dirname
+            }
+        }
+    },
+    {
+        // Tool config files stay JavaScript because their tools load them directly.
+        files: ['**/*.{js,mjs,cjs}'],
+        ...tseslint.configs.disableTypeChecked
+    },
+    {
+        files: ['src/**/*.ts'],
+        languageOptions: {
             globals: {
                 ...globals.browser,
                 ...globals.webextensions  // This adds chrome and other WebExtension APIs
@@ -30,14 +42,22 @@ export default [
     },
     {
         // Node-side tooling: tests, build/release scripts, and config files.
-        files: ['test/**/*.mjs', 'scripts/**/*.mjs', '**/*.cjs'],
+        files: ['test/**/*.ts', 'scripts/**/*.ts', '**/*.{js,mjs,cjs}'],
         languageOptions: { globals: { ...globals.node } }
+    },
+    {
+        files: ['test/**/*.ts'],
+        rules: {
+            // node:test's describe/test return promises that the runner itself awaits.
+            '@typescript-eslint/no-floating-promises': ['error', {
+                allowForKnownSafeCalls: [{ from: 'package', package: 'node:test', name: ['describe', 'suite', 'test', 'it'] }]
+            }]
+        }
     },
     {
         files: ['**/*.cjs'],
         languageOptions: { sourceType: 'commonjs' }
     },
-    pluginJs.configs.recommended,
     {
         rules: {
             // Google-style
@@ -47,7 +67,8 @@ export default [
             'semi': ['error', 'always'],
 
             // Airbnb-style
-            'no-unused-vars': 'error',
+            'no-unused-vars': 'off',
+            '@typescript-eslint/no-unused-vars': 'error',
             'prefer-const': 'error',
             'arrow-body-style': ['error', 'as-needed'],
 

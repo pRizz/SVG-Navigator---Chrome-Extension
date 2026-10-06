@@ -8,26 +8,29 @@ import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { Browser, Page } from 'puppeteer';
 import {
     BROWSERS,
+    clickInExtensionPage,
     evaluateInExtension,
     getViewBox,
     launchWithExtension,
-    openExtensionPage,
+    openOptionsPage,
     startFixtureServer,
     waitForNavigator,
+    waitForStoredSetting,
     waitForViewBoxChange,
-} from './harness.mjs';
+} from './harness.ts';
 
 const screenshotDir = fileURLToPath(new URL('../../test-results/e2e-screenshots/', import.meta.url));
 
 for (const browserName of BROWSERS) {
     describe(browserName, () => {
-        let server;
-        let browser;
-        let extensionOrigin;
-        let page;
-        let pageErrors;
+        let server: Awaited<ReturnType<typeof startFixtureServer>> | undefined;
+        let browser: Browser | undefined;
+        let extensionOrigin: string;
+        let page: Page;
+        let pageErrors: string[];
 
         before(async () => {
             server = await startFixtureServer();
@@ -39,24 +42,36 @@ for (const browserName of BROWSERS) {
             await server?.close();
         });
 
+        /** The launched browser; only valid inside tests and per-test hooks. */
+        function launched(): Browser {
+            assert.ok(browser, `${browserName} failed to launch`);
+            return browser;
+        }
+
+        function fixtureOrigin(): string {
+            assert.ok(server, 'fixture server failed to start');
+            return server.origin;
+        }
+
         beforeEach(async () => {
-            page = await browser.newPage();
+            page = await launched().newPage();
             pageErrors = [];
-            page.on('pageerror', (error) => pageErrors.push(error.message));
+            page.on('pageerror', (error) => pageErrors.push(error instanceof Error ? error.message : String(error)));
         });
 
         afterEach(async (t) => {
-            if (!t.passed) {
+            // `passed` exists at runtime (Node >= 20.12) but is missing from @types/node 22.
+            if (!('passed' in t && t.passed === true)) {
                 await mkdir(screenshotDir, { recursive: true });
                 const name = `${browserName}-${t.name}`.replace(/[^a-z0-9-]+/gi, '_');
                 await page.screenshot({ path: path.join(screenshotDir, `${name}.png`) });
             }
             await page.close();
-            await evaluateInExtension(browser, extensionOrigin, () => chrome.storage.sync.clear());
+            await evaluateInExtension(launched(), extensionOrigin, () => chrome.storage.sync.clear());
         });
 
-        async function openSvg(fixturePath = '/simple.svg') {
-            await page.goto(`${server.origin}${fixturePath}`);
+        async function openSvg(fixturePath = '/simple.svg'): Promise<void> {
+            await page.goto(`${fixtureOrigin()}${fixturePath}`);
             await waitForNavigator(page);
         }
 
@@ -65,7 +80,7 @@ for (const browserName of BROWSERS) {
             await openSvg();
 
             // Assert
-            assert.equal(await page.$eval('svg', (svg) => svg.parentElement.localName), 'body');
+            assert.equal(await page.$eval('svg', (svg) => svg.parentElement?.localName), 'body');
             assert.ok(await page.$('.toolbarcontainer'), 'toolbar should be present');
         });
 
@@ -155,7 +170,7 @@ for (const browserName of BROWSERS) {
             const markerTimeoutMs = 1_000;
 
             // Act
-            await page.goto(`${server.origin}/inline.html`);
+            await page.goto(`${fixtureOrigin()}/inline.html`);
             const maybeReady = await page
                 .waitForSelector('html[data-svg-navigator]', { timeout: markerTimeoutMs })
                 .catch(() => null);
@@ -176,19 +191,106 @@ for (const browserName of BROWSERS) {
 
         test('options popup renders its settings', async () => {
             // Act
-            await openExtensionPage(page, `${extensionOrigin}/options_custom/index.html`);
-            await page.waitForFunction(() => document.body.innerText.includes('Scroll sensitivity'), { timeout: 5_000 });
+            await openOptionsPage(page, extensionOrigin);
 
             // Assert
-            const text = await page.$eval('body', (body) => body.innerText);
+            const text = await page.$eval('body', (body) => (body as HTMLElement).innerText);
             assert.match(text, /Click and drag/);
+            assert.match(text, /Scroll sensitivity/);
             assert.match(text, /Background Color/);
             assert.deepEqual(pageErrors, []);
         });
 
+        test('options popup shows the stored settings', async () => {
+            // Arrange
+            await evaluateInExtension(launched(), extensionOrigin, () => chrome.storage.sync.set({
+                clickAndDragBehavior: 'zoomBox',
+                scrollSensitivity: 3.5,
+                toolbarEnabled: false,
+                svgBackgroundColor: 'black',
+            }));
+
+            // Act
+            await openOptionsPage(page, extensionOrigin);
+
+            // Assert
+            const shown = await page.evaluate(() => ({
+                clickAndDrag: document.querySelector<HTMLSelectElement>('#clickAndDragBehavior')?.value,
+                sensitivity: document.querySelector<HTMLInputElement>('#scrollSensitivity')?.value,
+                toolbarEnabled: document.querySelector<HTMLInputElement>('#toolbarEnabled')?.checked,
+                toolbarAutoHide: document.querySelector<HTMLInputElement>('#toolbarAutoHide')?.checked,
+                background: document.querySelector<HTMLInputElement>('#svgBackgroundColor')?.value,
+            }));
+            assert.deepEqual(shown, {
+                clickAndDrag: 'zoomBox',
+                sensitivity: '3.5',
+                toolbarEnabled: false,
+                toolbarAutoHide: true,
+                background: 'black',
+            });
+        });
+
+        test('options popup saves a toggled setting', async () => {
+            // Arrange
+            await openOptionsPage(page, extensionOrigin);
+
+            // Act
+            await clickInExtensionPage(page, '#toolbarEnabled');
+
+            // Assert
+            await waitForStoredSetting(page, 'toolbarEnabled', false);
+        });
+
+        test('options popup saves a typed background color even when closed right away', async () => {
+            // Arrange
+            await openOptionsPage(page, extensionOrigin);
+
+            // Act: type, then close the popup before the save delay elapses.
+            await page.evaluate(() => {
+                const input = document.querySelector<HTMLInputElement>('#svgBackgroundColor');
+                if (!input) { throw new Error('missing #svgBackgroundColor'); }
+                input.value = 'black';
+                input.dispatchEvent(new Event('input'));
+            });
+            await page.close();
+            page = await launched().newPage();
+
+            // Assert
+            await openOptionsPage(page, extensionOrigin);
+            await waitForStoredSetting(page, 'svgBackgroundColor', 'black');
+        });
+
+        test('options popup resets behaviors to their defaults', async () => {
+            // Arrange
+            await evaluateInExtension(launched(), extensionOrigin, () => chrome.storage.sync.set({
+                scrollSensitivity: 2,
+                invertScroll: true,
+            }));
+            await openOptionsPage(page, extensionOrigin);
+
+            // Act
+            await clickInExtensionPage(page, '#resetBehaviors');
+
+            // Assert
+            await waitForStoredSetting(page, 'scrollSensitivity', 7);
+            await waitForStoredSetting(page, 'invertScroll', false);
+            assert.equal(await page.$eval('#scrollSensitivity', (input) => (input as HTMLInputElement).value), '7');
+        });
+
+        test('applies a background color change to an open SVG', async () => {
+            // Arrange
+            await openSvg();
+
+            // Act
+            await evaluateInExtension(launched(), extensionOrigin, () => chrome.storage.sync.set({ svgBackgroundColor: 'rgb(255, 0, 0)' }));
+
+            // Assert
+            await page.waitForFunction(() => document.body.style.backgroundColor === 'rgb(255, 0, 0)', { timeout: 5_000 });
+        });
+
         test('respects the toolbarEnabled setting', async () => {
             // Arrange
-            await evaluateInExtension(browser, extensionOrigin, () => chrome.storage.sync.set({ toolbarEnabled: false }));
+            await evaluateInExtension(launched(), extensionOrigin, () => chrome.storage.sync.set({ toolbarEnabled: false }));
 
             // Act
             await openSvg();

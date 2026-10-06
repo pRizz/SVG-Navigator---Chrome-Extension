@@ -61,7 +61,7 @@ Build Instructions
 --------------------------------
 ### Requirements
 - Operating System: Windows, macOS, or Linux
-- Node.js 22.12 or later
+- Node.js 22.18 or later (runs the TypeScript build scripts and tests directly)
 - npm 9.x or later
 - pnpm 10.x or later (required package manager)
 
@@ -124,12 +124,27 @@ These commands will build the extension and start a development server that watc
 For Firefox, `web-ext run` loads the bundled build in `.build/firefox`; run `pnpm build:dev` after
 editing `src/` and Firefox reloads the extension automatically.
 
-### Linting
+### Source layout
 
-To run linting:
+The extension is written in TypeScript:
+
+- `src/js/svgNavigator.ts`: the content script that adds panning and zooming to SVG documents
+- `src/options/`: the toolbar popup with the settings (`index.html`, `options.ts`, `options.css`)
+- `src/shared/settings.ts`: the settings, their defaults, and their storage in `chrome.storage.sync`
+
+`webextension-toolbox` compiles each `.ts` file in `src/` to a `.js` file of the same name.
+Scripts in `scripts/` and the tests run directly on Node, which strips the types.
+
+### Type Checking and Linting
+
 ```bash
+pnpm typecheck
 pnpm lint
 ```
+
+`pnpm typecheck` checks the extension (`tsconfig.json`) and the Node scripts and tests
+(`tsconfig.node.json`). The extension build also reports type errors, but its exit code stays 0,
+so run `pnpm typecheck` to catch them.
 
 ### UI Tests
 
@@ -143,7 +158,7 @@ pnpm test:e2e
 
 - Run one browser only: `E2E_BROWSERS=firefox pnpm test:e2e`
 - Test a specific unpacked build, e.g. a release package before uploading it:
-  `E2E_CHROME_EXT=path/to/unzipped-chrome E2E_FIREFOX_EXT=path/to/unzipped-xpi node --test 'test/e2e/**/*.test.mjs'`
+  `E2E_CHROME_EXT=path/to/unzipped-chrome E2E_FIREFOX_EXT=path/to/unzipped-xpi node --test 'test/e2e/**/*.test.ts'`
   (versions up to 2.11 predate the readiness marker the tests wait for, so they always time out)
 - Screenshots of failing tests are saved to `test-results/e2e-screenshots/`
 
@@ -161,7 +176,7 @@ Releases are published by the [Release workflow](.github/workflows/release.yml):
    ```
 
 The workflow checks that the tag matches the manifest version, builds the release files, runs
-the lint, unit, and UI tests against the exact files it will upload, then submits them to the
+the type check, lint, unit, and UI tests against the exact files it will upload, then submits them to the
 Chrome Web Store and Firefox Add-ons. Both stores review a submission before users get it.
 Running the workflow manually (Actions → Release → Run workflow) is a dry run that builds and
 tests the release files and checks the Chrome Web Store credentials (read-only), without

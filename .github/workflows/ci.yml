@@ -26,6 +26,10 @@ jobs:
     - name: Install dependencies
       run: pnpm install
       
+    # The extension build exits 0 even when TypeScript reports errors, so this is the gate.
+    - name: Type check
+      run: pnpm typecheck
+
     - name: Run ESLint
       run: pnpm lint
 

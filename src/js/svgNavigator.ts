@@ -23,26 +23,43 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+
 /**
- * svgNavigator.js
+ * svgNavigator.ts
  * Contains all the logic for panning, zooming, and other controls.
  */
 
-import { BUILD_TIMESTAMP } from './buildInfo.js';
+import { BUILD_TIMESTAMP } from './buildInfo';
+import {
+    DEFAULT_SETTINGS,
+    SCROLL_SENSITIVITY_RANGE,
+    isSettingKey,
+    loadSettings,
+    parseSettings,
+    type Settings,
+} from '../shared/settings';
 
-// TODO: Reduce the need for globals
+interface ViewBox {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+}
+
+// TODO: Reduce the need for globals. They are assigned in main() before any
+// listener that reads them is attached.
 
 // define svg namespace
 const svgNS = 'http://www.w3.org/2000/svg';
-let svgDocument;
+let svgDocument: SVGSVGElement;
 
 // wrap the svg document in an html document
-let svgDocElement;
-let htmlDoc;
-let origSVGWidth;
-let origSVGHeight;
-let originalViewBoxText;
-let viewBox;
+let svgDocElement: SVGSVGElement;
+let htmlDoc: Document;
+let origSVGWidth: number;
+let origSVGHeight: number;
+let originalViewBoxText: string | null;
+let viewBox: ViewBox;
 
 // global variables for zooming
 let zoomAction = false;
@@ -52,7 +69,7 @@ let zoomX2 = 0;
 let zoomY2 = 0;
 let zoomWidth = 0;
 let zoomHeight = 0;
-let zoomRectangle;
+let zoomRectangle: SVGRectElement;
 
 // global variables for panning
 let panStart_Spacebar = true; // TODO try to not need these separate variables
@@ -66,81 +83,51 @@ let panOldY = 0;
 let panNewX = 0;
 let panNewY = 0;
 
-// FIXME: options don't have common access to these default settings
-const SVGNavigatorDefaultSettings = {
-    'clickAndDragBehavior': 'pan',
-    'scrollSensitivity': 7,
-    'invertScroll': false,
-    'toolbarAutoHide': true,
-    'toolbarEnabled': true,
-    'showDebugInfo': false,
-    'svgBackgroundColor': 'white'
-};
-
-// global settings, defaults
-let scrollSensitivity = SVGNavigatorDefaultSettings.scrollSensitivity;
-let invertScroll = SVGNavigatorDefaultSettings.invertScroll;
-let toolbarAutoHide = SVGNavigatorDefaultSettings.toolbarAutoHide;
-let toolbarEnabled = SVGNavigatorDefaultSettings.toolbarEnabled;
-let showDebugInfo = SVGNavigatorDefaultSettings.showDebugInfo;
-let svgBackgroundColor = SVGNavigatorDefaultSettings.svgBackgroundColor;
+// current settings; replaced from storage in main() and kept live by onSettingsChanged
+let settings: Settings = { ...DEFAULT_SETTINGS };
 
 // for debugging
-let debugTextElement;
-const debugChildren = [];
-let debugMode = showDebugInfo;
-let debugMouseEvent = {
+let debugTextElement: HTMLDivElement | null = null;
+const debugChildren: HTMLDivElement[] = [];
+let debugMouseEvent: Pick<MouseEvent, 'clientX' | 'clientY'> = {
     clientX: 0,
     clientY: 0
 };
 
-// Listen for messages from the options page
-chrome.runtime.onMessage.addListener((message) => {
-    if (message.type === 'backgroundColorChanged') {
-        svgBackgroundColor = message.color;
-        document.body.style.backgroundColor = svgBackgroundColor;
-    } else if (message.type === 'scrollSensitivityChanged') {
-        scrollSensitivity = message.value;
-    }
+main().catch((error: unknown) => {
+    console.error('SVG Navigator: failed to start', error);
 });
 
-main().then(() => {});
-
-async function main() {
-    'use strict';
-
-    if(!isFileCompatible()) { return; }
+async function main(): Promise<void> {
+    const maybeSvgRoot = getStandaloneSvgRoot();
+    if(!maybeSvgRoot) { return; }
 
     // wrap the svg document in an html document
-    svgDocElement = document.documentElement;
+    svgDocElement = maybeSvgRoot;
     htmlDoc = document.implementation.createHTMLDocument();
 
     document.replaceChild(htmlDoc.documentElement, svgDocElement);
 
     // the htmlDoc is the new document object
     document.body.appendChild(svgDocElement);
-    document.body.style.margin = 0;
-    document.body.style['overflow-y'] = 'scroll';
+    document.body.style.margin = '0';
+    document.body.style.overflowY = 'scroll';
 
     // document variables
-    const svgElements = document.getElementsByTagName('svg');
+    const maybeSvgDocument = document.getElementsByTagName('svg')[0];
 
-    svgDocument = svgElements[0];
-
-    if(!svgDocument) {
+    if(!maybeSvgDocument) {
         console.error('SVG Navigator: No SVG element found');
         return;
     }
+    svgDocument = maybeSvgDocument;
 
     // @since 2.6
     // Remove of the SVG element `style` `width` and `height` in case
     // these limit the visible SVG area.
     // See `examples/plantuml.html` and `examples/githubsvg.html` for the use case.
-    if (svgDocument.getAttribute('style')) {
-        // Do not expose const `style` to keep outer scope cleaner.
-        // Thus call `svgDocument.getAttribute` twice.
-        const style = svgDocument.getAttribute('style');
-
+    const style = svgDocument.getAttribute('style');
+    if (style) {
         // Define regex patterns for width and height separately
         const widthRegex = /(\s*width\s*:\s*[^;]+;\s*)/g;
         const heightRegex = /(\s*height\s*:\s*[^;]+;\s*)/g;
@@ -159,12 +146,12 @@ async function main() {
     zoomRectangle = insertZoomRect();
 
     // keep aspect ratio; just remove attribute if it exists
-    svgDocument.hasAttribute('preserveAspectRatio') && svgDocument.removeAttribute('preserveAspectRatio');
+    svgDocument.removeAttribute('preserveAspectRatio');
 
     // save original svg width and height
     // TODO problematic when width or height contain percent character
-    origSVGWidth = parseFloat(svgDocument.getAttribute('width') || getWidth());
-    origSVGHeight = parseFloat(svgDocument.getAttribute('height') || getHeight());
+    origSVGWidth = parseFloat(svgDocument.getAttribute('width') || String(getWidth()));
+    origSVGHeight = parseFloat(svgDocument.getAttribute('height') || String(getHeight()));
     // make width and height 100% to fill client web browser
     svgDocument.setAttribute('width', '100%');
     svgDocument.setAttribute('height', '100%');
@@ -186,24 +173,31 @@ async function main() {
     // this variable should always be up to date and set the real viewbox when it changes
     viewBox = parseOrGetViewBox();
 
-    await Promise.all([addEventListeners(), maybeAddToolbar()]);
+    settings = await loadSettingsOrDefaults();
+    addEventListeners();
+    maybeAddToolbar();
+    applyBackgroundColor();
+    maybePrintDebugInfo();
+    // Registered only once an SVG is wrapped, so settings changes never touch other pages.
+    chrome.storage.onChanged.addListener(onSettingsChanged);
     disableSelection();
 
     // Signals that all listeners are attached; E2E tests wait on this to avoid racing setup.
     document.documentElement.dataset.svgNavigator = 'ready';
-    console.log(`SVG Navigator v${  getVersion()  } loaded`);
+    console.log(`SVG Navigator v${getVersion()} loaded`);
 }
 
-async function getSyncOrDefault(key) {
-    const data = await chrome.storage.sync.get(key);
-    return Object.hasOwn(data, key) ? data[key] : SVGNavigatorDefaultSettings[key];
+async function loadSettingsOrDefaults(): Promise<Settings> {
+    try {
+        return await loadSettings();
+    } catch(e) {
+        console.warn('SVG Navigator: could not read settings; using defaults', e);
+        return { ...DEFAULT_SETTINGS };
+    }
 }
 
-async function maybeAddToolbar() {
-    toolbarAutoHide = await getSyncOrDefault('toolbarAutoHide');
-    toolbarEnabled = await getSyncOrDefault('toolbarEnabled');
-
-    if(!toolbarEnabled) {
+function maybeAddToolbar(): void {
+    if(!settings.toolbarEnabled) {
         return;
     }
 
@@ -215,7 +209,7 @@ async function maybeAddToolbar() {
     toolbarContainer.appendChild(toolbarDiv);
 
     const plusButton = htmlDoc.createElement('div');
-    plusButton.innerHTML = '+';
+    plusButton.textContent = '+';
     plusButton.className = 'toolbarbutton toolbarbuttonborder';
     plusButton.onclick = function () {
         zoomBy(0.8);
@@ -223,7 +217,7 @@ async function maybeAddToolbar() {
     toolbarDiv.appendChild(plusButton);
 
     const minusButton = htmlDoc.createElement('div');
-    minusButton.innerHTML = '-';
+    minusButton.textContent = '-';
     minusButton.className = 'toolbarbutton toolbarbuttonborder';
     minusButton.onclick = function () {
         zoomOut(true);
@@ -231,7 +225,7 @@ async function maybeAddToolbar() {
     toolbarDiv.appendChild(minusButton);
 
     const resetButton = htmlDoc.createElement('div');
-    resetButton.innerHTML = 'Reset';
+    resetButton.textContent = 'Reset';
     resetButton.className = 'toolbarbutton';
     resetButton.onclick = function () {
         zoomOriginal(true);
@@ -241,45 +235,59 @@ async function maybeAddToolbar() {
     document.body.appendChild(toolbarContainer); // add to DOM
 
     // make the toolbar fadeout after 5 seconds
-    toolbarContainer.style.opacity = 1;
-    if(toolbarAutoHide) {
+    toolbarContainer.style.opacity = '1';
+    if(settings.toolbarAutoHide) {
         setTimeout(function () {
-            toolbarContainer.style.opacity = null;
+            toolbarContainer.style.opacity = '';
         }, 5000);
     }
 }
 
 // insert a rectangle object into the svg, acting as the zoom rectangle
-function insertZoomRect() {
+function insertZoomRect(): SVGRectElement {
     const zoomRectangle = document.createElementNS(svgNS, 'rect');
-    zoomRectangle.setAttributeNS(null, 'x', 0);
-    zoomRectangle.setAttributeNS(null, 'y', 0);
-    zoomRectangle.setAttributeNS(null, 'rx', 0.01);
-    zoomRectangle.setAttributeNS(null, 'width', 0);
-    zoomRectangle.setAttributeNS(null, 'height', 0);
-    zoomRectangle.setAttributeNS(null, 'opacity', 1);
+    zoomRectangle.setAttributeNS(null, 'x', '0');
+    zoomRectangle.setAttributeNS(null, 'y', '0');
+    zoomRectangle.setAttributeNS(null, 'rx', '0.01');
+    zoomRectangle.setAttributeNS(null, 'width', '0');
+    zoomRectangle.setAttributeNS(null, 'height', '0');
+    zoomRectangle.setAttributeNS(null, 'opacity', '1');
     zoomRectangle.setAttributeNS(null, 'stroke', 'blue');
-    zoomRectangle.setAttributeNS(null, 'stroke-width', 1.0);
+    zoomRectangle.setAttributeNS(null, 'stroke-width', '1.0');
     zoomRectangle.setAttributeNS(null, 'fill', 'blue');
-    zoomRectangle.setAttributeNS(null, 'fill-opacity', 0.1);
+    zoomRectangle.setAttributeNS(null, 'fill-opacity', '0.1');
     svgDocument.appendChild(zoomRectangle);
     return zoomRectangle;
 }
 
-chrome.storage.onChanged.addListener((changes) => {
+function onSettingsChanged(changes: Record<string, chrome.storage.StorageChange>, areaName: string): void {
+    if(areaName !== 'sync') { return; }
     for (const [key, { newValue }] of Object.entries(changes)) {
+        if(isSettingKey(key)) {
+            settings = parseSettings({ ...settings, [key]: newValue });
+        }
         if(key === 'showDebugInfo') {
-            debugMode = showDebugInfo = new Boolean(newValue).valueOf();
             maybePrintDebugInfo();
-            document.addEventListener('mousemove', (e) => {
-                debugMouseEvent = e;
-                maybePrintDebugInfo();
-            }, false);
+            if(settings.showDebugInfo) {
+                document.addEventListener('mousemove', trackMouseForDebugInfo, false);
+            }
+        } else if(key === 'svgBackgroundColor') {
+            applyBackgroundColor();
         }
     }
-});
+}
 
-async function addEventListeners() {
+// A named listener, so adding it again after re-enabling debug info is a no-op.
+function trackMouseForDebugInfo(e: MouseEvent): void {
+    debugMouseEvent = e;
+    maybePrintDebugInfo();
+}
+
+function applyBackgroundColor(): void {
+    document.body.style.backgroundColor = settings.svgBackgroundColor;
+}
+
+function addEventListeners(): void {
     // event listeners
     document.addEventListener('keydown', panBegin, false); // spacebar panning
     document.addEventListener('mousemove', panMove, false); // spacebar panning
@@ -287,80 +295,42 @@ async function addEventListeners() {
     document.addEventListener('keyup', zoomOut, false); // alt key zoom out
     document.addEventListener('keyup', zoomOriginal, false); // escape key zoom out
     document.addEventListener('keyup', zoomCtrlKeys, false); // ctrl key zoom in/out
-    // retrieve options from stored settings
-    try{
-        const clickAndDragBehavior = await getSyncOrDefault('clickAndDragBehavior');
-        if(clickAndDragBehavior === 'pan') {
-            svgDocument.addEventListener('mousedown', panBegin2, false); // mouse panning
-            document.addEventListener('mousemove', panMove2, false); // mouse panning
-            document.addEventListener('mouseup', panEnd2, false); // mouse panning
-        } else if(clickAndDragBehavior === 'zoomBox') {
-            svgDocument.addEventListener('mousedown', zoomMouseDown, false); // zoom box
-            svgDocument.addEventListener('mousemove', zoomMouseMove, false); // zoom box
-            svgDocument.addEventListener('mouseup', zoomMouseUp, false); // zoom box
-        } else { // default to mouse panning
-            svgDocument.addEventListener('mousedown', panBegin2, false); // mouse panning
-            document.addEventListener('mousemove', panMove2, false); // mouse panning
-            document.addEventListener('mouseup', panEnd2, false); // mouse panning
-        }
-    } catch(e) {
-        console.warn('Error getting clickAndDragBehavior', e);
-        // default to mouse panning
+    if(settings.clickAndDragBehavior === 'zoomBox') {
+        svgDocument.addEventListener('mousedown', zoomMouseDown, false); // zoom box
+        svgDocument.addEventListener('mousemove', zoomMouseMove, false); // zoom box
+        svgDocument.addEventListener('mouseup', zoomMouseUp, false); // zoom box
+    } else {
         svgDocument.addEventListener('mousedown', panBegin2, false); // mouse panning
         document.addEventListener('mousemove', panMove2, false); // mouse panning
         document.addEventListener('mouseup', panEnd2, false); // mouse panning
     }
 
-    try {
-        scrollSensitivity = await getSyncOrDefault('scrollSensitivity');
-        invertScroll = await getSyncOrDefault('invertScroll');
-        svgDocument.addEventListener('wheel', doScroll, { passive: false }); // Standard event for all modern browsers
-    } catch(e) {
-        console.warn('Error getting scrollSensitivity', e);
-        // with defaults
-        svgDocument.addEventListener('wheel', doScroll, { passive: false }); // Standard event for all modern browsers
-    }
+    svgDocument.addEventListener('wheel', doScroll, { passive: false }); // Standard event for all modern browsers
 
-    try{
-        debugMode = await getSyncOrDefault('showDebugInfo');
-        if(debugMode) {
-            document.addEventListener('mousemove', (e) => {
-                debugMouseEvent = e;
-                maybePrintDebugInfo();
-            }, false);
-        }
-        maybePrintDebugInfo();
-    } catch(e) {
-        console.warn('Error getting showDebugInfo', e);
-        // with defaults
-        maybePrintDebugInfo();
+    if(settings.showDebugInfo) {
+        document.addEventListener('mousemove', trackMouseForDebugInfo, false);
     }
+}
 
-    try{
-        svgBackgroundColor = await getSyncOrDefault('svgBackgroundColor');
-        document.body.style.backgroundColor = svgBackgroundColor;
-    } catch(e) {
-        // with defaults
-        console.warn('Error getting svgBackgroundColor', e);
-        document.body.style.backgroundColor = svgBackgroundColor;
-    }
+/** Converts a point in client (window) coordinates into `element`'s user space. */
+function clientToSvgPoint(clientX: number, clientY: number, element: SVGGraphicsElement): DOMPoint {
+    const p = svgDocElement.createSVGPoint();
+    p.x = clientX;
+    p.y = clientY;
+    const m = element.getScreenCTM();
+    return m ? p.matrixTransform(m.inverse()) : p;
 }
 
 /* Zoom Functions */
 // click and drag to zoom in
 // press escape to zoom out
-function zoomMouseDown(evt) {
+function zoomMouseDown(evt: MouseEvent): void {
     // if the left click is down and the control and shift keys are NOT depressed, sets top left of zoombox and flag
-    if(!(panAction_Spacebar || panAction_Mouse) && zoomRectangle && !evt.ctrlKey && !evt.shiftKey) { // zoom
+    if(!(panAction_Spacebar || panAction_Mouse) && !evt.ctrlKey && !evt.shiftKey) { // zoom
         zoomAction = true;
-        let p = svgDocElement.createSVGPoint();
-        p.x = evt.clientX;
-        p.y = evt.clientY;
-
-        const m = zoomRectangle.getScreenCTM();
-        p = p.matrixTransform(m.inverse());
-        zoomRectangle.setAttribute('x', p.x);
-        zoomRectangle.setAttribute('y', p.y);
+        const p = clientToSvgPoint(evt.clientX, evt.clientY, zoomRectangle);
+        zoomRectangle.setAttribute('x', String(p.x));
+        zoomRectangle.setAttribute('y', String(p.y));
         zoomX1 = p.x;
         zoomY1 = p.y;
 
@@ -377,20 +347,15 @@ function zoomMouseDown(evt) {
         }
         const relativeStrokeWidth = viewBoxWidth/clientWidth;
 
-        zoomRectangle.setAttributeNS(null, 'stroke-width', relativeStrokeWidth);
-        zoomRectangle.setAttributeNS(null, 'rx', relativeStrokeWidth);
+        zoomRectangle.setAttributeNS(null, 'stroke-width', String(relativeStrokeWidth));
+        zoomRectangle.setAttributeNS(null, 'rx', String(relativeStrokeWidth));
     }
 }
 
 // blue zoombox drawn as mouse is moved across screen
-function zoomMouseMove(evt) {
+function zoomMouseMove(evt: MouseEvent): void {
     if(zoomAction) {
-        let p = svgDocElement.createSVGPoint();
-        p.x = evt.clientX;
-        p.y = evt.clientY;
-
-        const m = zoomRectangle.getScreenCTM();
-        p = p.matrixTransform(m.inverse());
+        const p = clientToSvgPoint(evt.clientX, evt.clientY, zoomRectangle);
 
         zoomX2 = p.x;
         zoomY2 = p.y;
@@ -398,24 +363,28 @@ function zoomMouseMove(evt) {
         zoomHeight = Math.abs(zoomY2 - zoomY1);
 
         // set top left corner point of zoom rectangle
-        zoomX1 < zoomX2 ? zoomRectangle.setAttribute('x', zoomX1) : zoomRectangle.setAttribute('x', zoomX2);
-        zoomY1 < zoomY2 ? zoomRectangle.setAttribute('y', zoomY1) : zoomRectangle.setAttribute('y', zoomY2);
+        zoomRectangle.setAttribute('x', String(Math.min(zoomX1, zoomX2)));
+        zoomRectangle.setAttribute('y', String(Math.min(zoomY1, zoomY2)));
 
-        zoomRectangle.setAttribute('width', zoomWidth);
-        zoomRectangle.setAttribute('height', zoomHeight);
+        zoomRectangle.setAttribute('width', String(zoomWidth));
+        zoomRectangle.setAttribute('height', String(zoomHeight));
     }
 }
 
+function getNumericAttribute(element: Element, name: string): number {
+    return parseFloat(element.getAttribute(name) ?? '');
+}
+
 // function that completes zoombox, then zooms view to zoombox
-function zoomMouseUp() {
+function zoomMouseUp(): void {
     // the viewbox width and height is changed when the button is up
     if(zoomAction) {
-        const zoomRectWidth = zoomRectangle.getAttribute('width');
-        const zoomRectHeight = zoomRectangle.getAttribute('height');
-        if((parseFloat(zoomRectWidth)*parseFloat(zoomRectHeight)) > 1e-6) { // prevent zooming on tiny area; svg visual starts acting weird
+        const zoomRectWidth = getNumericAttribute(zoomRectangle, 'width');
+        const zoomRectHeight = getNumericAttribute(zoomRectangle, 'height');
+        if((zoomRectWidth*zoomRectHeight) > 1e-6) { // prevent zooming on tiny area; svg visual starts acting weird
             // make aspect ratio of new viewbox match the screen aspect ratio; useful later, when adding debug info to corner of screen
-            const zoomRectX = zoomRectangle.getAttribute('x');
-            const zoomRectY = zoomRectangle.getAttribute('y');
+            const zoomRectX = getNumericAttribute(zoomRectangle, 'x');
+            const zoomRectY = getNumericAttribute(zoomRectangle, 'y');
 
             viewBox.x = zoomRectX;
             viewBox.y = zoomRectY;
@@ -439,26 +408,35 @@ function zoomMouseUp() {
     // reset zoom rectangle members
     zoomX1 = 0;
     zoomY1 = 0;
-    zoomRectangle.setAttribute('width', 0);
-    zoomRectangle.setAttribute('height', 0);
+    zoomRectangle.setAttribute('width', '0');
+    zoomRectangle.setAttribute('height', '0');
 
     zoomAction = false;
 }
 
-// zoom out when user presses alt key
-function zoomOut(evt) {
-    if(!zoomAction && !(panAction_Spacebar || panAction_Mouse) && evt.type === 'keyup' || evt === true) {
-        const charCode = evt.charCode || evt.keyCode;
+function isZoomingOrPanning(): boolean {
+    return zoomAction || panAction_Spacebar || panAction_Mouse;
+}
 
-        // alt key
-        if (charCode === 18 || evt === true) {
-            zoomBy(1.25);
-        }
+// KeyboardEvent.keyCode is deprecated but is what these key bindings were written against.
+function keyCodeOf(evt: KeyboardEvent): number {
+    return evt.charCode || evt.keyCode;
+}
+
+// zoom out when user presses alt key, or unconditionally when passed `true` (toolbar)
+function zoomOut(evt: KeyboardEvent | true): void {
+    if(evt === true) {
+        zoomBy(1.25);
+        return;
+    }
+    // alt key
+    if(!isZoomingOrPanning() && evt.type === 'keyup' && keyCodeOf(evt) === 18) {
+        zoomBy(1.25);
     }
 }
 
 // positive for zoom out, neg else
-function zoomBy(zoomAmount) {
+function zoomBy(zoomAmount: number): void {
     const oldViewBoxWidth = viewBox.width;
     const oldViewBoxHeight = viewBox.height;
 
@@ -479,21 +457,24 @@ function zoomBy(zoomAmount) {
 }
 
 // zoom back to original view when escape button is clicked or Reset button pressed
-function zoomOriginal(evt) {
-    const charCode = evt.charCode || evt.keyCode;
-    if(!zoomAction && !(panAction_Spacebar || panAction_Mouse) && ((evt.type === 'keyup' && charCode === 27) || evt === true)) {
-        viewBox = parseOrGetViewBox(originalViewBoxText);
-        setViewBox();
+function zoomOriginal(evt: KeyboardEvent | true): void {
+    if(isZoomingOrPanning()) { return; }
+    if(evt === true || (evt.type === 'keyup' && keyCodeOf(evt) === 27)) {
+        resetViewBox();
     }
 }
 
+function resetViewBox(): void {
+    viewBox = parseOrGetViewBox(originalViewBoxText);
+    setViewBox();
+}
+
 // zoom according to ctrl keys
-function zoomCtrlKeys(evt) {
-    if(!zoomAction && !(panAction_Spacebar || panAction_Mouse) && evt.type === 'keyup' && evt.ctrlKey) {
-        const charCode = evt.charCode || evt.keyCode;
+function zoomCtrlKeys(evt: KeyboardEvent): void {
+    if(!isZoomingOrPanning() && evt.type === 'keyup' && evt.ctrlKey) {
+        const charCode = keyCodeOf(evt);
         if (charCode === 48) { // ctrl-0, reset zoom
-            viewBox = parseOrGetViewBox(originalViewBoxText);
-            setViewBox();
+            resetViewBox();
         } else if (charCode === 187) { // ctrl-+, zoom in
             zoomBy(0.8);
         } else if (charCode === 189) { // ctrl--, zoom out
@@ -502,12 +483,10 @@ function zoomCtrlKeys(evt) {
     }
 }
 
-function panBegin(evt) {
+function panBegin(evt: KeyboardEvent): void {
     if(!panAction_Mouse && !zoomAction && evt.type === 'keydown') {
-        const charCode = evt.charCode || evt.keyCode;
         // spacebar
-        if (charCode === 32 && panStart_Spacebar === true) {
-            // alert("start");
+        if (keyCodeOf(evt) === 32 && panStart_Spacebar) {
             panStart_Spacebar = true;
             panAction_Spacebar = true;
             svgDocument.style.cursor='move';
@@ -516,7 +495,7 @@ function panBegin(evt) {
 }
 
 // pan with mouse down
-function panBegin2() {
+function panBegin2(): void {
     if(!panAction_Spacebar && !zoomAction) {
         panStart_Mouse = true;
         panAction_Mouse = true;
@@ -525,92 +504,65 @@ function panBegin2() {
 }
 
 
-function panMove(evt) {
+function panMove(evt: MouseEvent): void {
     if(panStart_Spacebar && panAction_Spacebar) {
         panAction_Spacebar = true;
         panStart_Spacebar = false;
-        let p = svgDocElement.createSVGPoint();
-        p.x = evt.clientX;
-        p.y = evt.clientY;
-        const m = svgDocument.getScreenCTM();
-        p = p.matrixTransform(m.inverse());
-
-        panOldX = p.x;
-        panOldY = p.y;
-
-        panViewBoxX = viewBox.x;
-        panViewBoxY = viewBox.y;
+        startPan(evt);
     }
     if(panAction_Spacebar && !panStart_Spacebar) {
-        let p = svgDocElement.createSVGPoint();
-        p.x = evt.clientX;
-        p.y = evt.clientY;
-        const m = svgDocument.getScreenCTM();
-        p = p.matrixTransform(m.inverse());
-
-        panNewX = p.x;
-        panNewY = p.y;
-
-        panViewBoxX = viewBox.x;
-        panViewBoxY = viewBox.y;
-
-        viewBox.x = parseFloat(panViewBoxX - (panNewX - panOldX));
-        viewBox.y = parseFloat(panViewBoxY - (panNewY - panOldY));
-        setViewBox();
+        continuePan(evt);
     }
 }
 
 // pan with mouse down
-function panMove2(evt) {
+function panMove2(evt: MouseEvent): void {
     if(panStart_Mouse && panAction_Mouse) {
         panAction_Mouse = true;
         panStart_Mouse = false;
-        let p = svgDocElement.createSVGPoint();
-        p.x = evt.clientX;
-        p.y = evt.clientY;
-        const m = svgDocument.getScreenCTM();
-        p = p.matrixTransform(m.inverse());
-
-        panOldX = p.x;
-        panOldY = p.y;
-
-        panViewBoxX = viewBox.x;
-        panViewBoxY = viewBox.y;
+        startPan(evt);
     }
     if(panAction_Mouse && !panStart_Mouse) {
-        let p = svgDocElement.createSVGPoint();
-        p.x = evt.clientX;
-        p.y = evt.clientY;
-        const m = svgDocument.getScreenCTM();
-        p = p.matrixTransform(m.inverse());
-
-        panNewX = p.x;
-        panNewY = p.y;
-
-        panViewBoxX = viewBox.x;
-        panViewBoxY = viewBox.y;
-
-        viewBox.x = parseFloat(panViewBoxX - (panNewX - panOldX));
-        viewBox.y = parseFloat(panViewBoxY - (panNewY - panOldY));
-        setViewBox();
+        continuePan(evt);
     }
 }
 
+function startPan(evt: MouseEvent): void {
+    const p = clientToSvgPoint(evt.clientX, evt.clientY, svgDocument);
 
-function panEnd(evt) {
-    if(evt.type === 'keyup') {
-        const charCode = evt.charCode || evt.keyCode;
-        // spacebar
-        if (charCode === 32) {
-            svgDocument.style.cursor = 'default';
-            panStart_Spacebar = true;
-            panAction_Spacebar = false;
-        }
+    panOldX = p.x;
+    panOldY = p.y;
+
+    panViewBoxX = viewBox.x;
+    panViewBoxY = viewBox.y;
+}
+
+function continuePan(evt: MouseEvent): void {
+    const p = clientToSvgPoint(evt.clientX, evt.clientY, svgDocument);
+
+    panNewX = p.x;
+    panNewY = p.y;
+
+    panViewBoxX = viewBox.x;
+    panViewBoxY = viewBox.y;
+
+    viewBox.x = panViewBoxX - (panNewX - panOldX);
+    viewBox.y = panViewBoxY - (panNewY - panOldY);
+    setViewBox();
+}
+
+
+function panEnd(evt: KeyboardEvent): void {
+    // spacebar
+    if(evt.type === 'keyup' && keyCodeOf(evt) === 32) {
+        svgDocument.style.cursor = 'default';
+        panStart_Spacebar = true;
+        panAction_Spacebar = false;
     }
 }
 
 // pan with mouse down
-function panEnd2() {
+function panEnd2(): void {
     svgDocument.style.cursor = 'default';
     panStart_Mouse = true;
     panAction_Mouse = false;
@@ -619,8 +571,8 @@ function panEnd2() {
 // implementation for scroll zooming
 // the area pointed to by the cursor will always stay under the cursor while scrolling/zooming in or out, just like google maps does
 // might be different scroll direction on Macs with "natural scroll" vs Windows
-function doScroll(evt) {
-    if(!zoomAction && !(panAction_Spacebar || panAction_Mouse)) {
+function doScroll(evt: WheelEvent): void {
+    if(!isZoomingOrPanning()) {
         evt.preventDefault(); // prevent default scroll action
 
         const maxWheelDelta = 1200; // ad hoc limit
@@ -632,19 +584,12 @@ function doScroll(evt) {
             wheelDeltaNormalized = -1;
         }
 
-        // scrollSensitivity and invertScroll are not initialized properly
-        const scrollAmount = wheelDeltaNormalized * scrollSensitivity * (invertScroll ? -1 : 1); // neg scroll in; pos scroll out; [-scrollSensitivity, scrollSensitivity]
-        const maxScrollSensitivity = 10; // check this matches the manifest.js max for scrollSensitivity
-        const scrollAmountNormalized = scrollAmount/maxScrollSensitivity; // [-1, 1]
+        const scrollAmount = wheelDeltaNormalized * settings.scrollSensitivity * (settings.invertScroll ? -1 : 1); // neg scroll in; pos scroll out; [-scrollSensitivity, scrollSensitivity]
+        const scrollAmountNormalized = scrollAmount/SCROLL_SENSITIVITY_RANGE.max; // [-1, 1]
 
         // scrolling in makes viewbox smaller, so zoomAmount is smaller
         const zoomAmount = scrollAmountNormalized < 0 ? 1 + (-scrollAmountNormalized + 0.01) : 1 / (1 + (scrollAmountNormalized + 0.01)) ; // zoom out : zoom in; (1, 2) : (0, 0.5)
-        let p = svgDocElement.createSVGPoint();
-        p.x = evt.clientX;
-        p.y = evt.clientY;
-
-        const m = svgDocument.getScreenCTM();
-        p = p.matrixTransform(m.inverse());
+        const p = clientToSvgPoint(evt.clientX, evt.clientY, svgDocument);
 
         // algorithm to zoom in and gravitate towards cursor scroll
         const newViewBoxWidth = viewBox.width * zoomAmount;
@@ -667,24 +612,24 @@ function doScroll(evt) {
 }
 
 // function to get the height of the window containing the svg in pixels; this is not the same as the svg viewbox or screen resolution
-function getHeight() {
+function getHeight(): number {
     return self.innerHeight;
 }
 
 // function to get the width of the window containing the svg in pixels; this is not the same as the svg viewbox or screen resolution
-function getWidth() {
+function getWidth(): number {
     return self.innerWidth;
 }
 
 
 // to prevent selection of text; prevent text Ibar cursor when dragging
-function disableSelection() {
+function disableSelection(): void {
     document.onselectstart = function () {return false;};
     document.body.style.cursor = 'default';
 }
 
 // make aspect ratio of new viewbox match the screen aspect ratio; useful later, when adding debug info to corner of screen
-function fillViewBoxToScreen() {
+function fillViewBoxToScreen(): void {
     const viewBox = parseOrGetViewBox();
     const viewBoxX = viewBox.x;
     const viewBoxY = viewBox.y;
@@ -714,91 +659,80 @@ function fillViewBoxToScreen() {
     svgDocument.setAttribute('viewBox', format);
 }
 
-function maybePrintDebugInfo() {
-    if(debugMode) {
-        if(!debugTextElement) {
-            debugTextElement = htmlDoc.createElement('div');
-            const textLines = 11;
-            for(let count = 0; count < textLines; count++) {
-                debugChildren[count] = htmlDoc.createElement('div');
-                debugChildren[count].style.padding = '1px 3px';
-                debugTextElement.appendChild(debugChildren[count]);
-            }
-            debugTextElement.style.position = 'fixed';
-            debugTextElement.style.top = '5px';
-            debugTextElement.style.left = '5px';
-            debugTextElement.style['pointer-events'] = 'none';
-            debugTextElement.style.padding = '5px';
-            debugTextElement.style.background = 'rgba(0, 0, 0, 0.8)';
-            debugTextElement.style.border = '1px solid #BBB';
-            debugTextElement.style['border-radius'] = '5px';
-            debugTextElement.style.color = 'white';
-            debugTextElement.style['font-family'] = '\'Consolas\', \'Lucida Grande\', sans-serif';
-
-            document.body.appendChild(debugTextElement); // add to DOM
-        }
-        debugChildren[0].textContent = 'Debug Info:';
-        debugChildren[1].textContent = `ViewBox X: ${viewBox.x}`;
-        debugChildren[2].textContent = `ViewBox Y: ${viewBox.y}`;
-        debugChildren[3].textContent = `ViewBox Width: ${viewBox.width}`;
-        debugChildren[4].textContent = `ViewBox Height: ${viewBox.height}`;
-        debugChildren[5].textContent = `CurrentVBW/InitVBW: ${viewBox.width/origSVGWidth}`;
-        debugChildren[6].textContent = `CurrentVBH/InitVBH: ${viewBox.height/origSVGHeight}`;
-        debugChildren[7].textContent = `Client X: ${debugMouseEvent.clientX}`;
-        debugChildren[8].textContent = `Client Y: ${debugMouseEvent.clientY}`;
-        debugChildren[9].textContent = `SVG Navigator Version: ${getVersion()}`;
-        debugChildren[10].textContent = `Built at: ${BUILD_TIMESTAMP}`;
-    } else {
+function maybePrintDebugInfo(): void {
+    if(!settings.showDebugInfo) {
         if(debugTextElement) {
             document.body.removeChild(debugTextElement);
             debugTextElement = null;
         }
+        return;
     }
+    const lines = [
+        'Debug Info:',
+        `ViewBox X: ${viewBox.x}`,
+        `ViewBox Y: ${viewBox.y}`,
+        `ViewBox Width: ${viewBox.width}`,
+        `ViewBox Height: ${viewBox.height}`,
+        `CurrentVBW/InitVBW: ${viewBox.width/origSVGWidth}`,
+        `CurrentVBH/InitVBH: ${viewBox.height/origSVGHeight}`,
+        `Client X: ${debugMouseEvent.clientX}`,
+        `Client Y: ${debugMouseEvent.clientY}`,
+        `SVG Navigator Version: ${getVersion()}`,
+        `Built at: ${BUILD_TIMESTAMP}`,
+    ];
+    if(!debugTextElement) {
+        debugTextElement = htmlDoc.createElement('div');
+        debugChildren.length = 0;
+        for(let count = 0; count < lines.length; count++) {
+            const child = htmlDoc.createElement('div');
+            child.style.padding = '1px 3px';
+            debugChildren.push(child);
+            debugTextElement.appendChild(child);
+        }
+        debugTextElement.style.position = 'fixed';
+        debugTextElement.style.top = '5px';
+        debugTextElement.style.left = '5px';
+        debugTextElement.style.pointerEvents = 'none';
+        debugTextElement.style.padding = '5px';
+        debugTextElement.style.background = 'rgba(0, 0, 0, 0.8)';
+        debugTextElement.style.border = '1px solid #BBB';
+        debugTextElement.style.borderRadius = '5px';
+        debugTextElement.style.color = 'white';
+        debugTextElement.style.fontFamily = '\'Consolas\', \'Lucida Grande\', sans-serif';
+
+        document.body.appendChild(debugTextElement); // add to DOM
+    }
+    debugChildren.forEach((child, index) => {
+        child.textContent = lines[index] ?? '';
+    });
 }
 
 // helper function to make the viewbox attribute
 // ignore error checking for now
-function formatViewBox(x, y, width, height) {
-    return `${parseFloat(x)  } ${
-        parseFloat(y)  } ${
-        parseFloat(width)  } ${
-        parseFloat(height)}`;
+function formatViewBox(x: number, y: number, width: number, height: number): string {
+    return `${x} ${y} ${width} ${height}`;
 }
 
 // helper to parse the viewbox frame
-function parseOrGetViewBox(viewBoxText) {
-    const tokens = viewBoxText && viewBoxText.split(' ') || svgDocument.getAttribute('viewBox').split(' ');
-    return {
-        x: parseFloat(tokens[0]),
-        y: parseFloat(tokens[1]),
-        width: parseFloat(tokens[2]),
-        height: parseFloat(tokens[3])
-    };
+function parseOrGetViewBox(viewBoxText?: string | null): ViewBox {
+    const tokens = (viewBoxText || svgDocument.getAttribute('viewBox') || '').split(' ').map(parseFloat);
+    const [x = NaN, y = NaN, width = NaN, height = NaN] = tokens;
+    return { x, y, width, height };
 }
 
-function setViewBox() {
+function setViewBox(): void {
     svgDocument.setAttribute('viewBox', formatViewBox(viewBox.x, viewBox.y, viewBox.width, viewBox.height));
     maybePrintDebugInfo();
 }
 
-function isFileCompatible() {
-    const baseURI = document.rootElement && document.rootElement.baseURI || undefined;
-    if (!baseURI) { return false; }
-    return baseURI.endsWith('.svg') || baseURI.endsWith('.svgz') ||
-        // @since 2.6
-        // Check id the the actual document content is svg not only by extension.
-        isSVGDocument(document);
-}
-
 // @since 2.6
-function isSVGDocument(document) {
-    // Expect the document root to be a svg element.
-    const isTopLevelSVG = document?.documentElement?.tagName?.toLowerCase() === 'svg';
-
-    // Could comfortably  add other edge cases here if needed.
-    return isTopLevelSVG;
+// The navigator takes over standalone SVG documents, whatever their URL (extension or
+// none), and never HTML pages with inline SVG.
+function getStandaloneSvgRoot(): SVGSVGElement | null {
+    const root = document.documentElement;
+    return root instanceof SVGSVGElement ? root : null;
 }
 
-function getVersion() {
+function getVersion(): string {
     return chrome.runtime.getManifest().version;
 }

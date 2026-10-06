@@ -68,8 +68,8 @@ jobs:
     - name: Install test browsers
       run: pnpm exec puppeteer browsers install chrome && pnpm exec puppeteer browsers install firefox
 
-    - name: Lint and unit test
-      run: pnpm lint && pnpm test:unit
+    - name: Type check, lint and unit test
+      run: pnpm typecheck && pnpm lint && pnpm test:unit
 
     - name: Build release files
       run: pnpm build:all && pnpm zip:source
@@ -85,7 +85,7 @@ jobs:
       run: |
         unzip -q release/chrome.zip -d unpacked-chrome
         unzip -q release/firefox.xpi -d unpacked-firefox
-        E2E_CHROME_EXT=unpacked-chrome E2E_FIREFOX_EXT=unpacked-firefox node --test 'test/e2e/**/*.test.mjs'
+        E2E_CHROME_EXT=unpacked-chrome E2E_FIREFOX_EXT=unpacked-firefox node --test 'test/e2e/**/*.test.ts'
 
     - name: Upload failure screenshots
       if: failure()
@@ -119,7 +119,7 @@ jobs:
       env:
         CWS_SERVICE_ACCOUNT_KEY: ${{ secrets.CWS_SERVICE_ACCOUNT_KEY }}
         CWS_PUBLISHER_ID: ${{ secrets.CWS_PUBLISHER_ID }}
-      run: node scripts/publishChromeWebStore.mjs --check
+      run: node scripts/publishChromeWebStore.ts --check
 
   publish-chrome:
     needs: verify
@@ -145,7 +145,7 @@ jobs:
       env:
         CWS_SERVICE_ACCOUNT_KEY: ${{ secrets.CWS_SERVICE_ACCOUNT_KEY }}
         CWS_PUBLISHER_ID: ${{ secrets.CWS_PUBLISHER_ID }}
-      run: node scripts/publishChromeWebStore.mjs release/chrome.zip
+      run: node scripts/publishChromeWebStore.ts release/chrome.zip
 
   publish-firefox:
     needs: verify

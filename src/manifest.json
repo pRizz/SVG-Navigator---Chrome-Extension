@@ -16,13 +16,13 @@
                 "http://*/*",
                 "https://*/*"
             ],
-            "js": ["options_custom/js/defaultSettings.js", "js/svgNavigator.js"],
+            "js": ["js/svgNavigator.js"],
             "css": ["css/svgNavigator.css"]
         }
     ],
     "manifest_version": 3,
     "action": {
-        "default_popup": "options_custom/index.html",
+        "default_popup": "options/index.html",
         "default_title": "SVG Navigator",
         "default_icon": {
             "16": "icon_16.png",

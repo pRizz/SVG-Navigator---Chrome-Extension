@@ -1,26 +1,58 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createVerify, generateKeyPairSync } from 'node:crypto';
-import { fetchItemStatus, getAccessToken, publishToChromeWebStore } from '../../scripts/publishChromeWebStore.mjs';
+import {
+    fetchItemStatus,
+    getAccessToken,
+    publishToChromeWebStore,
+    type FetchFn,
+    type ItemCredentials,
+} from '../../scripts/publishChromeWebStore.ts';
+
+type FakeResponse = [status: number, body: unknown];
+
+interface RecordedCall {
+    route: string;
+    url: string;
+    init: RequestInit;
+}
 
 /**
  * A fetch stand-in that answers by the request URL's trailing `:method`
  * (`:upload`, `:fetchStatus`, `:publish`) or full URL, consuming queued responses
  * in order and recording every call.
  */
-function fakeFetch(routes) {
-    const calls = [];
-    const fetchFn = async (url, init = {}) => {
-        const key = Object.keys(routes).find((route) => String(url).endsWith(route));
+function fakeFetch(routes: Record<string, FakeResponse[]>): { fetchFn: FetchFn, calls: RecordedCall[] } {
+    const calls: RecordedCall[] = [];
+    const fetchFn: FetchFn = (url, init = {}) => {
+        const key = Object.keys(routes).find((route) => url.endsWith(route));
         assert.ok(key, `unexpected request to ${url}`);
-        calls.push({ route: key, url: String(url), init });
-        const [status, body] = routes[key].shift();
-        return new Response(typeof body === 'string' ? body : JSON.stringify(body), { status });
+        calls.push({ route: key, url, init });
+        const response = routes[key]?.shift();
+        assert.ok(response, `no queued response left for ${key}`);
+        const [status, body] = response;
+        return Promise.resolve(new Response(typeof body === 'string' ? body : JSON.stringify(body), { status }));
     };
     return { fetchFn, calls };
 }
 
-const ITEM = { publisherId: 'pub-1', extensionId: 'ext-1', accessToken: 'token-1' };
+function callAt(calls: RecordedCall[], index: number): RecordedCall {
+    const call = calls[index];
+    assert.ok(call, `expected a request at index ${index}`);
+    return call;
+}
+
+function jsonBodyOf(call: RecordedCall): unknown {
+    const { body } = call.init;
+    assert.ok(typeof body === 'string', 'expected a JSON string request body');
+    return JSON.parse(body);
+}
+
+function authorizationOf(call: RecordedCall): string | null {
+    return new Headers(call.init.headers).get('authorization');
+}
+
+const ITEM: ItemCredentials = { publisherId: 'pub-1', extensionId: 'ext-1', accessToken: 'token-1' };
 const silent = { wait: async () => {}, log: () => {} };
 
 describe('getAccessToken', () => {
@@ -29,7 +61,7 @@ describe('getAccessToken', () => {
         const { publicKey, privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
         const serviceAccountKey = {
             client_email: 'publisher@example.iam.gserviceaccount.com',
-            private_key: privateKey.export({ type: 'pkcs8', format: 'pem' }),
+            private_key: privateKey.export({ type: 'pkcs8', format: 'pem' }).toString(),
         };
         const { fetchFn, calls } = fakeFetch({ 'oauth2.googleapis.com/token': [[200, { access_token: 'ya29.token' }]] });
 
@@ -38,9 +70,10 @@ describe('getAccessToken', () => {
 
         // Assert
         assert.equal(token, 'ya29.token');
-        const params = new URLSearchParams(calls[0].init.body);
+        const params = callAt(calls, 0).init.body;
+        assert.ok(params instanceof URLSearchParams, 'expected a form-encoded request body');
         assert.equal(params.get('grant_type'), 'urn:ietf:params:oauth:grant-type:jwt-bearer');
-        const [header, claims, signature] = params.get('assertion').split('.');
+        const [header = '', claims = '', signature = ''] = (params.get('assertion') ?? '').split('.');
         const verifier = createVerify('RSA-SHA256').update(`${header}.${claims}`);
         assert.ok(verifier.verify(publicKey, signature, 'base64url'), 'JWT signature should verify');
         assert.deepEqual(JSON.parse(Buffer.from(claims, 'base64url').toString()), {
@@ -68,10 +101,10 @@ describe('publishToChromeWebStore', () => {
         // Assert
         assert.equal(state, 'PENDING_REVIEW');
         assert.deepEqual(calls.map((call) => call.route), [':upload', ':publish']);
-        assert.equal(calls[0].url, 'https://chromewebstore.googleapis.com/upload/v2/publishers/pub-1/items/ext-1:upload');
-        assert.equal(calls[0].init.body, packageBytes);
-        assert.equal(calls[0].init.headers.authorization, 'Bearer token-1');
-        assert.deepEqual(JSON.parse(calls[1].init.body), { publishType: 'DEFAULT_PUBLISH' });
+        assert.equal(callAt(calls, 0).url, 'https://chromewebstore.googleapis.com/upload/v2/publishers/pub-1/items/ext-1:upload');
+        assert.equal(callAt(calls, 0).init.body, packageBytes);
+        assert.equal(authorizationOf(callAt(calls, 0)), 'Bearer token-1');
+        assert.deepEqual(jsonBodyOf(callAt(calls, 1)), { publishType: 'DEFAULT_PUBLISH' });
     });
 
     test('polls the status while the upload is still processing', async () => {
@@ -138,8 +171,8 @@ describe('fetchItemStatus', () => {
 
         // Assert
         assert.deepEqual(result, status);
-        assert.equal(calls[0].url, 'https://chromewebstore.googleapis.com/v2/publishers/pub-1/items/ext-1:fetchStatus');
-        assert.equal(calls[0].init.method, undefined);
-        assert.equal(calls[0].init.headers.authorization, 'Bearer token-1');
+        assert.equal(callAt(calls, 0).url, 'https://chromewebstore.googleapis.com/v2/publishers/pub-1/items/ext-1:fetchStatus');
+        assert.equal(callAt(calls, 0).init.method, undefined);
+        assert.equal(authorizationOf(callAt(calls, 0)), 'Bearer token-1');
     });
 });

@@ -8,7 +8,7 @@ node_modules
 web-ext-artifacts
 dist
 packages
-src/js/buildInfo.js
+src/js/buildInfo.ts
 .build
 test-results
 svg-navigator-source.zip

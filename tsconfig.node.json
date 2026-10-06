@@ -1,0 +1,23 @@
+{
+    // Build/release scripts and tests. Node runs these .ts files directly by
+    // stripping types, so only erasable syntax is allowed and nothing is emitted.
+    // DOM and chrome types are included because Puppeteer `evaluate` callbacks
+    // in the E2E tests run inside pages.
+    "compilerOptions": {
+        "target": "ES2023",
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
+        "lib": ["ES2023", "DOM", "DOM.Iterable"],
+        "types": ["node", "chrome"],
+        "strict": true,
+        "noUncheckedIndexedAccess": true,
+        "noImplicitOverride": true,
+        "noFallthroughCasesInSwitch": true,
+        "noEmit": true,
+        "allowImportingTsExtensions": true,
+        "erasableSyntaxOnly": true,
+        "verbatimModuleSyntax": true,
+        "skipLibCheck": true
+    },
+    "include": ["scripts/**/*.ts", "test/**/*.ts"]
+}
