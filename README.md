@@ -81,6 +81,9 @@ Build Instructions
     pnpm install
     ```
 
+   This also downloads the Chrome and Firefox builds used by the UI tests. To only build the
+   extension, skip that download with `PUPPETEER_SKIP_DOWNLOAD=true pnpm install`.
+
 ### Building
 
 1. Build the extension:
