@@ -61,9 +61,9 @@ Build Instructions
 --------------------------------
 ### Requirements
 - Operating System: Windows, macOS, or Linux
-- Node.js 18.x or later
+- Node.js 22.12 or later
 - npm 9.x or later
-- pnpm 8.x or later (required package manager)
+- pnpm 10.x or later (required package manager)
 
 ### Installation
 1. Install Node.js and npm from [nodejs.org](https://nodejs.org/)
@@ -118,6 +118,8 @@ For development with hot-reload:
   ```
 
 These commands will build the extension and start a development server that watches for changes.
+For Firefox, `web-ext run` loads the bundled build in `.build/firefox`; run `pnpm build:dev` after
+editing `src/` and Firefox reloads the extension automatically.
 
 ### Linting
 
@@ -125,3 +127,21 @@ To run linting:
 ```bash
 pnpm lint
 ```
+
+### UI Tests
+
+End-to-end tests load the built extension into headless Chrome and Firefox (via
+[Puppeteer](https://pptr.dev)) and drive it with real mouse and keyboard input. `pnpm install`
+downloads both test browsers.
+
+```bash
+pnpm test:e2e
+```
+
+- Run one browser only: `E2E_BROWSERS=firefox pnpm test:e2e`
+- Test a specific unpacked build, e.g. a release package before uploading it:
+  `E2E_CHROME_EXT=path/to/unzipped-chrome E2E_FIREFOX_EXT=path/to/unzipped-xpi node --test 'test/e2e/**/*.test.mjs'`
+  (versions up to 2.11 predate the readiness marker the tests wait for, so they always time out)
+- Screenshots of failing tests are saved to `test-results/e2e-screenshots/`
+
+CI runs these tests on every push and pull request.

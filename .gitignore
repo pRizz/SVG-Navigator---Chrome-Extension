@@ -9,3 +9,5 @@ web-ext-artifacts
 dist
 packages
 src/js/buildInfo.js
+.build
+test-results

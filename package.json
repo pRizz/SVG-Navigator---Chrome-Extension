@@ -5,7 +5,7 @@
   "description": "SVG Navigator is a browser extension that adds pan and zoom features to existing SVG files on the web.",
   "scripts": {
     "start:chrome": "pnpm run prebuild && webextension-toolbox dev chrome --src src",
-    "start:firefox": "pnpm run prebuild && web-ext run",
+    "start:firefox": "pnpm run build:dev && web-ext run",
     "start:safari": "pnpm run prebuild && webextension-toolbox dev safari --src src",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
@@ -15,8 +15,10 @@
     "build:firefox": "pnpm run prebuild && webextension-toolbox build firefox --src src",
     "build:safari": "pnpm run prebuild && webextension-toolbox build safari --src src",
     "build:all": "pnpm run build:chrome && pnpm run build:firefox && pnpm run build:safari",
-    "web-ext:lint": "web-ext lint",
-    "zip:source": "zip -r svg-navigator-source.zip src scripts eslint.config.mjs package.json pnpm-lock.yaml .eslintrc.json README.md web-ext-config.mjs LICENSE -x \"**/node_modules/*\""
+    "web-ext:lint": "pnpm run build:dev && web-ext lint",
+    "zip:source": "zip -r svg-navigator-source.zip src scripts eslint.config.mjs package.json pnpm-lock.yaml .eslintrc.json README.md web-ext-config.mjs LICENSE -x \"**/node_modules/*\"",
+    "build:dev": "pnpm run prebuild && webextension-toolbox build chrome --src src -t .build/chrome -o dev-chrome && webextension-toolbox build firefox --src src -t .build/firefox -o dev-firefox",
+    "test:e2e": "pnpm run build:dev && node --test 'test/e2e/**/*.test.mjs'"
   },
   "repository": {
     "type": "git",
@@ -38,6 +40,15 @@
     "babel-loader": "^9.2.1",
     "eslint": "^9.21.0",
     "globals": "^16.0.0",
+    "puppeteer": "^25.12.0",
     "web-ext": "^8.4.0"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "puppeteer"
+    ]
   }
 }

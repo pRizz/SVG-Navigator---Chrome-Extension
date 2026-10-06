@@ -1,6 +1,7 @@
 export default {
-    // Source directory where your extension files are located
-    sourceDir: 'src',
+    // Bundled dev build from `pnpm build:dev`. Raw `src` can't be loaded directly
+    // because its scripts use ES `import`/`export`, which content scripts don't support.
+    sourceDir: '.build/firefox',
 
     // Artifacts directory where built files will be saved
     artifactsDir: 'web-ext-artifacts',

@@ -186,10 +186,11 @@ async function main() {
     // this variable should always be up to date and set the real viewbox when it changes
     viewBox = parseOrGetViewBox();
 
-    addEventListeners();
-    maybeAddToolbar();
+    await Promise.all([addEventListeners(), maybeAddToolbar()]);
     disableSelection();
 
+    // Signals that all listeners are attached; E2E tests wait on this to avoid racing setup.
+    document.documentElement.dataset.svgNavigator = 'ready';
     console.log(`SVG Navigator v${  getVersion()  } loaded`);
 }
 

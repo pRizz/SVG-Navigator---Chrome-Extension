@@ -10,7 +10,9 @@ export default [
             'src/js/buildInfo.js',
             'node_modules/**/*',
             'dist/**/*',
-            'packages/**/*'
+            'packages/**/*',
+            '.build/**/*',
+            'test-results/**/*'
         ]
     },
     {
@@ -25,6 +27,15 @@ export default [
                 ...globals.webextensions  // This adds chrome and other WebExtension APIs
             }
         }
+    },
+    {
+        // Node-side tooling: E2E tests and config files.
+        files: ['test/**/*.mjs', '**/*.cjs'],
+        languageOptions: { globals: { ...globals.node } }
+    },
+    {
+        files: ['**/*.cjs'],
+        languageOptions: { sourceType: 'commonjs' }
     },
     pluginJs.configs.recommended,
     {
