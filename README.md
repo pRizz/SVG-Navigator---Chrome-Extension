@@ -1,6 +1,8 @@
 SVG Navigator
 ====================
 
+[![GitHub Stars](https://img.shields.io/github/stars/pRizz/SVG-Navigator---Chrome-Extension)](https://github.com/pRizz/SVG-Navigator---Chrome-Extension)
+
 Description
 --------------------------------
 SVG Navigator is a browser extension that adds pan and zoom features to existing SVG files on the web.
