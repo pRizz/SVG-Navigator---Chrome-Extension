@@ -184,6 +184,8 @@ Bun runs everything else directly, TypeScript included: the scripts in `scripts/
 ```bash
 bun run typecheck
 bun run lint
+- `src/js/viewBox.ts`: the pure viewBox geometry (parsing, fitting, zooming) the content script uses, unit tested
+- `src/js/toolbar.ts`: the floating +, -, and Reset toolbar
 ```
 
 `bun run typecheck` checks the extension (`tsconfig.json`) and the scripts and tests

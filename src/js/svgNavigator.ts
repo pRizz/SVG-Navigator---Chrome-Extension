@@ -38,13 +38,16 @@ import {
     parseSettings,
     type Settings,
 } from '../shared/settings';
-
-interface ViewBox {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-}
+import { addToolbar } from './toolbar';
+import {
+    fitToAspectRatio,
+    formatViewBox,
+    parseViewBox,
+    wheelZoomFactor,
+    zoomAroundCenter,
+    zoomAroundPoint,
+    type ViewBox,
+} from './viewBox';
 
 // TODO: Reduce the need for globals. They are assigned in main() before any
 // listener that reads them is attached.
@@ -163,9 +166,7 @@ async function main(): Promise<void> {
         // preferably, we want to set the viewbox as the bounding box values of the SVG from getBBox();
         // unfortunatley, chrome's getBBox() is bugged for some SVG documents, ex: http://upload.wikimedia.org/wikipedia/commons/d/dc/USA_orthographic.svg
         // so we make the viewbox at 0,0 with width and height of client browser
-        const formattedViewBox = formatViewBox(0, 0, origSVGWidth, origSVGHeight);
-
-        svgDocument.setAttribute('viewBox', formattedViewBox);
+        svgDocument.setAttribute('viewBox', formatViewBox({ x: 0, y: 0, width: origSVGWidth, height: origSVGHeight }));
     }
 
     fillViewBoxToScreen();
@@ -200,47 +201,11 @@ function maybeAddToolbar(): void {
     if(!settings.toolbarEnabled) {
         return;
     }
-
-    const toolbarContainer = htmlDoc.createElement('div');
-    toolbarContainer.className = 'toolbarcontainer';
-
-    const toolbarDiv = htmlDoc.createElement('div');
-    toolbarDiv.className = 'toolbar';
-    toolbarContainer.appendChild(toolbarDiv);
-
-    const plusButton = htmlDoc.createElement('div');
-    plusButton.textContent = '+';
-    plusButton.className = 'toolbarbutton toolbarbuttonborder';
-    plusButton.onclick = function () {
-        zoomBy(0.8);
-    };
-    toolbarDiv.appendChild(plusButton);
-
-    const minusButton = htmlDoc.createElement('div');
-    minusButton.textContent = '-';
-    minusButton.className = 'toolbarbutton toolbarbuttonborder';
-    minusButton.onclick = function () {
-        zoomOut(true);
-    };
-    toolbarDiv.appendChild(minusButton);
-
-    const resetButton = htmlDoc.createElement('div');
-    resetButton.textContent = 'Reset';
-    resetButton.className = 'toolbarbutton';
-    resetButton.onclick = function () {
-        zoomOriginal(true);
-    };
-    toolbarDiv.appendChild(resetButton);
-
-    document.body.appendChild(toolbarContainer); // add to DOM
-
-    // make the toolbar fadeout after 5 seconds
-    toolbarContainer.style.opacity = '1';
-    if(settings.toolbarAutoHide) {
-        setTimeout(function () {
-            toolbarContainer.style.opacity = '';
-        }, 5000);
-    }
+    addToolbar(htmlDoc, document.body, {
+        zoomIn: () => zoomBy(0.8),
+        zoomOut: () => zoomOut(true),
+        reset: () => zoomOriginal(true),
+    }, { autoHide: settings.toolbarAutoHide });
 }
 
 // insert a rectangle object into the svg, acting as the zoom rectangle
@@ -325,50 +290,37 @@ function clientToSvgPoint(clientX: number, clientY: number, element: SVGGraphics
 // click and drag to zoom in
 // press escape to zoom out
 function zoomMouseDown(evt: MouseEvent): void {
-    // if the left click is down and the control and shift keys are NOT depressed, sets top left of zoombox and flag
-    if(!(panAction_Spacebar || panAction_Mouse) && !evt.ctrlKey && !evt.shiftKey) { // zoom
-        zoomAction = true;
-        const p = clientToSvgPoint(evt.clientX, evt.clientY, zoomRectangle);
-        zoomRectangle.setAttribute('x', String(p.x));
-        zoomRectangle.setAttribute('y', String(p.y));
-        zoomX1 = p.x;
-        zoomY1 = p.y;
+    // only a plain click (no ctrl or shift) outside a pan starts a zoom box
+    if(panAction_Spacebar || panAction_Mouse || evt.ctrlKey || evt.shiftKey) { return; }
 
-        let viewBoxWidth = viewBox.width;
-        const viewBoxHeight = viewBox.height;
-        const viewBoxAspectRatio = viewBoxWidth/viewBoxHeight;
+    zoomAction = true;
+    const p = clientToSvgPoint(evt.clientX, evt.clientY, zoomRectangle);
+    zoomRectangle.setAttribute('x', String(p.x));
+    zoomRectangle.setAttribute('y', String(p.y));
+    zoomX1 = p.x;
+    zoomY1 = p.y;
 
-        const clientWidth = getWidth();
-        const clientHeight = getHeight();
-        const clientAspectRatio = clientWidth/clientHeight;
-
-        if(viewBoxAspectRatio < clientAspectRatio) {
-            viewBoxWidth = viewBoxHeight*clientAspectRatio;
-        }
-        const relativeStrokeWidth = viewBoxWidth/clientWidth;
-
-        zoomRectangle.setAttributeNS(null, 'stroke-width', String(relativeStrokeWidth));
-        zoomRectangle.setAttributeNS(null, 'rx', String(relativeStrokeWidth));
-    }
+    // one screen pixel in viewBox units, as the browser displays the viewBox
+    const relativeStrokeWidth = fitToAspectRatio(viewBox, getWidth()/getHeight()).width/getWidth();
+    zoomRectangle.setAttributeNS(null, 'stroke-width', String(relativeStrokeWidth));
+    zoomRectangle.setAttributeNS(null, 'rx', String(relativeStrokeWidth));
 }
 
 // blue zoombox drawn as mouse is moved across screen
 function zoomMouseMove(evt: MouseEvent): void {
-    if(zoomAction) {
-        const p = clientToSvgPoint(evt.clientX, evt.clientY, zoomRectangle);
+    if(!zoomAction) { return; }
 
-        zoomX2 = p.x;
-        zoomY2 = p.y;
-        zoomWidth = Math.abs(zoomX2 - zoomX1);
-        zoomHeight = Math.abs(zoomY2 - zoomY1);
+    const p = clientToSvgPoint(evt.clientX, evt.clientY, zoomRectangle);
+    zoomX2 = p.x;
+    zoomY2 = p.y;
+    zoomWidth = Math.abs(zoomX2 - zoomX1);
+    zoomHeight = Math.abs(zoomY2 - zoomY1);
 
-        // set top left corner point of zoom rectangle
-        zoomRectangle.setAttribute('x', String(Math.min(zoomX1, zoomX2)));
-        zoomRectangle.setAttribute('y', String(Math.min(zoomY1, zoomY2)));
-
-        zoomRectangle.setAttribute('width', String(zoomWidth));
-        zoomRectangle.setAttribute('height', String(zoomHeight));
-    }
+    // set top left corner point of zoom rectangle
+    zoomRectangle.setAttribute('x', String(Math.min(zoomX1, zoomX2)));
+    zoomRectangle.setAttribute('y', String(Math.min(zoomY1, zoomY2)));
+    zoomRectangle.setAttribute('width', String(zoomWidth));
+    zoomRectangle.setAttribute('height', String(zoomHeight));
 }
 
 function getNumericAttribute(element: Element, name: string): number {
@@ -379,28 +331,15 @@ function getNumericAttribute(element: Element, name: string): number {
 function zoomMouseUp(): void {
     // the viewbox width and height is changed when the button is up
     if(zoomAction) {
-        const zoomRectWidth = getNumericAttribute(zoomRectangle, 'width');
-        const zoomRectHeight = getNumericAttribute(zoomRectangle, 'height');
-        if((zoomRectWidth*zoomRectHeight) > 1e-6) { // prevent zooming on tiny area; svg visual starts acting weird
+        const zoomRect = {
+            x: getNumericAttribute(zoomRectangle, 'x'),
+            y: getNumericAttribute(zoomRectangle, 'y'),
+            width: getNumericAttribute(zoomRectangle, 'width'),
+            height: getNumericAttribute(zoomRectangle, 'height'),
+        };
+        if((zoomRect.width*zoomRect.height) > 1e-6) { // prevent zooming on tiny area; svg visual starts acting weird
             // make aspect ratio of new viewbox match the screen aspect ratio; useful later, when adding debug info to corner of screen
-            const zoomRectX = getNumericAttribute(zoomRectangle, 'x');
-            const zoomRectY = getNumericAttribute(zoomRectangle, 'y');
-
-            viewBox.x = zoomRectX;
-            viewBox.y = zoomRectY;
-            viewBox.width = zoomRectWidth;
-            viewBox.height = zoomRectHeight;
-            const viewBoxAspectRatio = viewBox.width/viewBox.height;
-
-            const clientAspectRatio = getWidth()/getHeight();
-
-            if(viewBoxAspectRatio < clientAspectRatio) {
-                viewBox.width = viewBox.height*clientAspectRatio;
-                viewBox.x = zoomRectX - (viewBox.width-zoomRectWidth)/2;
-            } else {
-                viewBox.height = viewBox.width/clientAspectRatio;
-                viewBox.y = zoomRectY - (viewBox.height-zoomRectHeight)/2;
-            }
+            viewBox = fitToAspectRatio(zoomRect, getWidth()/getHeight());
             setViewBox();
         }
     }
@@ -435,24 +374,9 @@ function zoomOut(evt: KeyboardEvent | true): void {
     }
 }
 
-// positive for zoom out, neg else
+// below 1 zooms in, above 1 zooms out
 function zoomBy(zoomAmount: number): void {
-    const oldViewBoxWidth = viewBox.width;
-    const oldViewBoxHeight = viewBox.height;
-
-    // algorithm to zoom in and gravitate towards center
-    viewBox.width = viewBox.width * zoomAmount;
-    viewBox.height = viewBox.height * zoomAmount;
-    const midX = oldViewBoxWidth / 2 + viewBox.x;
-    const midY = oldViewBoxHeight / 2 + viewBox.y;
-
-    // these should always turn out positive, because client cursor must be within svg x to x+width and y to y+height
-    const fracOfSVGX = (midX - viewBox.x) / oldViewBoxWidth;
-    const fracOfSVGY = (midY - viewBox.y) / oldViewBoxHeight;
-    const leftWidth = fracOfSVGX * viewBox.width; // offset to new x
-    const upperHeight = fracOfSVGY * viewBox.height; // offset to new y
-    viewBox.x = midX - leftWidth;
-    viewBox.y = midY - upperHeight;
+    viewBox = zoomAroundCenter(viewBox, zoomAmount);
     setViewBox();
 }
 
@@ -572,43 +496,17 @@ function panEnd2(): void {
 // the area pointed to by the cursor will always stay under the cursor while scrolling/zooming in or out, just like google maps does
 // might be different scroll direction on Macs with "natural scroll" vs Windows
 function doScroll(evt: WheelEvent): void {
-    if(!isZoomingOrPanning()) {
-        evt.preventDefault(); // prevent default scroll action
+    if(isZoomingOrPanning()) { return; }
+    evt.preventDefault(); // prevent default scroll action
 
-        const maxWheelDelta = 1200; // ad hoc limit
-        const wheelDelta = -evt.deltaY * 10; // Standard wheel event delta
-        let wheelDeltaNormalized = wheelDelta/maxWheelDelta; // [-1, 1]
-        if(wheelDeltaNormalized > 1) {
-            wheelDeltaNormalized = 1;
-        } else if(wheelDeltaNormalized < -1) {
-            wheelDeltaNormalized = -1;
-        }
-
-        const scrollAmount = wheelDeltaNormalized * settings.scrollSensitivity * (settings.invertScroll ? -1 : 1); // neg scroll in; pos scroll out; [-scrollSensitivity, scrollSensitivity]
-        const scrollAmountNormalized = scrollAmount/SCROLL_SENSITIVITY_RANGE.max; // [-1, 1]
-
-        // scrolling in makes viewbox smaller, so zoomAmount is smaller
-        const zoomAmount = scrollAmountNormalized < 0 ? 1 + (-scrollAmountNormalized + 0.01) : 1 / (1 + (scrollAmountNormalized + 0.01)) ; // zoom out : zoom in; (1, 2) : (0, 0.5)
-        const p = clientToSvgPoint(evt.clientX, evt.clientY, svgDocument);
-
-        // algorithm to zoom in and gravitate towards cursor scroll
-        const newViewBoxWidth = viewBox.width * zoomAmount;
-        const newViewBoxHeight = viewBox.height * zoomAmount;
-
-        // these should always turn out positive and between 0 and 1.0, because client cursor must be within svg x to x+width and y to y+height
-        const fracOfSVGX = (p.x - viewBox.x) / viewBox.width;
-        const fracOfSVGY = (p.y - viewBox.y) / viewBox.height;
-
-        const leftWidth = fracOfSVGX * newViewBoxWidth; // offset to new x
-        const upperHeight = fracOfSVGY * newViewBoxHeight; // offset to new y
-
-        viewBox.x = p.x - leftWidth;
-        viewBox.y = p.y - upperHeight;
-        viewBox.width = newViewBoxWidth;
-        viewBox.height = newViewBoxHeight;
-
-        setViewBox();
-    }
+    const zoomAmount = wheelZoomFactor(evt.deltaY, {
+        sensitivity: settings.scrollSensitivity,
+        maxSensitivity: SCROLL_SENSITIVITY_RANGE.max,
+        invert: settings.invertScroll,
+    });
+    const p = clientToSvgPoint(evt.clientX, evt.clientY, svgDocument);
+    viewBox = zoomAroundPoint(viewBox, p, zoomAmount);
+    setViewBox();
 }
 
 // function to get the height of the window containing the svg in pixels; this is not the same as the svg viewbox or screen resolution
@@ -630,33 +528,8 @@ function disableSelection(): void {
 
 // make aspect ratio of new viewbox match the screen aspect ratio; useful later, when adding debug info to corner of screen
 function fillViewBoxToScreen(): void {
-    const viewBox = parseOrGetViewBox();
-    const viewBoxX = viewBox.x;
-    const viewBoxY = viewBox.y;
-    const viewBoxWidth = viewBox.width;
-    const viewBoxHeight = viewBox.height;
-
-    let newViewBoxX = viewBoxX;
-    let newViewBoxY = viewBoxY;
-    let newViewBoxWidth = viewBoxWidth;
-    let newViewBoxHeight = viewBoxHeight;
-
-    const viewBoxAspectRatio = viewBoxWidth/viewBoxHeight;
-
-    const clientWidth = getWidth();
-    const clientHeight = getHeight();
-    const clientAspectRatio = clientWidth/clientHeight;
-
-    if(viewBoxAspectRatio < clientAspectRatio) {
-        newViewBoxWidth = viewBoxHeight*clientAspectRatio;
-        newViewBoxX = viewBoxX - (newViewBoxWidth - viewBoxWidth)/2;
-    } else {
-        newViewBoxHeight = viewBoxWidth/clientAspectRatio;
-        newViewBoxY = viewBoxY - (newViewBoxHeight - viewBoxHeight)/2;
-    }
-    const format = formatViewBox(newViewBoxX, newViewBoxY, newViewBoxWidth, newViewBoxHeight);
-
-    svgDocument.setAttribute('viewBox', format);
+    const filled = fitToAspectRatio(parseOrGetViewBox(), getWidth()/getHeight());
+    svgDocument.setAttribute('viewBox', formatViewBox(filled));
 }
 
 function maybePrintDebugInfo(): void {
@@ -707,21 +580,13 @@ function maybePrintDebugInfo(): void {
     });
 }
 
-// helper function to make the viewbox attribute
-// ignore error checking for now
-function formatViewBox(x: number, y: number, width: number, height: number): string {
-    return `${x} ${y} ${width} ${height}`;
-}
-
-// helper to parse the viewbox frame
-function parseOrGetViewBox(viewBoxText?: string | null): ViewBox {
-    const tokens = (viewBoxText || svgDocument.getAttribute('viewBox') || '').split(' ').map(parseFloat);
-    const [x = NaN, y = NaN, width = NaN, height = NaN] = tokens;
-    return { x, y, width, height };
+// parses `maybeViewBoxText`, falling back to the svg's current viewBox attribute
+function parseOrGetViewBox(maybeViewBoxText?: string | null): ViewBox {
+    return parseViewBox(maybeViewBoxText || svgDocument.getAttribute('viewBox') || '');
 }
 
 function setViewBox(): void {
-    svgDocument.setAttribute('viewBox', formatViewBox(viewBox.x, viewBox.y, viewBox.width, viewBox.height));
+    svgDocument.setAttribute('viewBox', formatViewBox(viewBox));
     maybePrintDebugInfo();
 }
 
