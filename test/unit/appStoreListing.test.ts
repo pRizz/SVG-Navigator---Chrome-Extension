@@ -34,13 +34,17 @@ describe('App Store listing', () => {
         assert.ok(section('promotional-text').length <= 170);
     });
 
-    test('keywords fit in 100 bytes, without spaces after the commas', () => {
-        // Arrange
-        const keywords = section('keywords');
+    test('keywords fit in 100 bytes', () => {
+        // Act
+        const bytes = byteLength(section('keywords'));
 
         // Assert
-        assert.ok(byteLength(keywords) <= 100, `${byteLength(keywords)} bytes`);
-        assert.doesNotMatch(keywords, /, /);
+        assert.ok(bytes <= 100, `${bytes} bytes`);
+    });
+
+    // A space after a comma would spend part of the 100-byte budget.
+    test('keywords have no spaces after the commas', () => {
+        assert.doesNotMatch(section('keywords'), /, /);
     });
 
     test('description fits in 4000 characters', () => {

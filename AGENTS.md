@@ -1,3 +1,19 @@
+# SVG Navigator
+
+## Repo-Local Guidance
+
+- Verify before committing with `bun run verify` (type check, ESLint, unit tests, Bright Builds checks). UI tests: `bun run test:e2e` builds `.build/`, then drives Chrome and Firefox through Puppeteer; they run locally, sandbox included.
+- If every UI test fails at startup (a timeout waiting for `data-svg-navigator="ready"`, then "Target closed"), the content script threw while starting. Compare against a clean `HEAD` worktree before blaming the environment.
+- `webextension-toolbox` exits 0 even when TypeScript reports errors; `bun run typecheck` is the real gate.
+- Build locally with `bun run build:dev` (into `.build/`). `bun run build:*` re-zips into `packages/`, overwriting the release archives.
+- TypeScript stays on `~6.0`: TypeScript 7 has no compiler API, which `ts-loader` and `typescript-eslint` need.
+- Bump the version only in `src/manifest.json`. `bun run prebuild` generates `src/js/buildInfo.ts` (gitignored) and `safari/Version.xcconfig` from it.
+- In a standalone SVG page, `document` is an XML document: build HTML UI from the wrapper `htmlDoc` in `src/js/svgNavigator.ts`, never `document.createElement`.
+- Firefox runs through WebDriver BiDi, which has its own quirks; the workarounds are commented in `test/e2e/harness.ts` and `test/e2e/navigator.test.ts`.
+- `bun run screenshots:app-store` regenerates `store/app-store/screenshots/` deterministically; an unrelated change should leave them byte-identical.
+- Releases: push a `vX.Y` tag that matches `src/manifest.json`. See "Releasing" in `README.md`.
+- `scripts/bright-builds-check.ts` is managed upstream and excluded from the type check and ESLint; do not edit it.
+
 <!-- bright-builds-rules-managed:begin -->
 
 # Bright Builds Rules

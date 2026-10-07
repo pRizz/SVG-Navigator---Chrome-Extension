@@ -11,6 +11,7 @@
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.node.json",
+    "verify": "bun run typecheck && bun run lint && bun run test:unit && bun scripts/bright-builds-check.ts all",
     "prebuild": "bun scripts/generateBuildInfo.ts",
     "postinstall": "bun run prebuild",
     "build:chrome": "bun run prebuild && webextension-toolbox build chrome --src src",

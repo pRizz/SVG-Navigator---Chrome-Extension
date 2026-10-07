@@ -199,9 +199,12 @@ Bun runs everything else directly, TypeScript included: the scripts in `scripts/
 ### Type Checking and Linting
 
 ```bash
-bun run typecheck
-bun run lint
+bun run verify
 ```
+
+`bun run verify` runs everything CI checks except the build and UI tests: the type check, ESLint, the unit
+tests, and the Bright Builds checks (`bun scripts/bright-builds-check.ts all`). Each also runs on its own
+(`bun run typecheck`, `bun run lint`, `bun run test:unit`).
 
 `bun run typecheck` checks the extension (`tsconfig.json`) and the scripts and tests
 (`tsconfig.node.json`). The extension build also reports type errors, but its exit code stays 0,

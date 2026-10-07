@@ -26,31 +26,31 @@ const screenshotDir = fileURLToPath(new URL('../../test-results/e2e-screenshots/
 
 for (const browserName of BROWSERS) {
     describe(browserName, () => {
-        let server: Awaited<ReturnType<typeof startFixtureServer>> | undefined;
-        let browser: Browser | undefined;
+        let maybeServer: Awaited<ReturnType<typeof startFixtureServer>> | undefined;
+        let maybeBrowser: Browser | undefined;
         let extensionOrigin: string;
         let page: Page;
         let pageErrors: string[];
 
         before(async () => {
-            server = await startFixtureServer();
-            ({ browser, extensionOrigin } = await launchWithExtension(browserName));
+            maybeServer = await startFixtureServer();
+            ({ browser: maybeBrowser, extensionOrigin } = await launchWithExtension(browserName));
         });
 
         after(async () => {
-            await browser?.close();
-            await server?.close();
+            await maybeBrowser?.close();
+            await maybeServer?.close();
         });
 
         /** The launched browser; only valid inside tests and per-test hooks. */
         function launched(): Browser {
-            assert.ok(browser, `${browserName} failed to launch`);
-            return browser;
+            assert.ok(maybeBrowser, `${browserName} failed to launch`);
+            return maybeBrowser;
         }
 
         function fixtureOrigin(): string {
-            assert.ok(server, 'fixture server failed to start');
-            return server.origin;
+            assert.ok(maybeServer, 'fixture server failed to start');
+            return maybeServer.origin;
         }
 
         beforeEach(async () => {

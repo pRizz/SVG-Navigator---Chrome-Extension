@@ -116,8 +116,8 @@ export async function publishToChromeWebStore({
     }), 'Upload');
     log(`Uploaded package (state: ${upload.uploadState}, version: ${upload.crxVersion ?? 'unknown'})`);
 
-    let uploadState: string | undefined = upload.uploadState;
-    for (let poll = 0; uploadState === 'IN_PROGRESS'; poll++) {
+    let maybeUploadState: string | undefined = upload.uploadState;
+    for (let poll = 0; maybeUploadState === 'IN_PROGRESS'; poll++) {
         if (poll >= UPLOAD_MAX_POLLS) {
             throw new Error(`Upload still processing after ${UPLOAD_MAX_POLLS} status checks`);
         }
@@ -126,11 +126,11 @@ export async function publishToChromeWebStore({
             await fetchFn(`${API_ROOT}/v2/${itemPath}:fetchStatus`, { headers: { authorization } }),
             'Status check',
         );
-        uploadState = status.lastAsyncUploadState;
-        log(`Upload state: ${uploadState}`);
+        maybeUploadState = status.lastAsyncUploadState;
+        log(`Upload state: ${maybeUploadState}`);
     }
-    if (uploadState !== 'SUCCEEDED') {
-        throw new Error(`Upload did not succeed (state: ${uploadState})`);
+    if (maybeUploadState !== 'SUCCEEDED') {
+        throw new Error(`Upload did not succeed (state: ${maybeUploadState})`);
     }
 
     const published = await parseJsonResponse<PublishResponse>(await fetchFn(`${API_ROOT}/v2/${itemPath}:publish`, {
@@ -158,10 +158,10 @@ export async function fetchItemStatus(
     return parseJsonResponse<ItemStatus>(response, 'Status check');
 }
 
-function describeRevision(revision: ItemRevisionStatus | undefined): string {
-    if (!revision) { return 'none'; }
-    const versions = (revision.distributionChannels ?? []).map((channel) => channel.crxVersion).join(', ');
-    return `${revision.state}${versions ? ` (version ${versions})` : ''}`;
+function describeRevision(maybeRevision: ItemRevisionStatus | undefined): string {
+    if (!maybeRevision) { return 'none'; }
+    const versions = (maybeRevision.distributionChannels ?? []).map((channel) => channel.crxVersion).join(', ');
+    return `${maybeRevision.state}${versions ? ` (version ${versions})` : ''}`;
 }
 
 async function parseJsonResponse<T>(response: Response, step: string): Promise<T> {

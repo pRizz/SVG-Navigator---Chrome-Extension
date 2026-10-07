@@ -48,7 +48,7 @@ function jsonBodyOf(call: RecordedCall): unknown {
     return JSON.parse(body);
 }
 
-function authorizationOf(call: RecordedCall): string | null {
+function maybeAuthorizationOf(call: RecordedCall): string | null {
     return new Headers(call.init.headers).get('authorization');
 }
 
@@ -103,7 +103,7 @@ describe('publishToChromeWebStore', () => {
         assert.deepEqual(calls.map((call) => call.route), [':upload', ':publish']);
         assert.equal(callAt(calls, 0).url, 'https://chromewebstore.googleapis.com/upload/v2/publishers/pub-1/items/ext-1:upload');
         assert.equal(callAt(calls, 0).init.body, packageBytes);
-        assert.equal(authorizationOf(callAt(calls, 0)), 'Bearer token-1');
+        assert.equal(maybeAuthorizationOf(callAt(calls, 0)), 'Bearer token-1');
         assert.deepEqual(jsonBodyOf(callAt(calls, 1)), { publishType: 'DEFAULT_PUBLISH' });
     });
 
@@ -173,6 +173,6 @@ describe('fetchItemStatus', () => {
         assert.deepEqual(result, status);
         assert.equal(callAt(calls, 0).url, 'https://chromewebstore.googleapis.com/v2/publishers/pub-1/items/ext-1:fetchStatus');
         assert.equal(callAt(calls, 0).init.method, undefined);
-        assert.equal(authorizationOf(callAt(calls, 0)), 'Bearer token-1');
+        assert.equal(maybeAuthorizationOf(callAt(calls, 0)), 'Bearer token-1');
     });
 });

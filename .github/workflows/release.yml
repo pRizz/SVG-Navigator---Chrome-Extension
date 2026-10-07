@@ -41,13 +41,7 @@ jobs:
 
     - name: Read and check version
       id: version
-      run: |
-        version=$(bun -p "require('./src/manifest.json').version")
-        echo "version=$version" >> "$GITHUB_OUTPUT"
-        if [[ "$GITHUB_REF" == refs/tags/* && "$GITHUB_REF_NAME" != "v$version" ]]; then
-          echo "::error::Tag $GITHUB_REF_NAME does not match manifest version $version (expected v$version)"
-          exit 1
-        fi
+      run: bun scripts/checkReleaseVersion.ts
 
     - name: Cache Puppeteer browsers
       uses: actions/cache@v6
@@ -61,8 +55,8 @@ jobs:
     - name: Install test browsers
       run: bunx --bun puppeteer browsers install chrome && bunx --bun puppeteer browsers install firefox
 
-    - name: Type check, lint and unit test
-      run: bun run typecheck && bun run lint && bun run test:unit
+    - name: Type check, lint, unit test, and Bright Builds checks
+      run: bun run verify
 
     - name: Build release files
       run: bun run build:all && bun run zip:source
