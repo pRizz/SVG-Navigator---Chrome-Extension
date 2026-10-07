@@ -7,7 +7,7 @@ Screenshots are in `screenshots/` (regenerate with `bun run screenshots:app-stor
 ## App Information
 
 - **Name** [30]: SVG Navigator
-- **Subtitle** [30]: Pan and zoom SVGs in Safari
+- **Subtitle** [30]: Infinitely zoom SVGs in Safari
 - **Primary category**: Developer Tools
 - **Secondary category**: Graphics & Design
 - **Content rights**: Doesn't contain, show, or access third-party content
@@ -32,22 +32,22 @@ Screenshots are in `screenshots/` (regenerate with `bun run screenshots:app-stor
 ### Promotional text [170]
 
 <!-- promotional-text -->
-Open an SVG in Safari and explore it like a map: scroll to zoom, drag to pan, or drag a box to zoom straight to the part you need.
+Open an SVG in Safari and zoom in infinitely: scroll into any detail, drag to pan, or drag a box to zoom straight to the part you need.
 <!-- /promotional-text -->
 
 ### Keywords [100, comma-separated]
 
 <!-- keywords -->
-svg,zoom,pan,vector,viewer,map,diagram,graphics,drawing,chart,image,scalable,magnify,explore
+svg,infinite,zoom,pan,vector,viewer,map,diagram,graphics,drawing,chart,scalable,magnify,explore
 <!-- /keywords -->
 
 ### Description [4000]
 
 <!-- description -->
-SVG Navigator adds panning and zooming to the SVG files you open in Safari, so big maps, diagrams, and illustrations are easy to explore instead of being stuck at one size.
+SVG Navigator adds infinite zoom and panning to the SVG files you open in Safari. SVGs are vector graphics that stay sharp at any size, so you can keep zooming into big maps, diagrams, and illustrations for as long as there is detail to see.
 
 Open an SVG file and:
-• Scroll to zoom in and out at the pointer
+• Scroll to zoom in infinitely, or back out, at the pointer
 • Drag to pan, or hold Space and move the pointer
 • Drag a box around exactly the area you want to see (zoom box mode)
 • Press Esc to reset the view, or Option to zoom out

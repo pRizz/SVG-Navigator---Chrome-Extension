@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "packageManager": "bun@1.4.2",
-  "description": "SVG Navigator is a browser extension that adds pan and zoom features to existing SVG files on the web.",
+  "description": "SVG Navigator is a browser extension that adds infinite zoom and panning to existing SVG files on the web.",
   "scripts": {
     "start:chrome": "bun run prebuild && webextension-toolbox dev chrome --src src",
     "start:firefox": "bun run build:dev && web-ext run",

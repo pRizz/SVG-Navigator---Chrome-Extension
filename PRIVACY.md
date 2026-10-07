@@ -8,7 +8,7 @@ that installs it in Safari, does not collect, store, sell, or share any personal
 - **No data collection.** SVG Navigator doesn't use analytics, tracking, advertising, or
   crash reporting, and it never sends anything to the developer or anyone else.
 - **No network requests.** The extension works entirely on your device. It reads the SVG
-  file you are viewing only to add panning and zooming to it, and it doesn't send that
+  file you are viewing only to add infinite zoom and panning to it, and it doesn't send that
   file, or anything about it, anywhere.
 - **Settings stay with your browser.** Your SVG Navigator settings (such as scroll
   sensitivity and background color) are saved in your browser's extension storage. Your

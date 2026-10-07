@@ -1,7 +1,7 @@
 {
     "name": "SVG Navigator",
     "short_name": "SVG Nav",
-    "description": "Adds zooming and panning capabilities to SVG files",
+    "description": "Adds infinite zoom and panning to SVG files",
     "version": "2.13",
     "icons": {
         "16": "icon_16.png",

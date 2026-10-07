@@ -5,7 +5,7 @@ SVG Navigator
 
 Description
 --------------------------------
-SVG Navigator is a browser extension that adds pan and zoom features to existing SVG files on the web.
+SVG Navigator is a browser extension that adds infinite zoom and panning to existing SVG files on the web.
 
 Note
 --------------------------------
@@ -19,10 +19,13 @@ Usage
 --------------------------------
 Go to a website with an SVG file. The extension begins working on the SVG graphic and you may:
 * Pan: click and drag or hold the space bar and drag the cursor to pan around the image
-* Zoom in or out: use mouse scroll wheel
+* Zoom in infinitely, or back out: use the mouse scroll wheel
 * Zoom: click and drag a zoom box of the desired area if enabled
 * Zoom out: tap alt key
 * Reset zoom: press escape
+
+SVGs are vector graphics, so they stay sharp however far you zoom in. SVG Navigator has no zoom
+limit; only the browser's numeric precision stops it, many millions of times in.
 Trying to pan on an SVG by shift click and dragging currently causes undesirable panning; possibly a Google Chrome bug/feature.
 If you want to view local files with this extension, you must enable "Allow access to file URLs" in Chrome's Extensions view.
 
@@ -167,7 +170,7 @@ editing `src/` and Firefox reloads the extension automatically.
 
 The extension is written in TypeScript:
 
-- `src/js/svgNavigator.ts`: the content script that adds panning and zooming to SVG documents
+- `src/js/svgNavigator.ts`: the content script that adds infinite zoom and panning to SVG documents
 - `src/options/`: the toolbar popup with the settings (`index.html`, `options.ts`, `options.css`)
 - `src/shared/settings.ts`: the settings, their defaults, and their storage in `chrome.storage.sync`
 

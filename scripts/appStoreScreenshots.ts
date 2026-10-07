@@ -58,8 +58,8 @@ interface Scene {
 
 const SCENES: Scene[] = [
     {
-        fileName: '01-pan-and-zoom.png',
-        title: 'Pan and zoom any SVG in Safari',
+        fileName: '01-infinite-zoom.png',
+        title: 'Infinite zoom for any SVG in Safari',
         subtitle: 'Open an SVG file and explore it like a map.',
         act: async (page) => {
             await zoom(page, { x: 680, y: 200 }, 4);
@@ -67,8 +67,8 @@ const SCENES: Scene[] = [
     },
     {
         fileName: '02-scroll-to-zoom.png',
-        title: 'Scroll to zoom into the details',
-        subtitle: 'Drag to pan, press Esc to reset, or use the toolbar.',
+        title: 'Scroll to zoom in infinitely',
+        subtitle: 'Vector graphics stay sharp at every level. Drag to pan, press Esc to reset.',
         act: async (page) => {
             await zoom(page, { x: 620, y: 175 }, 7);
             await pan(page, { x: 620, y: 320 }, { x: 560, y: 380 });
