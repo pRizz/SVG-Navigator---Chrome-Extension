@@ -1,3 +1,16 @@
+<!-- bright-builds-rules-readme-badges:begin -->
+
+<!-- Managed upstream by bright-builds-rules. If this badge block needs a fix, open an upstream PR or issue instead of editing the downstream managed block. Keep repo-local README content outside this managed badge block. -->
+
+[![GitHub Stars](https://img.shields.io/github/stars/pRizz/SVG-Navigator---Chrome-Extension)](https://github.com/pRizz/SVG-Navigator---Chrome-Extension)
+[![CI](https://img.shields.io/github/actions/workflow/status/pRizz/SVG-Navigator---Chrome-Extension/ci.yml?style=flat-square&logo=github&label=CI)](https://github.com/pRizz/SVG-Navigator---Chrome-Extension/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/pRizz/SVG-Navigator---Chrome-Extension?style=flat-square)](./LICENSE.txt)
+[![TypeScript 6.0.3](https://img.shields.io/badge/TypeScript-6.0.3-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Bright Builds: Rules](https://raw.githubusercontent.com/bright-builds-llc/bright-builds-rules/main/public/badges/bright-builds-rules-flat.svg)](https://github.com/bright-builds-llc/bright-builds-rules)
+[![OpenLinks profile](https://img.shields.io/badge/OpenLinks-profile-0F172A)](https://openlinks.us/)
+
+<!-- bright-builds-rules-readme-badges:end -->
+
 SVG Navigator
 ====================
 
@@ -171,6 +184,8 @@ editing `src/` and Firefox reloads the extension automatically.
 The extension is written in TypeScript:
 
 - `src/js/svgNavigator.ts`: the content script that adds infinite zoom and panning to SVG documents
+- `src/js/viewBox.ts`: the pure viewBox geometry (parsing, fitting, zooming) the content script uses, unit tested
+- `src/js/toolbar.ts`: the floating +, -, and Reset toolbar
 - `src/options/`: the toolbar popup with the settings (`index.html`, `options.ts`, `options.css`)
 - `src/shared/settings.ts`: the settings, their defaults, and their storage in `chrome.storage.sync`
 
@@ -184,8 +199,6 @@ Bun runs everything else directly, TypeScript included: the scripts in `scripts/
 ```bash
 bun run typecheck
 bun run lint
-- `src/js/viewBox.ts`: the pure viewBox geometry (parsing, fitting, zooming) the content script uses, unit tested
-- `src/js/toolbar.ts`: the floating +, -, and Reset toolbar
 ```
 
 `bun run typecheck` checks the extension (`tsconfig.json`) and the scripts and tests

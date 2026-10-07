@@ -20,5 +20,8 @@
         "verbatimModuleSyntax": true,
         "skipLibCheck": true
     },
-    "include": ["scripts/**/*.ts", "test/**/*.ts"]
+    "include": ["scripts/**/*.ts", "test/**/*.ts"],
+    // Managed upstream by bright-builds-rules (see AGENTS.md); local edits would
+    // count as drift, so it is not held to this repo's stricter settings.
+    "exclude": ["scripts/bright-builds-check.ts"]
 }

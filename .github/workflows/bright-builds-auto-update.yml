@@ -1,0 +1,84 @@
+# bright-builds-rules-managed-file: .github/workflows/bright-builds-auto-update.yml
+# Managed upstream by bright-builds-rules.
+# If this workflow needs a fix, open an upstream PR or issue instead of editing the downstream managed copy.
+name: Bright Builds Auto Update
+
+on:
+  schedule:
+    - cron: '0 14 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bright-builds-auto-update:
+    runs-on: ubuntu-latest
+    env:
+      BRIGHT_BUILDS_PUSH_TOKEN: ${{ secrets.BRIGHT_BUILDS_PUSH_TOKEN || github.token }}
+      BRIGHT_BUILDS_PUSH_TOKEN_CONFIGURED: ${{ secrets.BRIGHT_BUILDS_PUSH_TOKEN != '' }}
+    steps:
+      - name: Check out default branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          token: ${{ secrets.BRIGHT_BUILDS_PUSH_TOKEN || github.token }}
+
+      - name: Set up Python for managed Markdown formatting
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Install managed Markdown formatter
+        shell: bash
+        run: |
+          python -m venv "${RUNNER_TEMP}/bright-builds-mdformat"
+          "${RUNNER_TEMP}/bright-builds-mdformat/bin/python" -m pip install --disable-pip-version-check --no-input \
+            mdformat==1.0.0 \
+            mdformat-frontmatter==2.1.2 \
+            mdformat-gfm==1.0.0
+          echo "${RUNNER_TEMP}/bright-builds-mdformat/bin" >> "$GITHUB_PATH"
+
+      - name: Run Bright Builds auto-update
+        env:
+          GH_TOKEN: ${{ env.BRIGHT_BUILDS_PUSH_TOKEN }}
+          GITHUB_TOKEN: ${{ env.BRIGHT_BUILDS_PUSH_TOKEN }}
+        run: bash ./scripts/bright-builds-auto-update.sh
+
+      - name: Print upstream repair prompt
+        if: ${{ failure() }}
+        shell: bash
+        run: |
+          cat <<'BRIGHT_BUILDS_REPAIR_PROMPT'
+          Bright Builds auto-update failed.
+
+          Copy this prompt into Codex or another coding agent:
+
+          Investigate this failed Bright Builds Rules downstream auto-update run. If the failure comes from the managed workflow, helper, templates, or installer behavior, prepare a pull request against https://github.com/bright-builds-llc/bright-builds-rules so future downstream auto-update failures are mitigated.
+
+          Context:
+          - Upstream repo: https://github.com/bright-builds-llc/bright-builds-rules
+          - Downstream repo: ${{ github.repository }}
+          - Workflow: ${{ github.workflow }}
+          - Run URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          - Managed workflow: .github/workflows/bright-builds-auto-update.yml
+          - Managed helper: scripts/bright-builds-auto-update.sh
+
+          Triage steps:
+          1. Read the failing job log plus downstream AGENTS.md, AGENTS.bright-builds.md, standards-overrides.md if present, and bright-builds-rules.audit.md.
+          2. Classify the failure as downstream drift/configuration or upstream managed behavior.
+          3. If upstream managed behavior caused the failure or failed to mitigate it, open an upstream PR.
+          4. If downstream drift/configuration caused it, report the downstream fix and do not hand-edit fully managed files.
+
+          If the failure mentions BRIGHT_BUILDS_PUSH_TOKEN, repository access, or "without workflows permission", run this repair flow from the Bright Builds operator workstation:
+
+          chmod 600 /Users/peterryszkiewicz/Repos/BRIGHT_BUILDS_PUSH_TOKEN.txt
+          test -s /Users/peterryszkiewicz/Repos/BRIGHT_BUILDS_PUSH_TOKEN.txt
+          gh secret set BRIGHT_BUILDS_PUSH_TOKEN -R ${{ github.repository }} < /Users/peterryszkiewicz/Repos/BRIGHT_BUILDS_PUSH_TOKEN.txt
+          gh workflow run bright-builds-auto-update.yml -R ${{ github.repository }}
+          gh run list -R ${{ github.repository }} --workflow bright-builds-auto-update.yml --limit 1
+          gh run watch RUN_ID -R ${{ github.repository }} --exit-status
+
+          Never print or paste the token value. External adopters should replace the token-file path with their own secure local path.
+          BRIGHT_BUILDS_REPAIR_PROMPT

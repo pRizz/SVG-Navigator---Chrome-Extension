@@ -14,7 +14,9 @@ export default [
             '.build/**/*',
             'test-results/**/*',
             // Apple's Safari app template, not extension code
-            'safari/**/*'
+            'safari/**/*',
+            // Managed upstream by bright-builds-rules; local edits would count as drift
+            'scripts/bright-builds-check.ts'
         ]
     },
     pluginJs.configs.recommended,

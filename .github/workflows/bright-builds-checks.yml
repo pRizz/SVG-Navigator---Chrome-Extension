@@ -1,0 +1,27 @@
+# bright-builds-rules-managed-file: .github/workflows/bright-builds-checks.yml
+# Managed upstream by bright-builds-rules.
+# If this workflow needs a fix, open an upstream PR or issue instead of editing the downstream managed copy.
+name: Bright Builds Checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bright-builds-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.9"
+
+      - name: Run Bright Builds checks
+        run: bun scripts/bright-builds-check.ts all
