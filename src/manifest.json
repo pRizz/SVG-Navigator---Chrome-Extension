@@ -34,7 +34,10 @@
     ],
     "browser_specific_settings": {
         "gecko": {
-            "id": "svg-navigator@prizzventuresllc.com"
+            "id": "svg-navigator@prizzventuresllc.com",
+            "data_collection_permissions": {
+                "required": ["none"]
+            }
         }
     }
 }
