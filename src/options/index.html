@@ -10,7 +10,7 @@
     </head>
     <body>
         <header class="header">
-            <img class="header-icon" src="../icon_38.png" alt="" width="38" height="38">
+            <img class="header-icon" src="../icon_38.png" alt="" width="28" height="28">
             <h1>SVG Navigator</h1>
             <nav class="tabs" role="tablist" aria-label="Sections">
                 <button type="button" class="tab" id="tab-settings" role="tab" aria-controls="panel-settings" aria-selected="true">Settings</button>
@@ -20,102 +20,145 @@
 
         <main>
             <section class="panel" id="panel-settings" role="tabpanel" aria-labelledby="tab-settings">
-                <fieldset class="group">
-                    <legend>Behaviors</legend>
+                <h2 class="section-title" id="behavior-title">Behavior</h2>
+                <div class="card" role="group" aria-labelledby="behavior-title">
                     <div class="row">
-                        <label for="clickAndDragBehavior">Click and drag:</label>
-                        <select id="clickAndDragBehavior">
-                            <option value="pan">Pan</option>
-                            <option value="zoomBox">Zoom Box</option>
-                        </select>
+                        <span class="row-label" id="clickAndDragLabel">Click and drag</span>
+                        <div class="segmented" id="clickAndDragBehavior" role="radiogroup" aria-labelledby="clickAndDragLabel">
+                            <label><input type="radio" name="clickAndDragBehavior" value="pan"><span>Pan</span></label>
+                            <label><input type="radio" name="clickAndDragBehavior" value="zoomBox"><span>Zoom box</span></label>
+                        </div>
                     </div>
                     <div class="row">
-                        <label for="scrollSensitivity">Scroll sensitivity:</label>
-                        <input type="range" id="scrollSensitivity">
-                        <output id="scrollSensitivityValue" for="scrollSensitivity"></output>
+                        <label class="row-label" for="scrollSensitivity">Scroll sensitivity</label>
+                        <div class="slider">
+                            <input type="range" id="scrollSensitivity">
+                            <output id="scrollSensitivityValue" for="scrollSensitivity"></output>
+                        </div>
                     </div>
-                    <label class="check"><input type="checkbox" id="invertScroll"> Invert scroll</label>
-                    <button type="button" id="resetBehaviors">Reset Behaviors to Defaults</button>
-                </fieldset>
+                    <label class="row">
+                        <span class="row-label">Invert scroll direction</span>
+                        <input type="checkbox" class="switch" role="switch" id="invertScroll">
+                    </label>
+                </div>
 
-                <fieldset class="group">
-                    <legend>Toolbar</legend>
-                    <label class="check"><input type="checkbox" id="toolbarAutoHide"> Auto hide</label>
-                    <label class="check"><input type="checkbox" id="toolbarEnabled"> Enabled</label>
-                </fieldset>
+                <h2 class="section-title" id="toolbar-title">Toolbar</h2>
+                <div class="card" role="group" aria-labelledby="toolbar-title">
+                    <label class="row">
+                        <span class="row-label">Show zoom toolbar</span>
+                        <input type="checkbox" class="switch" role="switch" id="toolbarEnabled">
+                    </label>
+                    <label class="row">
+                        <span class="row-label">
+                            Auto-hide
+                            <span class="row-hint">Fades out after 5 seconds; hover to bring it back</span>
+                        </span>
+                        <input type="checkbox" class="switch" role="switch" id="toolbarAutoHide">
+                    </label>
+                </div>
 
-                <fieldset class="group">
-                    <legend>Debug</legend>
-                    <label class="check"><input type="checkbox" id="showDebugInfo"> Show Debugging Info</label>
-                </fieldset>
-
-                <fieldset class="group">
-                    <legend>Background</legend>
+                <h2 class="section-title" id="background-title">Background</h2>
+                <div class="card" role="group" aria-labelledby="background-title">
                     <div class="row">
-                        <label for="svgBackgroundColor">Background Color (any valid CSS color)</label>
+                        <label class="row-label" for="svgBackgroundColor">Background color</label>
+                        <div class="color-field">
+                            <span class="swatch" id="svgBackgroundColorSwatch" aria-hidden="true"></span>
+                            <input type="text" id="svgBackgroundColor" spellcheck="false" autocomplete="off" aria-describedby="svgBackgroundColorHint">
+                        </div>
                     </div>
                     <div class="row">
-                        <input type="text" id="svgBackgroundColor" spellcheck="false" autocomplete="off">
-                        <span class="swatch" id="svgBackgroundColorSwatch" aria-hidden="true"></span>
+                        <span class="row-hint" id="svgBackgroundColorHint">Any CSS color, or pick one:</span>
+                        <div class="presets" role="group" aria-label="Preset colors">
+                            <button type="button" class="preset" data-color="white" title="White" aria-label="White"></button>
+                            <button type="button" class="preset" data-color="#f1f3f4" title="Light gray" aria-label="Light gray"></button>
+                            <button type="button" class="preset" data-color="#80868b" title="Gray" aria-label="Gray"></button>
+                            <button type="button" class="preset" data-color="#202124" title="Dark gray" aria-label="Dark gray"></button>
+                            <button type="button" class="preset" data-color="black" title="Black" aria-label="Black"></button>
+                            <button type="button" class="preset" data-color="transparent" title="Transparent" aria-label="Transparent"></button>
+                        </div>
                     </div>
-                    <button type="button" id="resetBackgroundColor">Reset Background Color to Default (white)</button>
-                </fieldset>
+                </div>
 
-                <p class="status" id="status" role="status"></p>
+                <h2 class="section-title" id="debug-title">Debugging</h2>
+                <div class="card" role="group" aria-labelledby="debug-title">
+                    <label class="row">
+                        <span class="row-label">
+                            Debug overlay
+                            <span class="row-hint">Shows the view box and cursor position</span>
+                        </span>
+                        <input type="checkbox" class="switch" role="switch" id="showDebugInfo">
+                    </label>
+                </div>
+
+                <div class="actions">
+                    <button type="button" class="text-button" id="resetAll">Reset all to defaults</button>
+                    <span class="status" id="status" role="status" aria-live="polite"></span>
+                </div>
             </section>
 
             <section class="panel" id="panel-information" role="tabpanel" aria-labelledby="tab-information" hidden>
-                <h2>Description</h2>
-                <p>SVG Navigator is a browser extension that adds pan and zoom features to existing SVG files on the web.</p>
-                <p>
-                    If you like this extension and want to support its development, please consider donating at:<br>
-                    <a href="https://paypal.me/PeterRyszkiewicz/2">https://paypal.me/PeterRyszkiewicz/2</a><br>
-                    <a href="https://cash.me/$PeterRyszkiewicz/2">https://cash.me/$PeterRyszkiewicz/2</a>
-                </p>
+                <h2 class="section-title" id="shortcuts-title">Controls</h2>
+                <div class="card" role="group" aria-labelledby="shortcuts-title">
+                    <div class="row"><span class="row-label">Pan</span><span class="keys"><kbd>Drag</kbd> or <kbd>Space</kbd> + move</span></div>
+                    <div class="row"><span class="row-label">Zoom at cursor</span><span class="keys"><kbd>Scroll</kbd></span></div>
+                    <div class="row"><span class="row-label">Zoom to an area</span><span class="keys"><kbd>Drag</kbd> in Zoom box mode</span></div>
+                    <div class="row"><span class="row-label">Zoom in / out</span><span class="keys"><kbd>Ctrl</kbd> <kbd>=</kbd> / <kbd>Ctrl</kbd> <kbd>-</kbd></span></div>
+                    <div class="row"><span class="row-label">Zoom out</span><span class="keys"><kbd>Alt</kbd></span></div>
+                    <div class="row"><span class="row-label">Reset view</span><span class="keys"><kbd>Esc</kbd> or <kbd>Ctrl</kbd> <kbd>0</kbd></span></div>
+                </div>
 
-                <h2>Usage</h2>
-                <p>Go to a website with an SVG file. The extension begins working on the SVG graphic and you may:</p>
-                <ul>
-                    <li>Pan: click and drag or hold the space bar and drag the cursor to pan around the image</li>
-                    <li>Zoom in or out: use mouse scroll wheel</li>
-                    <li>Zoom: click and drag a zoom box of the desired area if enabled</li>
-                    <li>Zoom out: tap alt key</li>
-                    <li>Reset zoom: press escape</li>
-                </ul>
-                <p>Trying to pan on an SVG by shift click and dragging currently causes undesirable panning; possibly a Google Chrome bug/feature.</p>
-                <p>If you want to view local files with this extension, you must enable "Allow access to file URLs" in Chrome's Extensions view.</p>
+                <h2 class="section-title" id="about-title">About</h2>
+                <div class="card prose" role="group" aria-labelledby="about-title">
+                    <p>SVG Navigator adds pan and zoom to SVG files on the web. Open any <code>.svg</code> URL and it takes over the page.</p>
+                    <p class="links">
+                        <a href="https://github.com/pRizz/SVG-Navigator---Chrome-Extension">GitHub</a>
+                        <a href="https://chromewebstore.google.com/detail/svg-navigator/pefngfjmidahdaahgehodmfodhhhofkl">Chrome Web Store</a>
+                        <a href="https://addons.mozilla.org/en-US/firefox/addon/svg-navigator/">Firefox Add-ons</a>
+                        <a href="https://www.w3.org/TR/SVG11/">SVG 1.1 spec</a>
+                    </p>
+                </div>
 
-                <h2>Try Testing out these SVGs</h2>
-                <ul>
-                    <li><a href="https://upload.wikimedia.org/wikipedia/commons/6/6b/Bitmap_VS_SVG.svg">Vector vs Raster</a></li>
-                    <li><a href="https://upload.wikimedia.org/wikipedia/commons/1/17/World.svg">World Map</a></li>
-                    <li><a href="http://svg.kvalitne.cz/worldlandmarks/worldlandmarks.svg">Animated world landmarks</a></li>
-                    <li><a href="https://upload.wikimedia.org/wikipedia/commons/d/dc/USA_orthographic.svg">Map of the United States of America</a></li>
-                    <li><a href="https://upload.wikimedia.org/wikipedia/commons/3/32/Blank_US_Map.svg">Another USA map</a></li>
-                    <li><a href="https://upload.wikimedia.org/wikipedia/commons/f/ff/Orion_IAU.svg">Constellation Orion</a></li>
-                    <li><a href="https://upload.wikimedia.org/wikipedia/commons/9/91/Bertrand3-chords.svg">Bertrand's Chords</a></li>
-                    <li><a href="https://upload.wikimedia.org/wikipedia/commons/2/20/CellStructure-SiCrystal-eng-vect.svg">P and N type Silicon</a></li>
-                    <li><a href="https://upload.wikimedia.org/wikipedia/commons/6/62/Diagram_of_zeta_potential_and_slipping_plane.svg">Diagram of Zeta Potential and Slipping Plane</a></li>
-                    <li><a href="https://upload.wikimedia.org/wikipedia/commons/4/4e/Earth_Color_Trace.svg">Earth Color Trace</a></li>
-                    <li><a href="https://upload.wikimedia.org/wikipedia/commons/4/4c/Magnetic_moment.svg">Magnetic Moment</a></li>
-                    <li><a href="https://upload.wikimedia.org/wikipedia/commons/3/3c/Mandelbrot_Components.svg">Simple Mandelbrot</a></li>
-                    <li><a href="http://www.bogotobogo.com/svg_source/SVGDigitalClock.svg">Animated Digital Clock</a></li>
-                </ul>
+                <h2 class="section-title" id="tips-title">Tips</h2>
+                <div class="card prose" role="group" aria-labelledby="tips-title">
+                    <p>To use it on local files in Chrome, turn on <em>Allow access to file URLs</em> for SVG Navigator on the Extensions page.</p>
+                    <p>Shift + drag can pan unexpectedly; use a plain drag or Space + move instead.</p>
+                </div>
 
-                <h2>Useful Links</h2>
-                <ul>
-                    <li><a href="https://www.w3.org/TR/SVG11/">SVG 1.1 Second Edition Specifications</a></li>
-                    <li><a href="https://chrome.google.com/webstore/detail/svg-navigator/pefngfjmidahdaahgehodmfodhhhofkl">Official Google Chrome extension page</a></li>
-                    <li><a href="https://github.com/pRizz/SVG-Navigator---Chrome-Extension">Github Repository</a></li>
-                </ul>
+                <h2 class="section-title" id="examples-title">Try it on</h2>
+                <div class="card prose" role="group" aria-labelledby="examples-title">
+                    <ul class="examples">
+                        <li><a href="https://upload.wikimedia.org/wikipedia/commons/1/17/World.svg">World map</a></li>
+                        <li><a href="https://upload.wikimedia.org/wikipedia/commons/d/dc/USA_orthographic.svg">USA orthographic</a></li>
+                        <li><a href="https://upload.wikimedia.org/wikipedia/commons/6/6b/Bitmap_VS_SVG.svg">Vector vs. raster</a></li>
+                        <li><a href="https://upload.wikimedia.org/wikipedia/commons/f/ff/Orion_IAU.svg">Constellation Orion</a></li>
+                        <li><a href="https://upload.wikimedia.org/wikipedia/commons/3/3c/Mandelbrot_Components.svg">Mandelbrot set</a></li>
+                        <li><a href="https://upload.wikimedia.org/wikipedia/commons/4/4e/Earth_Color_Trace.svg">Earth color trace</a></li>
+                        <li><a href="https://upload.wikimedia.org/wikipedia/commons/9/91/Bertrand3-chords.svg">Bertrand's chords</a></li>
+                        <li><a href="https://upload.wikimedia.org/wikipedia/commons/4/4c/Magnetic_moment.svg">Magnetic moment</a></li>
+                        <li><a href="https://upload.wikimedia.org/wikipedia/commons/2/20/CellStructure-SiCrystal-eng-vect.svg">P and N type silicon</a></li>
+                        <li><a href="https://upload.wikimedia.org/wikipedia/commons/6/62/Diagram_of_zeta_potential_and_slipping_plane.svg">Zeta potential</a></li>
+                        <li><a href="http://www.bogotobogo.com/svg_source/SVGDigitalClock.svg">Animated clock</a></li>
+                    </ul>
+                </div>
 
-                <h2>Acknowledgements</h2>
-                <p>
-                    Concept originally created by Asad Akram, Ryan Oblenida aka Mr. O, and Peter Ryszkiewicz at the
-                    Illinois Institute of Technology. Adapted as a Google Chrome extension by Peter Ryszkiewicz. Work
-                    was inspired by Kevin Lindsey at <a href="http://www.kevlindev.com/index.htm">http://www.kevlindev.com/index.htm</a>.
-                    Illustrations by Cara Stemo.
-                </p>
+                <h2 class="section-title" id="support-title">Support</h2>
+                <div class="card prose" role="group" aria-labelledby="support-title">
+                    <p>If SVG Navigator is useful to you, you can support its development:</p>
+                    <p class="links">
+                        <a href="https://www.paypal.com/paypalme/PeterRyszkiewicz/2">PayPal</a>
+                        <a href="https://cash.app/$PeterRyszkiewicz/2">Cash App</a>
+                    </p>
+                </div>
+
+                <h2 class="section-title" id="credits-title">Credits</h2>
+                <div class="card prose" role="group" aria-labelledby="credits-title">
+                    <p>
+                        Concept originally created by Asad Akram, Ryan Oblenida aka Mr. O, and Peter Ryszkiewicz at the
+                        Illinois Institute of Technology. Adapted as a browser extension by Peter Ryszkiewicz. Inspired
+                        by Kevin Lindsey's work at <a href="http://www.kevlindev.com/index.htm">kevlindev.com</a>.
+                        Illustrations by Cara Stemo.
+                    </p>
+                </div>
             </section>
         </main>
 

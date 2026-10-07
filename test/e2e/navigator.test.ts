@@ -197,7 +197,7 @@ for (const browserName of BROWSERS) {
             const text = await page.$eval('body', (body) => (body as HTMLElement).innerText);
             assert.match(text, /Click and drag/);
             assert.match(text, /Scroll sensitivity/);
-            assert.match(text, /Background Color/);
+            assert.match(text, /Background color/);
             assert.deepEqual(pageErrors, []);
         });
 
@@ -215,10 +215,11 @@ for (const browserName of BROWSERS) {
 
             // Assert
             const shown = await page.evaluate(() => ({
-                clickAndDrag: document.querySelector<HTMLSelectElement>('#clickAndDragBehavior')?.value,
+                clickAndDrag: document.querySelector<HTMLInputElement>('input[name="clickAndDragBehavior"]:checked')?.value,
                 sensitivity: document.querySelector<HTMLInputElement>('#scrollSensitivity')?.value,
                 toolbarEnabled: document.querySelector<HTMLInputElement>('#toolbarEnabled')?.checked,
                 toolbarAutoHide: document.querySelector<HTMLInputElement>('#toolbarAutoHide')?.checked,
+                toolbarAutoHideDisabled: document.querySelector<HTMLInputElement>('#toolbarAutoHide')?.disabled,
                 background: document.querySelector<HTMLInputElement>('#svgBackgroundColor')?.value,
             }));
             assert.deepEqual(shown, {
@@ -226,6 +227,7 @@ for (const browserName of BROWSERS) {
                 sensitivity: '3.5',
                 toolbarEnabled: false,
                 toolbarAutoHide: true,
+                toolbarAutoHideDisabled: true,
                 background: 'black',
             });
         });
@@ -260,21 +262,49 @@ for (const browserName of BROWSERS) {
             await waitForStoredSetting(page, 'svgBackgroundColor', 'black');
         });
 
-        test('options popup resets behaviors to their defaults', async () => {
+        test('options popup saves the clicked color preset', async () => {
+            // Arrange
+            await openOptionsPage(page, extensionOrigin);
+
+            // Act
+            await clickInExtensionPage(page, '.preset[data-color="black"]');
+
+            // Assert
+            await waitForStoredSetting(page, 'svgBackgroundColor', 'black');
+            assert.equal(await page.$eval('#svgBackgroundColor', (input) => (input as HTMLInputElement).value), 'black');
+        });
+
+        test('options popup resets every setting after a confirming second click', async () => {
             // Arrange
             await evaluateInExtension(launched(), extensionOrigin, () => chrome.storage.sync.set({
                 scrollSensitivity: 2,
-                invertScroll: true,
+                toolbarEnabled: false,
+                svgBackgroundColor: 'black',
             }));
             await openOptionsPage(page, extensionOrigin);
 
             // Act
-            await clickInExtensionPage(page, '#resetBehaviors');
+            await clickInExtensionPage(page, '#resetAll');
+            await clickInExtensionPage(page, '#resetAll');
 
             // Assert
             await waitForStoredSetting(page, 'scrollSensitivity', 7);
-            await waitForStoredSetting(page, 'invertScroll', false);
+            await waitForStoredSetting(page, 'toolbarEnabled', true);
+            await waitForStoredSetting(page, 'svgBackgroundColor', 'white');
             assert.equal(await page.$eval('#scrollSensitivity', (input) => (input as HTMLInputElement).value), '7');
+        });
+
+        test('options popup does not reset on a single click', async () => {
+            // Arrange
+            await evaluateInExtension(launched(), extensionOrigin, () => chrome.storage.sync.set({ scrollSensitivity: 2 }));
+            await openOptionsPage(page, extensionOrigin);
+
+            // Act
+            await clickInExtensionPage(page, '#resetAll');
+
+            // Assert
+            await waitForStoredSetting(page, 'scrollSensitivity', 2);
+            assert.match(await page.$eval('#resetAll', (button) => button.textContent ?? ''), /Click again/);
         });
 
         test('applies a background color change to an open SVG', async () => {
