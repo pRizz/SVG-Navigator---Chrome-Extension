@@ -122,6 +122,24 @@ to `~/Applications`, open it once, then enable SVG Navigator in Safari → Setti
 Keep the project's development team signing: an ad-hoc signed build didn't show up in Safari's
 extension list, even with "Allow unsigned extensions" on.
 
+### App Store listing
+
+`store/app-store/listing.md` holds the Mac App Store text (description, keywords, review
+notes, privacy answers); a unit test checks it against App Store Connect's length limits.
+The privacy policy is [PRIVACY.md](PRIVACY.md).
+
+The screenshots in `store/app-store/screenshots/` are generated:
+
+```bash
+bun run screenshots:app-store
+```
+
+This drives the built extension in Puppeteer's Chrome with real mouse input on
+`examples/` SVGs and frames each capture in a Safari-style window at 2880×1800. Every
+input is fixed, so a rerun on the same Mac produces byte-identical files and `git status`
+only shows screenshots whose content really changed. Edit the scenes in
+`scripts/appStoreScreenshots.ts`.
+
 ### Development
 
 For development with hot-reload:

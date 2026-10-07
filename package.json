@@ -22,7 +22,8 @@
     "zip:source": "zip -r svg-navigator-source.zip src scripts eslint.config.mjs tsconfig.json tsconfig.node.json package.json bun.lock bunfig.toml README.md web-ext-config.mjs LICENSE.txt -x \"**/node_modules/*\"",
     "build:dev": "bun run prebuild && webextension-toolbox build chrome --src src -t .build/chrome -o dev-chrome && webextension-toolbox build firefox --src src -t .build/firefox -o dev-firefox",
     "test:e2e": "bun run build:dev && bun test test/e2e",
-    "test:unit": "bun test test/unit"
+    "test:unit": "bun test test/unit",
+    "screenshots:app-store": "bun run build:dev && bun scripts/appStoreScreenshots.ts"
   },
   "repository": {
     "type": "git",

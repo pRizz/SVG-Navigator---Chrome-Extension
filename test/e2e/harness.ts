@@ -46,12 +46,12 @@ const CONTENT_TYPES: Record<string, string> = {
 // Served without a file extension to exercise content-based SVG detection.
 const EXTENSIONLESS_ROUTES: Record<string, string> = { '/diagram': 'simple.svg' };
 
-/** Serves `test/e2e/fixtures` over HTTP on an ephemeral localhost port. */
-export async function startFixtureServer(): Promise<{ origin: string, close: () => Promise<void> }> {
+/** Serves `dir` (by default `test/e2e/fixtures`) over HTTP on an ephemeral localhost port. */
+export async function startFixtureServer(dir = fixturesDir): Promise<{ origin: string, close: () => Promise<void> }> {
     const server = createServer((request, response) => {
         const { pathname } = new URL(request.url ?? '/', 'http://localhost');
-        const fileName = EXTENSIONLESS_ROUTES[pathname] ?? path.basename(pathname);
-        readFile(path.join(fixturesDir, fileName)).then(
+        const fileName = EXTENSIONLESS_ROUTES[pathname] ?? path.basename(decodeURIComponent(pathname));
+        readFile(path.join(dir, fileName)).then(
             (body) => {
                 response.writeHead(200, { 'content-type': CONTENT_TYPES[path.extname(fileName)] });
                 response.end(body);
@@ -78,9 +78,13 @@ function extensionDir(browserName: BrowserName): string {
     return path.resolve(repoRoot, override ?? path.join('.build', browserName));
 }
 
-/** Launches a headless browser with the unpacked extension installed. */
+/**
+ * Launches a headless browser with the unpacked extension installed.
+ * `chromeArgs` are extra Chrome command-line switches.
+ */
 export async function launchWithExtension(
     browserName: string,
+    chromeArgs: string[] = [],
 ): Promise<{ browser: Browser, extensionOrigin: string }> {
     if (browserName !== 'chrome' && browserName !== 'firefox') {
         throw new Error(`Unsupported browser "${browserName}"; expected chrome or firefox`);
@@ -92,7 +96,7 @@ export async function launchWithExtension(
             pipe: true,
             enableExtensions: true,
             // GitHub's Ubuntu runners restrict the user namespaces Chrome's sandbox needs.
-            args: process.env.CI ? ['--no-sandbox'] : [],
+            args: [...(process.env.CI ? ['--no-sandbox'] : []), ...chromeArgs],
         });
         const extensionId = await browser.installExtension(dir);
         return { browser, extensionOrigin: `chrome-extension://${extensionId}` };
