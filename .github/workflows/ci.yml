@@ -6,10 +6,10 @@ on:
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Setup Bun
       uses: oven-sh/setup-bun@v2
@@ -30,10 +30,10 @@ jobs:
       run: bun run test:unit
 
   web-ext-lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Setup Bun
       uses: oven-sh/setup-bun@v2
@@ -47,10 +47,10 @@ jobs:
       run: bun run web-ext:lint
 
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Setup Bun
       uses: oven-sh/setup-bun@v2
@@ -64,10 +64,10 @@ jobs:
       run: bun run build:all
 
   e2e:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
 
     - name: Setup Bun
       uses: oven-sh/setup-bun@v2
@@ -76,7 +76,7 @@ jobs:
 
     # Puppeteer downloads Chrome and Firefox during install; reuse them across runs.
     - name: Cache Puppeteer browsers
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: ~/.cache/puppeteer
         key: puppeteer-${{ runner.os }}-${{ hashFiles('bun.lock') }}
@@ -92,7 +92,7 @@ jobs:
 
     - name: Upload failure screenshots
       if: failure()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: e2e-screenshots
         path: test-results/
