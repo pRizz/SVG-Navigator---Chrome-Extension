@@ -12,7 +12,9 @@ export default [
             'dist/**/*',
             'packages/**/*',
             '.build/**/*',
-            'test-results/**/*'
+            'test-results/**/*',
+            // Apple's Safari app template, not extension code
+            'safari/**/*'
         ]
     },
     pluginJs.configs.recommended,

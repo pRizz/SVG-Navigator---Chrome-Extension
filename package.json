@@ -17,6 +17,7 @@
     "build:firefox": "bun run prebuild && webextension-toolbox build firefox --src src",
     "build:safari": "bun run prebuild && webextension-toolbox build safari --src src",
     "build:all": "bun run build:chrome && bun run build:firefox && bun run build:safari",
+    "build:safari-app": "bun run build:safari && xcodebuild -project 'safari/SVG Navigator.xcodeproj' -scheme 'SVG Navigator' -configuration Release -derivedDataPath .build/safari-app -allowProvisioningUpdates build",
     "web-ext:lint": "bun run build:dev && web-ext lint",
     "zip:source": "zip -r svg-navigator-source.zip src scripts eslint.config.mjs tsconfig.json tsconfig.node.json package.json bun.lock bunfig.toml README.md web-ext-config.mjs LICENSE.txt -x \"**/node_modules/*\"",
     "build:dev": "bun run prebuild && webextension-toolbox build chrome --src src -t .build/chrome -o dev-chrome && webextension-toolbox build firefox --src src -t .build/firefox -o dev-firefox",

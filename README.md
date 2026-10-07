@@ -9,7 +9,11 @@ SVG Navigator is a browser extension that adds pan and zoom features to existing
 
 Note
 --------------------------------
-You can access file URLs by going to Chrome's extension settings, and checking "Allow access to file URLs".
+In Chrome, you can access file URLs by going to the extension settings and checking "Allow access to file URLs".
+Safari doesn't run extensions on file URLs.
+
+In Safari, allow SVG Navigator on every website (click its toolbar icon and choose "Always Allow on Every Website")
+so it can run on the SVG files you open.
 
 Usage
 --------------------------------
@@ -97,6 +101,26 @@ The packaged extensions will be available in:
 - Chrome: `packages/svg-navigator...chrome.zip`
 - Firefox: `packages/svg-navigator...firefox.xpi`
 - Safari: `packages/svg-navigator...safari.zip`
+
+### Safari app
+
+Safari extensions ship inside a macOS app. Its Xcode project is in `safari/` and needs Xcode and
+an Apple Developer account signed in under Xcode → Settings → Accounts.
+
+```bash
+bun run build:safari-app
+```
+
+This builds `dist/safari` and then the app. The Xcode project's "Web Extension" group references
+the top-level entries of `dist/safari` rather than copies of them, so a new top-level file or
+folder in `src/` has to be added to that group (a unit test checks this). The app's version
+comes from `src/manifest.json` through `safari/Version.xcconfig`, which every build generates.
+To build from Xcode instead, run `bun run build:safari` first.
+
+To try it in Safari, copy the built `.build/safari-app/Build/Products/Release/SVG Navigator.app`
+to `~/Applications`, open it once, then enable SVG Navigator in Safari → Settings → Extensions.
+Keep the project's development team signing: an ad-hoc signed build didn't show up in Safari's
+extension list, even with "Allow unsigned extensions" on.
 
 ### Development
 

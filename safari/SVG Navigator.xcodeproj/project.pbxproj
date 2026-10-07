@@ -1,0 +1,611 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 110;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		2731848B3075CD5600CA349B /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2731848A3075CD5600CA349B /* AppDelegate.swift */; };
+		2731848F3075CD5600CA349B /* Main.html in Resources */ = {isa = PBXBuildFile; fileRef = 2731848D3075CD5600CA349B /* Main.html */; };
+		273184913075CD5600CA349B /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 273184903075CD5600CA349B /* Icon.png */; };
+		273184933075CD5600CA349B /* Style.css in Resources */ = {isa = PBXBuildFile; fileRef = 273184923075CD5600CA349B /* Style.css */; };
+		273184953075CD5600CA349B /* Script.js in Resources */ = {isa = PBXBuildFile; fileRef = 273184943075CD5600CA349B /* Script.js */; };
+		273184973075CD5600CA349B /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 273184963075CD5600CA349B /* ViewController.swift */; };
+		2731849A3075CD5600CA349B /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 273184983075CD5600CA349B /* Main.storyboard */; };
+		2731849C3075CD5700CA349B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2731849B3075CD5700CA349B /* Assets.xcassets */; };
+		273184A33075CD5700CA349B /* SVG Navigator Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 273184A23075CD5700CA349B /* SVG Navigator Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		273184A83075CD5700CA349B /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 273184A73075CD5700CA349B /* SafariWebExtensionHandler.swift */; };
+		273185103075CD5800CA349B /* css in Resources */ = {isa = PBXBuildFile; fileRef = 273185003075CD5800CA349B /* css */; };
+		273185113075CD5800CA349B /* js in Resources */ = {isa = PBXBuildFile; fileRef = 273185013075CD5800CA349B /* js */; };
+		273185123075CD5800CA349B /* options in Resources */ = {isa = PBXBuildFile; fileRef = 273185023075CD5800CA349B /* options */; };
+		273185133075CD5800CA349B /* shared in Resources */ = {isa = PBXBuildFile; fileRef = 273185033075CD5800CA349B /* shared */; };
+		273185143075CD5800CA349B /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 273185043075CD5800CA349B /* manifest.json */; };
+		273185153075CD5800CA349B /* icon_16.png in Resources */ = {isa = PBXBuildFile; fileRef = 273185053075CD5800CA349B /* icon_16.png */; };
+		273185163075CD5800CA349B /* icon_19.png in Resources */ = {isa = PBXBuildFile; fileRef = 273185063075CD5800CA349B /* icon_19.png */; };
+		273185173075CD5800CA349B /* icon_38.png in Resources */ = {isa = PBXBuildFile; fileRef = 273185073075CD5800CA349B /* icon_38.png */; };
+		273185183075CD5800CA349B /* icon_48.png in Resources */ = {isa = PBXBuildFile; fileRef = 273185083075CD5800CA349B /* icon_48.png */; };
+		273185193075CD5800CA349B /* icon_128.png in Resources */ = {isa = PBXBuildFile; fileRef = 273185093075CD5800CA349B /* icon_128.png */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		273184A43075CD5700CA349B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2731847F3075CD5600CA349B /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 273184A13075CD5700CA349B;
+			remoteInfo = "SVG Navigator Extension";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		273184AF3075CD5700CA349B /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			dstPath = "";
+			dstSubfolder = PlugIns;
+			files = (
+				273184A33075CD5700CA349B /* SVG Navigator Extension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		273184D13075CD5800CA349B /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = "<group>"; };
+		273184873075CD5600CA349B /* SVG Navigator.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "SVG Navigator.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		2731848A3075CD5600CA349B /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		2731848E3075CD5600CA349B /* Base */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = Base; path = Base.lproj/Main.html; sourceTree = "<group>"; };
+		273184903075CD5600CA349B /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Icon.png; sourceTree = "<group>"; };
+		273184923075CD5600CA349B /* Style.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = Style.css; sourceTree = "<group>"; };
+		273184943075CD5600CA349B /* Script.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = Script.js; sourceTree = "<group>"; };
+		273184963075CD5600CA349B /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		273184993075CD5600CA349B /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		2731849B3075CD5700CA349B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		2731849D3075CD5700CA349B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		273184A23075CD5700CA349B /* SVG Navigator Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "SVG Navigator Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		273184A73075CD5700CA349B /* SafariWebExtensionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariWebExtensionHandler.swift; sourceTree = "<group>"; };
+		273184A93075CD5700CA349B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		273185003075CD5800CA349B /* css */ = {isa = PBXFileReference; lastKnownFileType = folder; path = css; sourceTree = "<group>"; };
+		273185013075CD5800CA349B /* js */ = {isa = PBXFileReference; lastKnownFileType = folder; path = js; sourceTree = "<group>"; };
+		273185023075CD5800CA349B /* options */ = {isa = PBXFileReference; lastKnownFileType = folder; path = options; sourceTree = "<group>"; };
+		273185033075CD5800CA349B /* shared */ = {isa = PBXFileReference; lastKnownFileType = folder; path = shared; sourceTree = "<group>"; };
+		273185043075CD5800CA349B /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = manifest.json; sourceTree = "<group>"; };
+		273185053075CD5800CA349B /* icon_16.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = icon_16.png; sourceTree = "<group>"; };
+		273185063075CD5800CA349B /* icon_19.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = icon_19.png; sourceTree = "<group>"; };
+		273185073075CD5800CA349B /* icon_38.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = icon_38.png; sourceTree = "<group>"; };
+		273185083075CD5800CA349B /* icon_48.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = icon_48.png; sourceTree = "<group>"; };
+		273185093075CD5800CA349B /* icon_128.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = icon_128.png; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		273184843075CD5600CA349B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+		2731849F3075CD5700CA349B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		2731847E3075CD5600CA349B = {
+			isa = PBXGroup;
+			children = (
+				273184D13075CD5800CA349B /* Version.xcconfig */,
+				273184893075CD5600CA349B /* SVG Navigator */,
+				273184A63075CD5700CA349B /* SVG Navigator Extension */,
+				273184883075CD5600CA349B /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		273184883075CD5600CA349B /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				273184873075CD5600CA349B /* SVG Navigator.app */,
+				273184A23075CD5700CA349B /* SVG Navigator Extension.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		273184893075CD5600CA349B /* SVG Navigator */ = {
+			isa = PBXGroup;
+			children = (
+				2731848A3075CD5600CA349B /* AppDelegate.swift */,
+				273184963075CD5600CA349B /* ViewController.swift */,
+				273184983075CD5600CA349B /* Main.storyboard */,
+				2731849B3075CD5700CA349B /* Assets.xcassets */,
+				2731849D3075CD5700CA349B /* Info.plist */,
+				2731848C3075CD5600CA349B /* Resources */,
+			);
+			path = "SVG Navigator";
+			sourceTree = "<group>";
+		};
+		2731848C3075CD5600CA349B /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				2731848D3075CD5600CA349B /* Main.html */,
+				273184903075CD5600CA349B /* Icon.png */,
+				273184923075CD5600CA349B /* Style.css */,
+				273184943075CD5600CA349B /* Script.js */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		273184A63075CD5700CA349B /* SVG Navigator Extension */ = {
+			isa = PBXGroup;
+			children = (
+				273185203075CD5800CA349B /* Web Extension */,
+				273184A73075CD5700CA349B /* SafariWebExtensionHandler.swift */,
+				273184A93075CD5700CA349B /* Info.plist */,
+			);
+			path = "SVG Navigator Extension";
+			sourceTree = "<group>";
+		};
+		273185203075CD5800CA349B /* Web Extension */ = {
+			isa = PBXGroup;
+			children = (
+				273185003075CD5800CA349B /* css */,
+				273185013075CD5800CA349B /* js */,
+				273185023075CD5800CA349B /* options */,
+				273185033075CD5800CA349B /* shared */,
+				273185043075CD5800CA349B /* manifest.json */,
+				273185053075CD5800CA349B /* icon_16.png */,
+				273185063075CD5800CA349B /* icon_19.png */,
+				273185073075CD5800CA349B /* icon_38.png */,
+				273185083075CD5800CA349B /* icon_48.png */,
+				273185093075CD5800CA349B /* icon_128.png */,
+			);
+			name = "Web Extension";
+			path = ../dist/safari;
+			sourceTree = SOURCE_ROOT;
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		273184863075CD5600CA349B /* SVG Navigator */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 273184B03075CD5700CA349B /* Build configuration list for PBXNativeTarget "SVG Navigator" */;
+			buildPhases = (
+				273184833075CD5600CA349B /* Sources */,
+				273184843075CD5600CA349B /* Frameworks */,
+				273184853075CD5600CA349B /* Resources */,
+				273184AF3075CD5700CA349B /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				273184A53075CD5700CA349B /* PBXTargetDependency */,
+			);
+			name = "SVG Navigator";
+			productName = "SVG Navigator";
+			productReference = 273184873075CD5600CA349B /* SVG Navigator.app */;
+			productType = "com.apple.product-type.application";
+		};
+		273184A13075CD5700CA349B /* SVG Navigator Extension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 273184AC3075CD5700CA349B /* Build configuration list for PBXNativeTarget "SVG Navigator Extension" */;
+			buildPhases = (
+				2731849E3075CD5700CA349B /* Sources */,
+				2731849F3075CD5700CA349B /* Frameworks */,
+				273184A03075CD5700CA349B /* Resources */,
+			);
+			buildRules = (
+			);
+			name = "SVG Navigator Extension";
+			productName = "SVG Navigator Extension";
+			productReference = 273184A23075CD5700CA349B /* SVG Navigator Extension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		2731847F3075CD5600CA349B /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2700;
+				LastUpgradeCheck = 2700;
+				TargetAttributes = {
+					273184863075CD5600CA349B = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					273184A13075CD5700CA349B = {
+						CreatedOnToolsVersion = 27.0;
+					};
+				};
+			};
+			buildConfigurationList = 273184823075CD5600CA349B /* Build configuration list for PBXProject "SVG Navigator" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 2731847E3075CD5600CA349B;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 273184883075CD5600CA349B /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				273184863075CD5600CA349B /* SVG Navigator */,
+				273184A13075CD5700CA349B /* SVG Navigator Extension */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		273184853075CD5600CA349B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+				273184913075CD5600CA349B /* Icon.png in Resources */,
+				2731849A3075CD5600CA349B /* Main.storyboard in Resources */,
+				273184953075CD5600CA349B /* Script.js in Resources */,
+				2731848F3075CD5600CA349B /* Main.html in Resources */,
+				2731849C3075CD5700CA349B /* Assets.xcassets in Resources */,
+				273184933075CD5600CA349B /* Style.css in Resources */,
+			);
+		};
+		273184A03075CD5700CA349B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+				273185103075CD5800CA349B /* css in Resources */,
+				273185113075CD5800CA349B /* js in Resources */,
+				273185123075CD5800CA349B /* options in Resources */,
+				273185133075CD5800CA349B /* shared in Resources */,
+				273185143075CD5800CA349B /* manifest.json in Resources */,
+				273185153075CD5800CA349B /* icon_16.png in Resources */,
+				273185163075CD5800CA349B /* icon_19.png in Resources */,
+				273185173075CD5800CA349B /* icon_38.png in Resources */,
+				273185183075CD5800CA349B /* icon_48.png in Resources */,
+				273185193075CD5800CA349B /* icon_128.png in Resources */,
+			);
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		273184833075CD5600CA349B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				273184973075CD5600CA349B /* ViewController.swift in Sources */,
+				2731848B3075CD5600CA349B /* AppDelegate.swift in Sources */,
+			);
+		};
+		2731849E3075CD5700CA349B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				273184A83075CD5700CA349B /* SafariWebExtensionHandler.swift in Sources */,
+			);
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		273184A53075CD5700CA349B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 273184A13075CD5700CA349B /* SVG Navigator Extension */;
+			targetProxy = 273184A43075CD5700CA349B /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		2731848D3075CD5600CA349B /* Main.html */ = {
+			isa = PBXVariantGroup;
+			children = (
+				2731848E3075CD5600CA349B /* Base */,
+			);
+			name = Main.html;
+			sourceTree = "<group>";
+		};
+		273184983075CD5600CA349B /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				273184993075CD5600CA349B /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		273184AA3075CD5700CA349B /* Debug configuration for PBXProject "SVG Navigator" */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273184D13075CD5800CA349B /* Version.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEVELOPMENT_TEAM = 2QYZ88DN8A;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		273184AB3075CD5700CA349B /* Release configuration for PBXProject "SVG Navigator" */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 273184D13075CD5800CA349B /* Version.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEVELOPMENT_TEAM = 2QYZ88DN8A;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		273184AD3075CD5700CA349B /* Debug configuration for PBXNativeTarget "SVG Navigator Extension" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "SVG Navigator Extension/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "SVG Navigator Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © Peter Ryszkiewicz";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.prizzventuresllc.SVGNavigator.Extension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		273184AE3075CD5700CA349B /* Release configuration for PBXNativeTarget "SVG Navigator Extension" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "SVG Navigator Extension/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "SVG Navigator Extension";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © Peter Ryszkiewicz";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.prizzventuresllc.SVGNavigator.Extension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		273184B13075CD5700CA349B /* Debug configuration for PBXNativeTarget "SVG Navigator" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "SVG Navigator/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "SVG Navigator";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © Peter Ryszkiewicz";
+				INFOPLIST_KEY_NSMainStoryboardFile = Main;
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				INFOPLIST_KEY_NSViewGestureRecognizerIsExclusive = NO;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+					"-framework",
+					WebKit,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.prizzventuresllc.SVGNavigator;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		273184B23075CD5700CA349B /* Release configuration for PBXNativeTarget "SVG Navigator" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "SVG Navigator/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "SVG Navigator";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © Peter Ryszkiewicz";
+				INFOPLIST_KEY_NSMainStoryboardFile = Main;
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				INFOPLIST_KEY_NSViewGestureRecognizerIsExclusive = NO;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+					"-framework",
+					WebKit,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.prizzventuresllc.SVGNavigator;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		273184823075CD5600CA349B /* Build configuration list for PBXProject "SVG Navigator" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				273184AA3075CD5700CA349B /* Debug configuration for PBXProject "SVG Navigator" */,
+				273184AB3075CD5700CA349B /* Release configuration for PBXProject "SVG Navigator" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		273184AC3075CD5700CA349B /* Build configuration list for PBXNativeTarget "SVG Navigator Extension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				273184AD3075CD5700CA349B /* Debug configuration for PBXNativeTarget "SVG Navigator Extension" */,
+				273184AE3075CD5700CA349B /* Release configuration for PBXNativeTarget "SVG Navigator Extension" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		273184B03075CD5700CA349B /* Build configuration list for PBXNativeTarget "SVG Navigator" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				273184B13075CD5700CA349B /* Debug configuration for PBXNativeTarget "SVG Navigator" */,
+				273184B23075CD5700CA349B /* Release configuration for PBXNativeTarget "SVG Navigator" */,
+			);
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 2731847F3075CD5600CA349B /* Project object */;
+	validationLevel = 1;
+}
