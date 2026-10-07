@@ -15,6 +15,7 @@ import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import type { Browser, Page } from 'puppeteer';
 import type { Settings } from '../src/shared/settings.ts';
+import { fillTemplate } from './fillTemplate.ts';
 import {
     evaluateInExtension,
     getViewBox,
@@ -174,87 +175,21 @@ async function capturePopup(browser: Browser, extensionOrigin: string): Promise<
 
 const dataUrl = (png: Uint8Array): string => `data:image/png;base64,${Buffer.from(png).toString('base64')}`;
 
-const ICONS = {
-    sidebar: '<svg viewBox="0 0 20 16"><rect x="1" y="1" width="18" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M7 1v14" stroke="currentColor" stroke-width="1.6"/></svg>',
-    back: '<svg viewBox="0 0 12 18"><path d="M9 2 2 9l7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-    forward: '<svg viewBox="0 0 12 18"><path d="m3 2 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-    share: '<svg viewBox="0 0 16 20"><path d="M8 1v12M4 5l4-4 4 4M5 8H2v11h12V8h-3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-    plus: '<svg viewBox="0 0 16 16"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
-    tabs: '<svg viewBox="0 0 18 18"><rect x="1" y="4" width="13" height="13" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M4 1h10a3 3 0 0 1 3 3v10" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
-};
-
 /** Lays out the caption and a Safari-style window around the captured page. */
-function composeHtml(scene: Scene, page: string, toolbarIcon: string, maybePopup: string | undefined): string {
-    const popup = maybePopup === undefined ? '' : `<div class="popover"><div class="arrow"></div><img src="${maybePopup}"></div>`;
-    return `<!doctype html><html><head><style>
-        * { box-sizing: border-box; margin: 0; }
-        body {
-            width: ${CANVAS.width}px; height: ${CANVAS.height}px; overflow: hidden;
-            font-family: -apple-system, system-ui, sans-serif; color: #1d1d1f;
-            background: linear-gradient(160deg, #f5f7fb 0%, #dde5f0 100%);
-            display: flex; flex-direction: column; align-items: center;
-        }
-        h1 { margin-top: 44px; font-size: 46px; font-weight: 700; letter-spacing: -0.02em; }
-        p.subtitle { margin-top: 10px; font-size: 22px; color: #515154; }
-        .window {
-            position: relative; margin-top: 34px; width: ${VIEWPORT.width}px; border-radius: 12px; overflow: hidden;
-            background: #fff; box-shadow: 0 0 0 0.5px rgba(0,0,0,0.25), 0 24px 60px rgba(30,45,70,0.28);
-        }
-        .toolbar {
-            height: 52px; display: flex; align-items: center; gap: 18px; padding: 0 18px;
-            background: #f6f6f6; border-bottom: 1px solid #d9d9d9; color: #6e6e73;
-        }
-        .lights { display: flex; gap: 8px; margin-right: 6px; }
-        .lights span { width: 12px; height: 12px; border-radius: 50%; }
-        .icon { display: block; height: 16px; }
-        .icon svg { height: 100%; display: block; }
-        .address {
-            flex: 1; margin: 0 40px; height: 32px; border-radius: 8px; background: #e8e8ea;
-            display: flex; align-items: center; justify-content: center; font-size: 14px; color: #3a3a3c;
-        }
-        /* The 38px icon at 2x, so it is never resampled. */
-        .extension { width: 19px; height: 19px; }
-        .page { display: block; width: ${VIEWPORT.width}px; height: ${VIEWPORT.height}px; }
-        .popover {
-            position: absolute; top: 60px; border-radius: 10px; background: #fff;
-            box-shadow: 0 0 0 0.5px rgba(0,0,0,0.2), 0 16px 40px rgba(0,0,0,0.25);
-        }
-        .popover img { display: block; width: 420px; border-radius: 10px; }
-        .arrow {
-            position: absolute; top: -7px; width: 14px; height: 14px; background: #fff;
-            transform: rotate(45deg); box-shadow: -0.5px -0.5px 0 0 rgba(0,0,0,0.2);
-        }
-    </style></head><body>
-        <h1>${scene.title}</h1>
-        <p class="subtitle">${scene.subtitle}</p>
-        <div class="window">
-            <div class="toolbar">
-                <div class="lights"><span style="background:#ff5f57"></span><span style="background:#febc2e"></span><span style="background:#28c840"></span></div>
-                <span class="icon">${ICONS.sidebar}</span>
-                <span class="icon">${ICONS.back}</span>
-                <span class="icon">${ICONS.forward}</span>
-                <div class="address">${DISPLAYED_HOST}</div>
-                <img class="extension" src="${toolbarIcon}">
-                <span class="icon">${ICONS.share}</span>
-                <span class="icon">${ICONS.plus}</span>
-                <span class="icon">${ICONS.tabs}</span>
-            </div>
-            <img class="page" src="${page}">
-            ${popup}
-        </div>
-        <script>
-            // Center the popover under the extension's toolbar icon, keeping it inside the window.
-            const popover = document.querySelector('.popover');
-            if (popover) {
-                const windowRect = document.querySelector('.window').getBoundingClientRect();
-                const icon = document.querySelector('.extension').getBoundingClientRect();
-                const iconCenter = icon.left + icon.width / 2 - windowRect.left;
-                const left = Math.min(iconCenter - popover.offsetWidth / 2, windowRect.width - popover.offsetWidth - 8);
-                popover.style.left = left + 'px';
-                popover.querySelector('.arrow').style.left = (iconCenter - left - 7) + 'px';
-            }
-        </script>
-    </body></html>`;
+function composeHtml(frame: string, scene: Scene, page: string, toolbarIcon: string, maybePopup: string | undefined): string {
+    return fillTemplate(frame, {
+        canvasWidth: String(CANVAS.width),
+        canvasHeight: String(CANVAS.height),
+        viewportWidth: String(VIEWPORT.width),
+        viewportHeight: String(VIEWPORT.height),
+        title: scene.title,
+        subtitle: scene.subtitle,
+        displayedHost: DISPLAYED_HOST,
+        toolbarIcon,
+        page,
+        // The frame hides its popover when this is empty.
+        popup: maybePopup ?? '',
+    });
 }
 
 async function compose(browser: Browser, html: string): Promise<Uint8Array> {
@@ -272,13 +207,14 @@ async function main(): Promise<void> {
     const server = await startFixtureServer(fileURLToPath(new URL('examples/', repoRoot)));
     const { browser, extensionOrigin } = await launchWithExtension('chrome', DETERMINISTIC_RENDERING_ARGS);
     try {
+        const frame = await readFile(new URL('scripts/appStoreScreenshotFrame.html', repoRoot), 'utf8');
         const toolbarIcon = dataUrl(await readFile(new URL('src/icon_38.png', repoRoot)));
         await rm(outputDir, { recursive: true, force: true });
         await mkdir(outputDir, { recursive: true });
         for (const scene of SCENES) {
             const page = dataUrl(await captureScene(browser, extensionOrigin, server.origin, scene));
             const maybePopup = scene.withPopup ? dataUrl(await capturePopup(browser, extensionOrigin)) : undefined;
-            const png = await compose(browser, composeHtml(scene, page, toolbarIcon, maybePopup));
+            const png = await compose(browser, composeHtml(frame, scene, page, toolbarIcon, maybePopup));
             await writeFile(new URL(scene.fileName, outputDir), png);
             console.log(`Wrote store/app-store/screenshots/${scene.fileName}`);
         }
