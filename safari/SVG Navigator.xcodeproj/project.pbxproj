@@ -508,6 +508,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "SVG Navigator/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "SVG Navigator";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © Peter Ryszkiewicz";
 				INFOPLIST_KEY_NSMainStoryboardFile = Main;
@@ -548,6 +549,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "SVG Navigator/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "SVG Navigator";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © Peter Ryszkiewicz";
 				INFOPLIST_KEY_NSMainStoryboardFile = Main;
