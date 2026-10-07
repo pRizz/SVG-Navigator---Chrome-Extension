@@ -117,6 +117,41 @@ for (const browserName of BROWSERS) {
             assert.equal(after.height, before.height);
         });
 
+        test('holding Space while moving the mouse pans without zooming', async () => {
+            // Arrange
+            await openSvg();
+            const before = await getViewBox(page);
+            await page.mouse.move(400, 300);
+
+            // Act
+            await page.keyboard.down(' '); // Firefox's BiDi driver has no 'Space' key name
+            await page.mouse.move(300, 250, { steps: 5 });
+            await page.keyboard.up(' ');
+
+            // Assert
+            const after = await waitForViewBoxChange(page, before);
+            assert.ok(after.x > before.x, 'moving left should move the view right');
+            assert.ok(after.y > before.y, 'moving up should move the view down');
+            assert.equal(after.width, before.width);
+        });
+
+        test('dragging in Zoom box mode zooms in to the dragged area', async () => {
+            // Arrange
+            await evaluateInExtension(launched(), extensionOrigin, () => chrome.storage.sync.set({ clickAndDragBehavior: 'zoomBox' }));
+            await openSvg();
+            const before = await getViewBox(page);
+
+            // Act
+            await page.mouse.move(200, 150);
+            await page.mouse.down();
+            await page.mouse.move(400, 300, { steps: 5 });
+            await page.mouse.up();
+
+            // Assert
+            const after = await waitForViewBoxChange(page, before);
+            assert.ok(after.width < before.width, `width ${after.width} should be < ${before.width}`);
+        });
+
         test('pressing Escape restores the original view', async () => {
             // Arrange
             await openSvg();

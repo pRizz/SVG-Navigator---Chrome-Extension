@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import {
     fitToAspectRatio,
     formatViewBox,
-    parseViewBox,
+    maybeParseViewBox,
+    panViewBox,
+    rectFromCorners,
     wheelZoomFactor,
     zoomAroundCenter,
     zoomAroundPoint,
@@ -11,29 +13,60 @@ import {
 
 const FULL_SENSITIVITY = { sensitivity: 10, maxSensitivity: 10, invert: false };
 
-describe('parseViewBox', () => {
+describe('maybeParseViewBox', () => {
     test('parses space-separated numbers', () => {
         // Act
-        const viewBox = parseViewBox('-10 20.5 300 400');
+        const maybeViewBox = maybeParseViewBox('-10 20.5 300 400');
 
         // Assert
-        assert.deepEqual(viewBox, { x: -10, y: 20.5, width: 300, height: 400 });
+        assert.deepEqual(maybeViewBox, { x: -10, y: 20.5, width: 300, height: 400 });
     });
 
     test('accepts commas and mixed whitespace as separators', () => {
         // Act
-        const viewBox = parseViewBox(' 0,0\t100 ,\n50 ');
+        const maybeViewBox = maybeParseViewBox(' 0,0\t100 ,\n50 ');
 
         // Assert
-        assert.deepEqual(viewBox, { x: 0, y: 0, width: 100, height: 50 });
+        assert.deepEqual(maybeViewBox, { x: 0, y: 0, width: 100, height: 50 });
     });
 
-    test('returns NaN for missing numbers', () => {
+    test('rejects an empty attribute', () => {
+        assert.equal(maybeParseViewBox(''), null);
+    });
+
+    test('rejects the wrong number of values', () => {
+        assert.equal(maybeParseViewBox('0 0 100 100 5'), null);
+    });
+
+    test('rejects a non-numeric value', () => {
+        assert.equal(maybeParseViewBox('0 0 wide 100'), null);
+    });
+
+    test('rejects a width or height that is not positive', () => {
+        assert.equal(maybeParseViewBox('0 0 0 100'), null);
+    });
+});
+
+describe('rectFromCorners', () => {
+    test('spans the corners whichever way the drag went', () => {
         // Act
-        const viewBox = parseViewBox('');
+        const rect = rectFromCorners({ x: 30, y: 5 }, { x: 10, y: 25 });
 
         // Assert
-        assert.deepEqual(viewBox, { x: NaN, y: NaN, width: NaN, height: NaN });
+        assert.deepEqual(rect, { x: 10, y: 5, width: 20, height: 20 });
+    });
+});
+
+describe('panViewBox', () => {
+    test('moves the view so the grabbed point returns under the cursor', () => {
+        // Arrange
+        const viewBox = { x: 0, y: 0, width: 100, height: 100 };
+
+        // Act
+        const panned = panViewBox(viewBox, { x: 40, y: 40 }, { x: 50, y: 30 });
+
+        // Assert
+        assert.deepEqual(panned, { x: -10, y: 10, width: 100, height: 100 });
     });
 });
 

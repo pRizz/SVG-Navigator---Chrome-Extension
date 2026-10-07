@@ -42,12 +42,25 @@ import { addToolbar } from './toolbar';
 import {
     fitToAspectRatio,
     formatViewBox,
-    parseViewBox,
+    maybeParseViewBox,
+    panViewBox,
+    rectFromCorners,
     wheelZoomFactor,
     zoomAroundCenter,
     zoomAroundPoint,
+    type Point,
     type ViewBox,
 } from './viewBox';
+
+type PanSource = 'spacebar' | 'mouse';
+
+/** What the user is doing with the pointer: at most one zoom box or pan at a time. */
+type Interaction =
+    | { kind: 'idle' }
+    | { kind: 'zoomBox', start: Point }
+    // The pan key or button is down; the pan anchors at the next mouse move.
+    | { kind: 'panReady', source: PanSource }
+    | { kind: 'panning', source: PanSource, anchor: Point };
 
 // TODO: Reduce the need for globals. They are assigned in main() before any
 // listener that reads them is attached.
@@ -61,36 +74,18 @@ let svgDocElement: SVGSVGElement;
 let htmlDoc: Document;
 let origSVGWidth: number;
 let origSVGHeight: number;
-let originalViewBoxText: string | null;
+// the view that Escape, Ctrl+0, and Reset return to
+let originalViewBox: ViewBox;
 let viewBox: ViewBox;
 
-// global variables for zooming
-let zoomAction = false;
-let zoomX1 = 0;
-let zoomY1 = 0;
-let zoomX2 = 0;
-let zoomY2 = 0;
-let zoomWidth = 0;
-let zoomHeight = 0;
+let interaction: Interaction = { kind: 'idle' };
 let zoomRectangle: SVGRectElement;
-
-// global variables for panning
-let panStart_Spacebar = true; // TODO try to not need these separate variables
-let panAction_Spacebar = false; // TODO try to not need these separate variables
-let panStart_Mouse = true; // TODO try to not need these separate variables
-let panAction_Mouse = false; // TODO try to not need these separate variables
-let panViewBoxX = 0;
-let panViewBoxY = 0;
-let panOldX = 0;
-let panOldY = 0;
-let panNewX = 0;
-let panNewY = 0;
 
 // current settings; replaced from storage in main() and kept live by onSettingsChanged
 let settings: Settings = { ...DEFAULT_SETTINGS };
 
 // for debugging
-let debugTextElement: HTMLDivElement | null = null;
+let maybeDebugTextElement: HTMLDivElement | null = null;
 const debugChildren: HTMLDivElement[] = [];
 let debugMouseEvent: Pick<MouseEvent, 'clientX' | 'clientY'> = {
     clientX: 0,
@@ -102,7 +97,7 @@ main().catch((error: unknown) => {
 });
 
 async function main(): Promise<void> {
-    const maybeSvgRoot = getStandaloneSvgRoot();
+    const maybeSvgRoot = maybeGetStandaloneSvgRoot();
     if(!maybeSvgRoot) { return; }
 
     // wrap the svg document in an html document
@@ -159,20 +154,18 @@ async function main(): Promise<void> {
     svgDocument.setAttribute('width', '100%');
     svgDocument.setAttribute('height', '100%');
 
-    originalViewBoxText = svgDocument.getAttribute('viewBox');
-    // check if the svg document had a viewbox
-    if(originalViewBoxText === null) {
-        console.warn('SVG Navigator: warning: SVG had no viewbox attribute. Making new viewbox attribute.');
-        // preferably, we want to set the viewbox as the bounding box values of the SVG from getBBox();
-        // unfortunatley, chrome's getBBox() is bugged for some SVG documents, ex: http://upload.wikimedia.org/wikipedia/commons/d/dc/USA_orthographic.svg
-        // so we make the viewbox at 0,0 with width and height of client browser
-        svgDocument.setAttribute('viewBox', formatViewBox({ x: 0, y: 0, width: origSVGWidth, height: origSVGHeight }));
+    const maybeAuthoredViewBox = maybeParseViewBox(svgDocument.getAttribute('viewBox') ?? '');
+    if(!maybeAuthoredViewBox) {
+        console.warn('SVG Navigator: warning: SVG had no usable viewBox attribute. Making one from its size.');
     }
-
-    fillViewBoxToScreen();
-    originalViewBoxText = svgDocument.getAttribute('viewBox');
-    // this variable should always be up to date and set the real viewbox when it changes
-    viewBox = parseOrGetViewBox();
+    // preferably, a missing viewbox would be the bounding box of the SVG from getBBox();
+    // unfortunatley, chrome's getBBox() is bugged for some SVG documents, ex: http://upload.wikimedia.org/wikipedia/commons/d/dc/USA_orthographic.svg
+    // so the viewbox starts at 0,0 with the SVG's width and height
+    const authoredViewBox = maybeAuthoredViewBox ?? { x: 0, y: 0, width: origSVGWidth, height: origSVGHeight };
+    // match the window's aspect ratio, so the whole drawing shows, centered
+    originalViewBox = fitToAspectRatio(authoredViewBox, getWidth()/getHeight());
+    viewBox = originalViewBox;
+    svgDocument.setAttribute('viewBox', formatViewBox(viewBox));
 
     settings = await loadSettingsOrDefaults();
     addEventListeners();
@@ -254,9 +247,9 @@ function applyBackgroundColor(): void {
 
 function addEventListeners(): void {
     // event listeners
-    document.addEventListener('keydown', panBegin, false); // spacebar panning
-    document.addEventListener('mousemove', panMove, false); // spacebar panning
-    document.addEventListener('keyup', panEnd, false); // spacebar panning
+    document.addEventListener('keydown', spacebarPanBegin, false);
+    document.addEventListener('mousemove', panMove, false); // spacebar and mouse panning
+    document.addEventListener('keyup', spacebarPanEnd, false);
     document.addEventListener('keyup', zoomOut, false); // alt key zoom out
     document.addEventListener('keyup', zoomOriginal, false); // escape key zoom out
     document.addEventListener('keyup', zoomCtrlKeys, false); // ctrl key zoom in/out
@@ -265,9 +258,8 @@ function addEventListeners(): void {
         svgDocument.addEventListener('mousemove', zoomMouseMove, false); // zoom box
         svgDocument.addEventListener('mouseup', zoomMouseUp, false); // zoom box
     } else {
-        svgDocument.addEventListener('mousedown', panBegin2, false); // mouse panning
-        document.addEventListener('mousemove', panMove2, false); // mouse panning
-        document.addEventListener('mouseup', panEnd2, false); // mouse panning
+        svgDocument.addEventListener('mousedown', () => panBegin('mouse'), false);
+        document.addEventListener('mouseup', () => panEnd('mouse'), false);
     }
 
     svgDocument.addEventListener('wheel', doScroll, { passive: false }); // Standard event for all modern browsers
@@ -291,14 +283,12 @@ function clientToSvgPoint(clientX: number, clientY: number, element: SVGGraphics
 // press escape to zoom out
 function zoomMouseDown(evt: MouseEvent): void {
     // only a plain click (no ctrl or shift) outside a pan starts a zoom box
-    if(panAction_Spacebar || panAction_Mouse || evt.ctrlKey || evt.shiftKey) { return; }
+    if(isPanning() || evt.ctrlKey || evt.shiftKey) { return; }
 
-    zoomAction = true;
-    const p = clientToSvgPoint(evt.clientX, evt.clientY, zoomRectangle);
-    zoomRectangle.setAttribute('x', String(p.x));
-    zoomRectangle.setAttribute('y', String(p.y));
-    zoomX1 = p.x;
-    zoomY1 = p.y;
+    const start = clientToSvgPoint(evt.clientX, evt.clientY, zoomRectangle);
+    interaction = { kind: 'zoomBox', start };
+    zoomRectangle.setAttribute('x', String(start.x));
+    zoomRectangle.setAttribute('y', String(start.y));
 
     // one screen pixel in viewBox units, as the browser displays the viewBox
     const relativeStrokeWidth = fitToAspectRatio(viewBox, getWidth()/getHeight()).width/getWidth();
@@ -308,19 +298,13 @@ function zoomMouseDown(evt: MouseEvent): void {
 
 // blue zoombox drawn as mouse is moved across screen
 function zoomMouseMove(evt: MouseEvent): void {
-    if(!zoomAction) { return; }
+    if(interaction.kind !== 'zoomBox') { return; }
 
-    const p = clientToSvgPoint(evt.clientX, evt.clientY, zoomRectangle);
-    zoomX2 = p.x;
-    zoomY2 = p.y;
-    zoomWidth = Math.abs(zoomX2 - zoomX1);
-    zoomHeight = Math.abs(zoomY2 - zoomY1);
-
-    // set top left corner point of zoom rectangle
-    zoomRectangle.setAttribute('x', String(Math.min(zoomX1, zoomX2)));
-    zoomRectangle.setAttribute('y', String(Math.min(zoomY1, zoomY2)));
-    zoomRectangle.setAttribute('width', String(zoomWidth));
-    zoomRectangle.setAttribute('height', String(zoomHeight));
+    const rect = rectFromCorners(interaction.start, clientToSvgPoint(evt.clientX, evt.clientY, zoomRectangle));
+    zoomRectangle.setAttribute('x', String(rect.x));
+    zoomRectangle.setAttribute('y', String(rect.y));
+    zoomRectangle.setAttribute('width', String(rect.width));
+    zoomRectangle.setAttribute('height', String(rect.height));
 }
 
 function getNumericAttribute(element: Element, name: string): number {
@@ -330,7 +314,8 @@ function getNumericAttribute(element: Element, name: string): number {
 // function that completes zoombox, then zooms view to zoombox
 function zoomMouseUp(): void {
     // the viewbox width and height is changed when the button is up
-    if(zoomAction) {
+    if(interaction.kind === 'zoomBox') {
+        interaction = { kind: 'idle' };
         const zoomRect = {
             x: getNumericAttribute(zoomRectangle, 'x'),
             y: getNumericAttribute(zoomRectangle, 'y'),
@@ -344,17 +329,17 @@ function zoomMouseUp(): void {
         }
     }
 
-    // reset zoom rectangle members
-    zoomX1 = 0;
-    zoomY1 = 0;
+    // hide the zoom rectangle
     zoomRectangle.setAttribute('width', '0');
     zoomRectangle.setAttribute('height', '0');
-
-    zoomAction = false;
 }
 
 function isZoomingOrPanning(): boolean {
-    return zoomAction || panAction_Spacebar || panAction_Mouse;
+    return interaction.kind !== 'idle';
+}
+
+function isPanning(): boolean {
+    return interaction.kind === 'panReady' || interaction.kind === 'panning';
 }
 
 // KeyboardEvent.keyCode is deprecated but is what these key bindings were written against.
@@ -389,7 +374,7 @@ function zoomOriginal(evt: KeyboardEvent | true): void {
 }
 
 function resetViewBox(): void {
-    viewBox = parseOrGetViewBox(originalViewBoxText);
+    viewBox = originalViewBox;
     setViewBox();
 }
 
@@ -407,89 +392,43 @@ function zoomCtrlKeys(evt: KeyboardEvent): void {
     }
 }
 
-function panBegin(evt: KeyboardEvent): void {
-    if(!panAction_Mouse && !zoomAction && evt.type === 'keydown') {
-        // spacebar
-        if (keyCodeOf(evt) === 32 && panStart_Spacebar) {
-            panStart_Spacebar = true;
-            panAction_Spacebar = true;
-            svgDocument.style.cursor='move';
-        }
+function spacebarPanBegin(evt: KeyboardEvent): void {
+    if(evt.type === 'keydown' && keyCodeOf(evt) === 32) {
+        panBegin('spacebar');
     }
 }
 
-// pan with mouse down
-function panBegin2(): void {
-    if(!panAction_Spacebar && !zoomAction) {
-        panStart_Mouse = true;
-        panAction_Mouse = true;
-        svgDocument.style.cursor='move';
+function spacebarPanEnd(evt: KeyboardEvent): void {
+    if(evt.type === 'keyup' && keyCodeOf(evt) === 32) {
+        panEnd('spacebar');
     }
 }
 
+// a pan starts only when nothing else is going on; held-key repeats are ignored
+function panBegin(source: PanSource): void {
+    if(interaction.kind !== 'idle') { return; }
+    interaction = { kind: 'panReady', source };
+    svgDocument.style.cursor = 'move';
+}
 
+// the first move anchors the point under the cursor; later moves keep it there
 function panMove(evt: MouseEvent): void {
-    if(panStart_Spacebar && panAction_Spacebar) {
-        panAction_Spacebar = true;
-        panStart_Spacebar = false;
-        startPan(evt);
+    if(interaction.kind === 'panReady') {
+        const anchor = clientToSvgPoint(evt.clientX, evt.clientY, svgDocument);
+        interaction = { kind: 'panning', source: interaction.source, anchor };
+        return;
     }
-    if(panAction_Spacebar && !panStart_Spacebar) {
-        continuePan(evt);
-    }
-}
+    if(interaction.kind !== 'panning') { return; }
 
-// pan with mouse down
-function panMove2(evt: MouseEvent): void {
-    if(panStart_Mouse && panAction_Mouse) {
-        panAction_Mouse = true;
-        panStart_Mouse = false;
-        startPan(evt);
-    }
-    if(panAction_Mouse && !panStart_Mouse) {
-        continuePan(evt);
-    }
-}
-
-function startPan(evt: MouseEvent): void {
-    const p = clientToSvgPoint(evt.clientX, evt.clientY, svgDocument);
-
-    panOldX = p.x;
-    panOldY = p.y;
-
-    panViewBoxX = viewBox.x;
-    panViewBoxY = viewBox.y;
-}
-
-function continuePan(evt: MouseEvent): void {
-    const p = clientToSvgPoint(evt.clientX, evt.clientY, svgDocument);
-
-    panNewX = p.x;
-    panNewY = p.y;
-
-    panViewBoxX = viewBox.x;
-    panViewBoxY = viewBox.y;
-
-    viewBox.x = panViewBoxX - (panNewX - panOldX);
-    viewBox.y = panViewBoxY - (panNewY - panOldY);
+    viewBox = panViewBox(viewBox, interaction.anchor, clientToSvgPoint(evt.clientX, evt.clientY, svgDocument));
     setViewBox();
 }
 
-
-function panEnd(evt: KeyboardEvent): void {
-    // spacebar
-    if(evt.type === 'keyup' && keyCodeOf(evt) === 32) {
-        svgDocument.style.cursor = 'default';
-        panStart_Spacebar = true;
-        panAction_Spacebar = false;
-    }
-}
-
-// pan with mouse down
-function panEnd2(): void {
+function panEnd(source: PanSource): void {
+    if(interaction.kind !== 'panReady' && interaction.kind !== 'panning') { return; }
+    if(interaction.source !== source) { return; }
+    interaction = { kind: 'idle' };
     svgDocument.style.cursor = 'default';
-    panStart_Mouse = true;
-    panAction_Mouse = false;
 }
 
 // implementation for scroll zooming
@@ -526,17 +465,11 @@ function disableSelection(): void {
     document.body.style.cursor = 'default';
 }
 
-// make aspect ratio of new viewbox match the screen aspect ratio; useful later, when adding debug info to corner of screen
-function fillViewBoxToScreen(): void {
-    const filled = fitToAspectRatio(parseOrGetViewBox(), getWidth()/getHeight());
-    svgDocument.setAttribute('viewBox', formatViewBox(filled));
-}
-
 function maybePrintDebugInfo(): void {
     if(!settings.showDebugInfo) {
-        if(debugTextElement) {
-            document.body.removeChild(debugTextElement);
-            debugTextElement = null;
+        if(maybeDebugTextElement) {
+            document.body.removeChild(maybeDebugTextElement);
+            maybeDebugTextElement = null;
         }
         return;
     }
@@ -553,36 +486,31 @@ function maybePrintDebugInfo(): void {
         `SVG Navigator Version: ${getVersion()}`,
         `Built at: ${BUILD_TIMESTAMP}`,
     ];
-    if(!debugTextElement) {
-        debugTextElement = htmlDoc.createElement('div');
+    if(!maybeDebugTextElement) {
+        maybeDebugTextElement = htmlDoc.createElement('div');
         debugChildren.length = 0;
         for(let count = 0; count < lines.length; count++) {
             const child = htmlDoc.createElement('div');
             child.style.padding = '1px 3px';
             debugChildren.push(child);
-            debugTextElement.appendChild(child);
+            maybeDebugTextElement.appendChild(child);
         }
-        debugTextElement.style.position = 'fixed';
-        debugTextElement.style.top = '5px';
-        debugTextElement.style.left = '5px';
-        debugTextElement.style.pointerEvents = 'none';
-        debugTextElement.style.padding = '5px';
-        debugTextElement.style.background = 'rgba(0, 0, 0, 0.8)';
-        debugTextElement.style.border = '1px solid #BBB';
-        debugTextElement.style.borderRadius = '5px';
-        debugTextElement.style.color = 'white';
-        debugTextElement.style.fontFamily = '\'Consolas\', \'Lucida Grande\', sans-serif';
+        maybeDebugTextElement.style.position = 'fixed';
+        maybeDebugTextElement.style.top = '5px';
+        maybeDebugTextElement.style.left = '5px';
+        maybeDebugTextElement.style.pointerEvents = 'none';
+        maybeDebugTextElement.style.padding = '5px';
+        maybeDebugTextElement.style.background = 'rgba(0, 0, 0, 0.8)';
+        maybeDebugTextElement.style.border = '1px solid #BBB';
+        maybeDebugTextElement.style.borderRadius = '5px';
+        maybeDebugTextElement.style.color = 'white';
+        maybeDebugTextElement.style.fontFamily = '\'Consolas\', \'Lucida Grande\', sans-serif';
 
-        document.body.appendChild(debugTextElement); // add to DOM
+        document.body.appendChild(maybeDebugTextElement); // add to DOM
     }
     debugChildren.forEach((child, index) => {
         child.textContent = lines[index] ?? '';
     });
-}
-
-// parses `maybeViewBoxText`, falling back to the svg's current viewBox attribute
-function parseOrGetViewBox(maybeViewBoxText?: string | null): ViewBox {
-    return parseViewBox(maybeViewBoxText || svgDocument.getAttribute('viewBox') || '');
 }
 
 function setViewBox(): void {
@@ -593,7 +521,7 @@ function setViewBox(): void {
 // @since 2.6
 // The navigator takes over standalone SVG documents, whatever their URL (extension or
 // none), and never HTML pages with inline SVG.
-function getStandaloneSvgRoot(): SVGSVGElement | null {
+function maybeGetStandaloneSvgRoot(): SVGSVGElement | null {
     const root = document.documentElement;
     return root instanceof SVGSVGElement ? root : null;
 }

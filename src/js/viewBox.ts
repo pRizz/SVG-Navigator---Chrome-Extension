@@ -19,12 +19,32 @@ export interface Point {
 const MAX_WHEEL_DELTA = 1200;
 
 /**
- * Parses an SVG `viewBox` attribute, whose numbers may be separated by whitespace
- * and/or a comma. Missing or malformed numbers come back as `NaN`.
+ * Parses an SVG `viewBox` attribute, whose four numbers may be separated by
+ * whitespace and/or a comma. Returns `null` for anything a browser would not render
+ * with: the wrong count, a non-number, or a width or height that is not positive.
  */
-export function parseViewBox(text: string): ViewBox {
-    const [x = NaN, y = NaN, width = NaN, height = NaN] = text.trim().split(/[\s,]+/).map(parseFloat);
-    return { x, y, width, height };
+export function maybeParseViewBox(text: string): ViewBox | null {
+    const [x = NaN, y = NaN, width = NaN, height = NaN, ...extra] = text.trim().split(/[\s,]+/).map(parseFloat);
+    const isUsable = extra.length === 0 && [x, y, width, height].every(Number.isFinite) && width > 0 && height > 0;
+    return isUsable ? { x, y, width, height } : null;
+}
+
+/** The axis-aligned rectangle spanned by two opposite corners. */
+export function rectFromCorners(a: Point, b: Point): ViewBox {
+    return {
+        x: Math.min(a.x, b.x),
+        y: Math.min(a.y, b.y),
+        width: Math.abs(b.x - a.x),
+        height: Math.abs(b.y - a.y),
+    };
+}
+
+/**
+ * Moves `viewBox` so the user-space point `anchor`, grabbed when the pan began,
+ * lies under the cursor again; `cursor` is where the cursor points in user space now.
+ */
+export function panViewBox(viewBox: ViewBox, anchor: Point, cursor: Point): ViewBox {
+    return { ...viewBox, x: viewBox.x - (cursor.x - anchor.x), y: viewBox.y - (cursor.y - anchor.y) };
 }
 
 export function formatViewBox({ x, y, width, height }: ViewBox): string {
