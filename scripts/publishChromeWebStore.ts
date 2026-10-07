@@ -2,8 +2,8 @@
  * Uploads a packaged extension to the Chrome Web Store and submits it for review,
  * using the Chrome Web Store API v2 authenticated as a Google service account.
  *
- * Usage: node scripts/publishChromeWebStore.ts <package.zip>
- *        node scripts/publishChromeWebStore.ts --check   (read-only credentials check)
+ * Usage: bun scripts/publishChromeWebStore.ts <package.zip>
+ *        bun scripts/publishChromeWebStore.ts --check   (read-only credentials check)
  *
  * Environment:
  *   CWS_SERVICE_ACCOUNT_KEY  the service account's JSON key (file contents, not a path)
@@ -182,7 +182,7 @@ function requireEnv(name: string): string {
 async function main(): Promise<void> {
     const [packagePathOrFlag] = process.argv.slice(2);
     if (!packagePathOrFlag) {
-        throw new Error('Usage: node scripts/publishChromeWebStore.ts <package.zip> | --check');
+        throw new Error('Usage: bun scripts/publishChromeWebStore.ts <package.zip> | --check');
     }
     const serviceAccountKey = JSON.parse(requireEnv('CWS_SERVICE_ACCOUNT_KEY')) as ServiceAccountKey;
     const item: ItemCredentials = {

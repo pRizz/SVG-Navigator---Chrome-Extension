@@ -1,5 +1,5 @@
 export default {
-    // Bundled dev build from `pnpm build:dev`. Raw `src` can't be loaded directly
+    // Bundled dev build from `bun run build:dev`. Raw `src` can't be loaded directly
     // because its scripts use ES `import`/`export`, which content scripts don't support.
     sourceDir: '.build/firefox',
 

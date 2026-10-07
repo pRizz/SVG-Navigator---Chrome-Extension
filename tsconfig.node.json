@@ -1,6 +1,7 @@
 {
-    // Build/release scripts and tests. Node runs these .ts files directly by
-    // stripping types, so only erasable syntax is allowed and nothing is emitted.
+    // Build/release scripts and tests. Bun runs these .ts files directly; only
+    // erasable syntax is allowed (so Node's type stripping could run them too) and
+    // nothing is emitted. They use Node APIs, which Bun implements.
     // DOM and chrome types are included because Puppeteer `evaluate` callbacks
     // in the E2E tests run inside pages.
     "compilerOptions": {

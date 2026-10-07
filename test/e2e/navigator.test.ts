@@ -60,7 +60,7 @@ for (const browserName of BROWSERS) {
         });
 
         afterEach(async (t) => {
-            // `passed` exists at runtime (Node >= 20.12) but is missing from @types/node 22.
+            // `passed` exists at runtime (Bun's node:test, Node >= 20.12) but is missing from @types/node 22.
             if (!('passed' in t && t.passed === true)) {
                 await mkdir(screenshotDir, { recursive: true });
                 const name = `${browserName}-${t.name}`.replace(/[^a-z0-9-]+/gi, '_');

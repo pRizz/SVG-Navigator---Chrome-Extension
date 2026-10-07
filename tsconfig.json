@@ -1,6 +1,6 @@
 {
     // Extension code under src/. webextension-toolbox's ts-loader compiles and
-    // type-checks it during `pnpm build:*`; `pnpm typecheck` checks it standalone.
+    // type-checks it during `bun run build:*`; `bun run typecheck` checks it standalone.
     "compilerOptions": {
         "target": "ES2022",
         "module": "ESNext",

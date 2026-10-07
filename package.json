@@ -2,25 +2,26 @@
   "name": "svg-navigator---chrome-extension",
   "version": "1.0.0",
   "type": "module",
+  "packageManager": "bun@1.4.2",
   "description": "SVG Navigator is a browser extension that adds pan and zoom features to existing SVG files on the web.",
   "scripts": {
-    "start:chrome": "pnpm run prebuild && webextension-toolbox dev chrome --src src",
-    "start:firefox": "pnpm run build:dev && web-ext run",
-    "start:safari": "pnpm run prebuild && webextension-toolbox dev safari --src src",
+    "start:chrome": "bun run prebuild && webextension-toolbox dev chrome --src src",
+    "start:firefox": "bun run build:dev && web-ext run",
+    "start:safari": "bun run prebuild && webextension-toolbox dev safari --src src",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.node.json",
-    "prebuild": "node scripts/generateBuildInfo.ts",
-    "postinstall": "pnpm run prebuild",
-    "build:chrome": "pnpm run prebuild && webextension-toolbox build chrome --src src",
-    "build:firefox": "pnpm run prebuild && webextension-toolbox build firefox --src src",
-    "build:safari": "pnpm run prebuild && webextension-toolbox build safari --src src",
-    "build:all": "pnpm run build:chrome && pnpm run build:firefox && pnpm run build:safari",
-    "web-ext:lint": "pnpm run build:dev && web-ext lint",
-    "zip:source": "zip -r svg-navigator-source.zip src scripts eslint.config.mjs tsconfig.json tsconfig.node.json package.json pnpm-lock.yaml README.md web-ext-config.mjs LICENSE.txt -x \"**/node_modules/*\"",
-    "build:dev": "pnpm run prebuild && webextension-toolbox build chrome --src src -t .build/chrome -o dev-chrome && webextension-toolbox build firefox --src src -t .build/firefox -o dev-firefox",
-    "test:e2e": "pnpm run build:dev && node --test 'test/e2e/**/*.test.ts'",
-    "test:unit": "node --test 'test/unit/**/*.test.ts'"
+    "prebuild": "bun scripts/generateBuildInfo.ts",
+    "postinstall": "bun run prebuild",
+    "build:chrome": "bun run prebuild && webextension-toolbox build chrome --src src",
+    "build:firefox": "bun run prebuild && webextension-toolbox build firefox --src src",
+    "build:safari": "bun run prebuild && webextension-toolbox build safari --src src",
+    "build:all": "bun run build:chrome && bun run build:firefox && bun run build:safari",
+    "web-ext:lint": "bun run build:dev && web-ext lint",
+    "zip:source": "zip -r svg-navigator-source.zip src scripts eslint.config.mjs tsconfig.json tsconfig.node.json package.json bun.lock bunfig.toml README.md web-ext-config.mjs LICENSE.txt -x \"**/node_modules/*\"",
+    "build:dev": "bun run prebuild && webextension-toolbox build chrome --src src -t .build/chrome -o dev-chrome && webextension-toolbox build firefox --src src -t .build/firefox -o dev-firefox",
+    "test:e2e": "bun run build:dev && bun test test/e2e",
+    "test:unit": "bun test test/unit"
   },
   "repository": {
     "type": "git",
@@ -49,11 +50,9 @@
     "web-ext": "^8.4.0"
   },
   "engines": {
-    "node": ">=22.18.0"
+    "bun": ">=1.4.0"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "puppeteer"
-    ]
-  }
+  "trustedDependencies": [
+    "puppeteer"
+  ]
 }

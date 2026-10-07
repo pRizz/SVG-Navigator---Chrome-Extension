@@ -61,34 +61,31 @@ Build Instructions
 --------------------------------
 ### Requirements
 - Operating System: Windows, macOS, or Linux
-- Node.js 22.18 or later (runs the TypeScript build scripts and tests directly)
-- npm 9.x or later
-- pnpm 10.x or later (required package manager)
+- [Bun](https://bun.sh) 1.4 or later (package manager and runtime; Node.js is not needed)
 
 ### Installation
-1. Install Node.js and npm from [nodejs.org](https://nodejs.org/)
-2. Install pnpm:
+1. Install Bun (see [bun.sh](https://bun.sh) for other options):
    ```bash
-   npm install -g pnpm
+   curl -fsSL https://bun.sh/install | bash
    ```
-3. Clone the repository:
+2. Clone the repository:
    ```bash
    git clone https://github.com/pRizz/SVG-Navigator---Chrome-Extension.git
    cd SVG-Navigator---Chrome-Extension
    ```
-4. Install dependencies:
+3. Install dependencies:
     ```bash
-    pnpm install
+    bun install
     ```
 
    This also downloads the Chrome and Firefox builds used by the UI tests. To only build the
-   extension, skip that download with `PUPPETEER_SKIP_DOWNLOAD=true pnpm install`.
+   extension, skip that download with `PUPPETEER_SKIP_DOWNLOAD=true bun install`.
 
 ### Building
 
 1. Build the extension:
    ```bash
-   pnpm build:all
+   bun run build:all
    ```
 
 The built extensions will be available in:
@@ -107,21 +104,21 @@ For development with hot-reload:
 
 - Chrome:
   ```bash
-  pnpm start:chrome
+  bun run start:chrome
   ```
 
 - Firefox:
   ```bash
-  pnpm start:firefox
+  bun run start:firefox
   ```
 
 - Safari:
   ```bash
-  pnpm start:safari
+  bun run start:safari
   ```
 
 These commands will build the extension and start a development server that watches for changes.
-For Firefox, `web-ext run` loads the bundled build in `.build/firefox`; run `pnpm build:dev` after
+For Firefox, `web-ext run` loads the bundled build in `.build/firefox`; run `bun run build:dev` after
 editing `src/` and Firefox reloads the extension automatically.
 
 ### Source layout
@@ -133,32 +130,34 @@ The extension is written in TypeScript:
 - `src/shared/settings.ts`: the settings, their defaults, and their storage in `chrome.storage.sync`
 
 `webextension-toolbox` compiles each `.ts` file in `src/` to a `.js` file of the same name.
-Scripts in `scripts/` and the tests run directly on Node, which strips the types.
+Bun runs everything else directly, TypeScript included: the scripts in `scripts/`, the tests
+(`bun test`, which runs the `node:test` suites), and the build tools themselves, because
+`bunfig.toml` makes `bun run` use Bun even for tools whose shebang asks for Node.
 
 ### Type Checking and Linting
 
 ```bash
-pnpm typecheck
-pnpm lint
+bun run typecheck
+bun run lint
 ```
 
-`pnpm typecheck` checks the extension (`tsconfig.json`) and the Node scripts and tests
+`bun run typecheck` checks the extension (`tsconfig.json`) and the scripts and tests
 (`tsconfig.node.json`). The extension build also reports type errors, but its exit code stays 0,
-so run `pnpm typecheck` to catch them.
+so run `bun run typecheck` to catch them.
 
 ### UI Tests
 
 End-to-end tests load the built extension into headless Chrome and Firefox (via
-[Puppeteer](https://pptr.dev)) and drive it with real mouse and keyboard input. `pnpm install`
+[Puppeteer](https://pptr.dev)) and drive it with real mouse and keyboard input. `bun install`
 downloads both test browsers.
 
 ```bash
-pnpm test:e2e
+bun run test:e2e
 ```
 
-- Run one browser only: `E2E_BROWSERS=firefox pnpm test:e2e`
+- Run one browser only: `E2E_BROWSERS=firefox bun run test:e2e`
 - Test a specific unpacked build, e.g. a release package before uploading it:
-  `E2E_CHROME_EXT=path/to/unzipped-chrome E2E_FIREFOX_EXT=path/to/unzipped-xpi node --test 'test/e2e/**/*.test.ts'`
+  `E2E_CHROME_EXT=path/to/unzipped-chrome E2E_FIREFOX_EXT=path/to/unzipped-xpi bun test test/e2e`
   (versions up to 2.11 predate the readiness marker the tests wait for, so they always time out)
 - Screenshots of failing tests are saved to `test-results/e2e-screenshots/`
 
@@ -199,6 +198,6 @@ With the [GitHub CLI](https://cli.github.com), for example:
 gh secret set CWS_SERVICE_ACCOUNT_KEY < path/to/service-account-key.json
 ```
 
-Firefox requires source code for bundled add-ons, so the workflow uploads `pnpm zip:source`'s
+Firefox requires source code for bundled add-ons, so the workflow uploads `bun run zip:source`'s
 archive with each version. Reviewers can rebuild with
-`PUPPETEER_SKIP_DOWNLOAD=true pnpm install && pnpm build:firefox` (output in `dist/firefox`).
+`PUPPETEER_SKIP_DOWNLOAD=true bun install && bun run build:firefox` (output in `dist/firefox`).

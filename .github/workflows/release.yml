@@ -34,22 +34,15 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Setup pnpm
-      uses: pnpm/action-setup@v4
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
       with:
-        version: 10
-        run_install: false
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22'
-        cache: 'pnpm'
+        bun-version-file: package.json
 
     - name: Read and check version
       id: version
       run: |
-        version=$(node -p "require('./src/manifest.json').version")
+        version=$(bun -p "require('./src/manifest.json').version")
         echo "version=$version" >> "$GITHUB_OUTPUT"
         if [[ "$GITHUB_REF" == refs/tags/* && "$GITHUB_REF_NAME" != "v$version" ]]; then
           echo "::error::Tag $GITHUB_REF_NAME does not match manifest version $version (expected v$version)"
@@ -60,19 +53,19 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.cache/puppeteer
-        key: puppeteer-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+        key: puppeteer-${{ runner.os }}-${{ hashFiles('bun.lock') }}
 
     - name: Install dependencies
-      run: pnpm install --frozen-lockfile
+      run: bun install --frozen-lockfile
 
     - name: Install test browsers
-      run: pnpm exec puppeteer browsers install chrome && pnpm exec puppeteer browsers install firefox
+      run: bunx --bun puppeteer browsers install chrome && bunx --bun puppeteer browsers install firefox
 
     - name: Type check, lint and unit test
-      run: pnpm typecheck && pnpm lint && pnpm test:unit
+      run: bun run typecheck && bun run lint && bun run test:unit
 
     - name: Build release files
-      run: pnpm build:all && pnpm zip:source
+      run: bun run build:all && bun run zip:source
 
     - name: Collect release files
       run: |
@@ -85,7 +78,7 @@ jobs:
       run: |
         unzip -q release/chrome.zip -d unpacked-chrome
         unzip -q release/firefox.xpi -d unpacked-firefox
-        E2E_CHROME_EXT=unpacked-chrome E2E_FIREFOX_EXT=unpacked-firefox node --test 'test/e2e/**/*.test.ts'
+        E2E_CHROME_EXT=unpacked-chrome E2E_FIREFOX_EXT=unpacked-firefox bun test test/e2e
 
     - name: Upload failure screenshots
       if: failure()
@@ -110,16 +103,16 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
       with:
-        node-version: '22'
+        bun-version-file: package.json
 
     - name: Check Chrome Web Store credentials (read-only)
       env:
         CWS_SERVICE_ACCOUNT_KEY: ${{ secrets.CWS_SERVICE_ACCOUNT_KEY }}
         CWS_PUBLISHER_ID: ${{ secrets.CWS_PUBLISHER_ID }}
-      run: node scripts/publishChromeWebStore.ts --check
+      run: bun scripts/publishChromeWebStore.ts --check
 
   publish-chrome:
     needs: verify
@@ -130,10 +123,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
       with:
-        node-version: '22'
+        bun-version-file: package.json
 
     - name: Download release files
       uses: actions/download-artifact@v4
@@ -145,7 +138,7 @@ jobs:
       env:
         CWS_SERVICE_ACCOUNT_KEY: ${{ secrets.CWS_SERVICE_ACCOUNT_KEY }}
         CWS_PUBLISHER_ID: ${{ secrets.CWS_PUBLISHER_ID }}
-      run: node scripts/publishChromeWebStore.ts release/chrome.zip
+      run: bun scripts/publishChromeWebStore.ts release/chrome.zip
 
   publish-firefox:
     needs: verify
@@ -156,22 +149,15 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Setup pnpm
-      uses: pnpm/action-setup@v4
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
       with:
-        version: 10
-        run_install: false
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22'
-        cache: 'pnpm'
+        bun-version-file: package.json
 
     - name: Install dependencies
       env:
         PUPPETEER_SKIP_DOWNLOAD: 'true'
-      run: pnpm install --frozen-lockfile
+      run: bun install --frozen-lockfile
 
     - name: Download release files
       uses: actions/download-artifact@v4
@@ -188,7 +174,7 @@ jobs:
         WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
       run: |
         unzip -q release/firefox.xpi -d unpacked-firefox
-        pnpm exec web-ext sign \
+        bunx --bun web-ext sign \
           --source-dir unpacked-firefox \
           --channel listed \
           --upload-source-code release/source.zip \

@@ -1,0 +1,8 @@
+[run]
+# Run package binaries (webpack via webextension-toolbox, tsc, eslint, web-ext) on Bun
+# even though their shebangs say `node`.
+bun = true
+
+[test]
+# The browser tests launch real browsers; bun's 5 s per-test default is too tight for CI.
+timeout = 30000
