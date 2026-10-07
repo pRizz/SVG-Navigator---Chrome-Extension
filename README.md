@@ -188,6 +188,8 @@ The extension is written in TypeScript:
 - `src/js/toolbar.ts`: the floating +, -, and Reset toolbar
 - `src/options/`: the toolbar popup with the settings (`index.html`, `options.ts`, `options.css`)
 - `src/shared/settings.ts`: the settings, their defaults, and their storage in `chrome.storage.sync`
+- `src/shared/provenance.ts`: the version, commit, and build time shown in the popup footer; `bun run prebuild`
+  generates them into `src/js/buildInfo.ts`, linking the build time to its CI run when built in GitHub Actions
 
 `webextension-toolbox` compiles each `.ts` file in `src/` to a `.js` file of the same name.
 Bun runs everything else directly, TypeScript included: the scripts in `scripts/`, the tests

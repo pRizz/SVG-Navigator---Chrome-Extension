@@ -29,7 +29,7 @@
  * Contains all the logic for panning, zooming, and other controls.
  */
 
-import { BUILD_TIMESTAMP } from './buildInfo';
+import { BUILD_INFO } from './buildInfo';
 import {
     DEFAULT_SETTINGS,
     SCROLL_SENSITIVITY_RANGE,
@@ -38,6 +38,7 @@ import {
     parseSettings,
     type Settings,
 } from '../shared/settings';
+import { UNAVAILABLE } from '../shared/provenance';
 import { addToolbar } from './toolbar';
 import {
     fitToAspectRatio,
@@ -484,7 +485,8 @@ function maybePrintDebugInfo(): void {
         `Client X: ${debugMouseEvent.clientX}`,
         `Client Y: ${debugMouseEvent.clientY}`,
         `SVG Navigator Version: ${getVersion()}`,
-        `Built at: ${BUILD_TIMESTAMP}`,
+        `Commit: ${BUILD_INFO.maybeCommit ?? UNAVAILABLE}`,
+        `Built at: ${BUILD_INFO.timestamp}`,
     ];
     if(!maybeDebugTextElement) {
         maybeDebugTextElement = htmlDoc.createElement('div');

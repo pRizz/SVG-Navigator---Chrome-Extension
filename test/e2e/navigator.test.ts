@@ -236,6 +236,24 @@ for (const browserName of BROWSERS) {
             assert.deepEqual(pageErrors, []);
         });
 
+        test('options popup footer shows the version, commit, and build time', async () => {
+            // Act
+            await openOptionsPage(page, extensionOrigin);
+
+            // Assert
+            const text = await page.$eval('#versionInfo', (footer) => footer.textContent);
+            assert.match(text, /^Version [\d.]+ · Commit ([0-9a-f]{7}|Unavailable) · Built \d{4}-\d\d-\d\d \d\d:\d\d UTC$/);
+        });
+
+        test('options popup footer links to the source in a new tab', async () => {
+            // Act
+            await openOptionsPage(page, extensionOrigin);
+
+            // Assert
+            const link = await page.$eval('.footer-links a[href^="https://github.com/"]', (anchor) => ({ target: anchor.target, rel: anchor.rel }));
+            assert.deepEqual(link, { target: '_blank', rel: 'noopener noreferrer' });
+        });
+
         test('options popup shows the stored settings', async () => {
             // Arrange
             await evaluateInExtension(launched(), extensionOrigin, () => chrome.storage.sync.set({

@@ -163,7 +163,7 @@ async function capturePopup(browser: Browser, extensionOrigin: string): Promise<
         await preparePage(page, { width: 420, height: 600 });
         await openOptionsPage(page, extensionOrigin);
         await freezeAnimations(page);
-        // The build timestamp changes on every build.
+        // The commit and build time change on every build.
         await page.$eval('#versionInfo', (footer) => {
             footer.textContent = `Version ${chrome.runtime.getManifest().version}`;
         });

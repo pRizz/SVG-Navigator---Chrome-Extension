@@ -3,7 +3,8 @@
  * `chrome.storage.sync`, and the content script picks it up from there.
  */
 
-import { BUILD_TIMESTAMP } from '../js/buildInfo';
+import { BUILD_INFO } from '../js/buildInfo';
+import { provenanceFields, type ProvenanceField } from '../shared/provenance';
 import {
     DEFAULT_SETTINGS,
     SCROLL_SENSITIVITY_RANGE,
@@ -192,9 +193,26 @@ function setUpTabs(): void {
     }
 }
 
+/** Shows which build this is, linking the commit and the CI run when known. */
 function renderVersionInfo(): void {
-    const version = chrome.runtime.getManifest().version;
-    controls.versionInfo.textContent = `Version ${version} · Built ${BUILD_TIMESTAMP}`;
+    const fields = provenanceFields(chrome.runtime.getManifest().version, BUILD_INFO);
+    controls.versionInfo.replaceChildren(...fields.flatMap((field, index) => [
+        index === 0 ? '' : ' · ',
+        `${field.label} `,
+        renderFieldValue(field),
+    ]));
+}
+
+function renderFieldValue({ text, maybeHref }: ProvenanceField): Node | string {
+    if (maybeHref === null) {
+        return text;
+    }
+    const link = document.createElement('a');
+    link.href = maybeHref;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = text;
+    return link;
 }
 
 async function init(): Promise<void> {

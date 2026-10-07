@@ -404,9 +404,33 @@ code {
     font: 12px ui-monospace, 'SF Mono', Menlo, monospace;
 }
 
-.version {
+.footer {
     padding: 10px 16px;
     color: var(--muted);
     font-size: 11px;
     text-align: center;
+}
+
+.version {
+    margin: 0;
+}
+
+.footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px 12px;
+    margin: 0 0 4px;
+}
+
+.footer-links a {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.footer-icon {
+    width: 14px;
+    height: 14px;
+    flex: none;
 }
