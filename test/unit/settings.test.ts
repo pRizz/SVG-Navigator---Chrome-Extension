@@ -1,6 +1,6 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DEFAULT_SETTINGS, parseSetting, parseSettings } from '../../src/shared/settings.ts';
+import { DEFAULT_SETTINGS, TOOLBAR_POSITIONS, parseSetting, parseSettings } from '../../src/shared/settings.ts';
 
 describe('parseSettings', () => {
     test('uses the defaults when nothing is stored', () => {
@@ -46,5 +46,23 @@ describe('parseSetting', () => {
 
         // Assert
         assert.equal(color, 'white');
+    });
+});
+
+describe('toolbarPosition', () => {
+    test('defaults to the bottom-right corner', () => {
+        assert.equal(parseSettings({}).toolbarPosition, 'bottom-right');
+    });
+
+    test('accepts every position the picker offers', () => {
+        // Act
+        const parsed = TOOLBAR_POSITIONS.map((position) => parseSetting('toolbarPosition', position));
+
+        // Assert
+        assert.deepEqual(parsed, [...TOOLBAR_POSITIONS]);
+    });
+
+    test('falls back to the default for an unknown position', () => {
+        assert.equal(parseSetting('toolbarPosition', 'center'), 'bottom-right');
     });
 });
