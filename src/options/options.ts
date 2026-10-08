@@ -33,6 +33,7 @@ function requireElement<T extends HTMLElement>(id: string, type: new () => T): T
 
 const controls = {
     clickAndDragOptions: [...document.querySelectorAll<HTMLInputElement>('input[name="clickAndDragBehavior"]')],
+    toolbarPositionOptions: [...document.querySelectorAll<HTMLInputElement>('input[name="toolbarPosition"]')],
     scrollSensitivity: requireElement('scrollSensitivity', HTMLInputElement),
     scrollSensitivityValue: requireElement('scrollSensitivityValue', HTMLOutputElement),
     svgBackgroundColor: requireElement('svgBackgroundColor', HTMLInputElement),
@@ -50,6 +51,9 @@ function render(settings: Settings): void {
     for (const option of controls.clickAndDragOptions) {
         option.checked = option.value === settings.clickAndDragBehavior;
     }
+    for (const option of controls.toolbarPositionOptions) {
+        option.checked = option.value === settings.toolbarPosition;
+    }
     controls.scrollSensitivity.value = String(settings.scrollSensitivity);
     renderScrollSensitivityValue();
     for (const key of SWITCH_KEYS) {
@@ -64,9 +68,13 @@ function renderScrollSensitivityValue(): void {
     controls.scrollSensitivityValue.value = controls.scrollSensitivity.value;
 }
 
-// Auto-hide only matters while the toolbar is shown.
+// Auto-hide and position only matter while the toolbar is shown.
 function renderToolbarDependencies(): void {
-    controls.switches.toolbarAutoHide.disabled = !controls.switches.toolbarEnabled.checked;
+    const isToolbarOff = !controls.switches.toolbarEnabled.checked;
+    controls.switches.toolbarAutoHide.disabled = isToolbarOff;
+    for (const option of controls.toolbarPositionOptions) {
+        option.disabled = isToolbarOff;
+    }
 }
 
 function isValidCssColor(value: string): boolean {
@@ -150,6 +158,12 @@ function addEventListeners(): void {
     for (const option of controls.clickAndDragOptions) {
         option.addEventListener('change', () => {
             save('clickAndDragBehavior', parseSetting('clickAndDragBehavior', option.value));
+        });
+    }
+
+    for (const option of controls.toolbarPositionOptions) {
+        option.addEventListener('change', () => {
+            save('toolbarPosition', parseSetting('toolbarPosition', option.value));
         });
     }
 

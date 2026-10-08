@@ -143,5 +143,30 @@ for (const browserName of BROWSERS) {
             await waitForStoredSetting(suite.page, 'scrollSensitivity', 2);
             assert.match(await suite.page.$eval('#resetAll', (button) => button.textContent ?? ''), /Click again/);
         });
+
+        test('options popup saves the chosen toolbar position', async () => {
+            // Arrange
+            await openOptionsPage(suite.page, suite.extensionOrigin());
+
+            // Act
+            await clickInExtensionPage(suite.page, 'input[name="toolbarPosition"][value="left"]');
+
+            // Assert
+            await waitForStoredSetting(suite.page, 'toolbarPosition', 'left');
+        });
+
+        test('options popup disables the position picker while the toolbar is off', async () => {
+            // Arrange
+            await suite.setSettings({ toolbarEnabled: false });
+
+            // Act
+            await openOptionsPage(suite.page, suite.extensionOrigin());
+
+            // Assert
+            const allDisabled = await suite.page.evaluate(() =>
+                [...document.querySelectorAll<HTMLInputElement>('input[name="toolbarPosition"]')].every((input) => input.disabled),
+            );
+            assert.equal(allDisabled, true);
+        });
     });
 }

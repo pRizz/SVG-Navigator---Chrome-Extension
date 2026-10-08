@@ -45,7 +45,7 @@
                 <h2 class="section-title" id="toolbar-title">Toolbar</h2>
                 <div class="card" role="group" aria-labelledby="toolbar-title">
                     <label class="row">
-                        <span class="row-label">Show zoom toolbar</span>
+                        <span class="row-label">Show on-screen controls</span>
                         <input type="checkbox" class="switch" role="switch" id="toolbarEnabled">
                     </label>
                     <label class="row">
@@ -55,6 +55,20 @@
                         </span>
                         <input type="checkbox" class="switch" role="switch" id="toolbarAutoHide">
                     </label>
+                    <div class="row">
+                        <span class="row-label" id="toolbarPositionLabel">Position</span>
+                        <div class="position-picker" role="radiogroup" aria-labelledby="toolbarPositionLabel">
+                            <label title="Top left"><input type="radio" name="toolbarPosition" value="top-left" aria-label="Top left"></label>
+                            <label title="Top"><input type="radio" name="toolbarPosition" value="top" aria-label="Top"></label>
+                            <label title="Top right"><input type="radio" name="toolbarPosition" value="top-right" aria-label="Top right"></label>
+                            <label title="Left"><input type="radio" name="toolbarPosition" value="left" aria-label="Left"></label>
+                            <span aria-hidden="true"></span>
+                            <label title="Right"><input type="radio" name="toolbarPosition" value="right" aria-label="Right"></label>
+                            <label title="Bottom left"><input type="radio" name="toolbarPosition" value="bottom-left" aria-label="Bottom left"></label>
+                            <label title="Bottom"><input type="radio" name="toolbarPosition" value="bottom" aria-label="Bottom"></label>
+                            <label title="Bottom right"><input type="radio" name="toolbarPosition" value="bottom-right" aria-label="Bottom right"></label>
+                        </div>
+                    </div>
                 </div>
 
                 <h2 class="section-title" id="background-title">Background</h2>

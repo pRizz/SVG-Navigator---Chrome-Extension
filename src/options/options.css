@@ -253,6 +253,44 @@ label.row {
     font-variant-numeric: tabular-nums;
 }
 
+/* Toolbar position: a 3×3 grid drawn as a tiny screen; the middle cell stays empty. */
+
+.position-picker {
+    display: grid;
+    flex: none;
+    grid-template-columns: repeat(3, 18px);
+    grid-template-rows: repeat(3, 12px);
+    gap: 3px;
+    padding: 4px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--page);
+}
+
+.position-picker label {
+    display: flex;
+    cursor: pointer;
+}
+
+.position-picker input {
+    appearance: none;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    border-radius: 3px;
+    background: var(--control);
+    cursor: inherit;
+}
+
+.position-picker input:checked {
+    background: var(--accent);
+}
+
+.position-picker input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
 /* Background color */
 
 .color-field {
