@@ -18,7 +18,8 @@ export const REPOSITORY_URL = 'https://github.com/pRizz/SVG-Navigator---Chrome-E
 /** Shown for any provenance field the build could not record. */
 export const UNAVAILABLE = 'Unavailable';
 
-const SHORT_COMMIT_LENGTH = 7;
+/** How many characters of the commit hash to show. */
+export const SHORT_COMMIT_LENGTH = 7;
 
 export interface ProvenanceField {
     label: string;
