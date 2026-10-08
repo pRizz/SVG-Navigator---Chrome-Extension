@@ -98,3 +98,12 @@ export function wheelZoomFactor(
     const scrollAmount = (wheelDelta * sensitivity * (invert ? -1 : 1)) / maxSensitivity;
     return scrollAmount < 0 ? 1 + (-scrollAmount + 0.01) : 1 / (1 + (scrollAmount + 0.01));
 }
+
+/**
+ * How far `current` is zoomed relative to `original` as the browser displays both in
+ * a window of `aspectRatio` (width / height): 2 means twice as close. Both are fitted
+ * to the window first, because a zoom box of any shape is letterboxed on screen.
+ */
+export function displayedZoom(original: ViewBox, current: ViewBox, aspectRatio: number): number {
+    return fitToAspectRatio(original, aspectRatio).width / fitToAspectRatio(current, aspectRatio).width;
+}

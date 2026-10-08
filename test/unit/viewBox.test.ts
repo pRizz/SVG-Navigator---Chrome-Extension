@@ -1,6 +1,7 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+    displayedZoom,
     fitToAspectRatio,
     formatViewBox,
     maybeParseViewBox,
@@ -160,5 +161,35 @@ describe('wheelZoomFactor', () => {
 
         // Assert
         assert.equal(factor, 1 / 1.51);
+    });
+});
+
+describe('displayedZoom', () => {
+    const ORIGINAL = { x: 0, y: 0, width: 800, height: 600 };
+
+    test('is 1 for the original view', () => {
+        assert.equal(displayedZoom(ORIGINAL, ORIGINAL, 4 / 3), 1);
+    });
+
+    test('is 2 when the view is half as wide', () => {
+        // Arrange
+        const current = zoomAroundCenter(ORIGINAL, 0.5);
+
+        // Act
+        const zoom = displayedZoom(ORIGINAL, current, 4 / 3);
+
+        // Assert
+        assert.equal(zoom, 2);
+    });
+
+    test('measures a zoom box by its displayed size, not its raw width', () => {
+        // Arrange: a tall box the browser letterboxes to 400 units wide in a 4:3 window
+        const tallBox = { x: 0, y: 0, width: 100, height: 300 };
+
+        // Act
+        const zoom = displayedZoom(ORIGINAL, tallBox, 4 / 3);
+
+        // Assert
+        assert.equal(zoom, 2);
     });
 });
