@@ -12,7 +12,7 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import puppeteer, { type Browser, type EvaluateFunc, type Page } from 'puppeteer';
+import puppeteer, { type Browser, type ElementHandle, type EvaluateFunc, type Page } from 'puppeteer';
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
 const fixturesDir = fileURLToPath(new URL('fixtures', import.meta.url));
@@ -43,17 +43,23 @@ const CONTENT_TYPES: Record<string, string> = {
     '.html': 'text/html; charset=utf-8',
 };
 
-// Served without a file extension to exercise content-based SVG detection.
-const EXTENSIONLESS_ROUTES: Record<string, string> = { '/diagram': 'simple.svg' };
+// Paths served from another file, or with extra headers, to exercise edge cases.
+const ROUTES: Record<string, { file: string, headers: Record<string, string> }> = {
+    // No file extension: exercises content-based SVG detection.
+    '/diagram': { file: 'simple.svg', headers: {} },
+    // The strictest policy a page can send: the HUD must still be styled.
+    '/csp.svg': { file: 'simple.svg', headers: { 'content-security-policy': 'default-src \'none\'' } },
+};
 
 /** Serves `dir` (by default `test/e2e/fixtures`) over HTTP on an ephemeral localhost port. */
 export async function startFixtureServer(dir = fixturesDir): Promise<{ origin: string, close: () => Promise<void> }> {
     const server = createServer((request, response) => {
         const { pathname } = new URL(request.url ?? '/', 'http://localhost');
-        const fileName = EXTENSIONLESS_ROUTES[pathname] ?? path.basename(decodeURIComponent(pathname));
+        const maybeRoute = ROUTES[pathname];
+        const fileName = maybeRoute?.file ?? path.basename(decodeURIComponent(pathname));
         readFile(path.join(dir, fileName)).then(
             (body) => {
-                response.writeHead(200, { 'content-type': CONTENT_TYPES[path.extname(fileName)] });
+                response.writeHead(200, { 'content-type': CONTENT_TYPES[path.extname(fileName)], ...maybeRoute?.headers });
                 response.end(body);
             },
             () => {
@@ -251,4 +257,82 @@ export async function evaluateInExtension<Params extends unknown[], Func extends
     } finally {
         await page.close();
     }
+}
+
+/** The HUD's shadow host tag; matches `HUD_HOST_TAG` in `src/js/hud/shadowHost.ts`. */
+export const HUD_HOST = 'svg-navigator-hud';
+
+/**
+ * Finds `selector` inside the HUD's open shadow root, or returns null. Evaluated in
+ * the page, which sees the content script's shadow root because it is open.
+ */
+export async function maybeHudElement(page: Page, selector: string): Promise<ElementHandle<Element> | null> {
+    const handle = await page.evaluateHandle(
+        (host: string, target: string) => document.querySelector(host)?.shadowRoot?.querySelector(target) ?? null,
+        HUD_HOST,
+        selector,
+    );
+    const maybeElement = handle.asElement();
+    if (maybeElement === null) {
+        await handle.dispose();
+    }
+    return maybeElement as ElementHandle<Element> | null;
+}
+
+export async function hudElement(page: Page, selector: string): Promise<ElementHandle<Element>> {
+    const maybeElement = await maybeHudElement(page, selector);
+    if (maybeElement === null) {
+        throw new Error(`No HUD element matches ${selector}`);
+    }
+    return maybeElement;
+}
+
+export async function hudText(page: Page, selector: string): Promise<string | null> {
+    return page.evaluate(
+        (host: string, target: string) => document.querySelector(host)?.shadowRoot?.querySelector(target)?.textContent ?? null,
+        HUD_HOST,
+        selector,
+    );
+}
+
+/** A computed style property of a HUD element, or null when the element is missing. */
+export async function hudComputedStyle(page: Page, selector: string, property: string): Promise<string | null> {
+    return page.evaluate(
+        (host: string, target: string, name: string) => {
+            const maybeElement = document.querySelector(host)?.shadowRoot?.querySelector(target);
+            return maybeElement ? getComputedStyle(maybeElement).getPropertyValue(name) : null;
+        },
+        HUD_HOST,
+        selector,
+        property,
+    );
+}
+
+/** Waits until a HUD element matching `selector` exists (or, with `present: false`, doesn't). */
+export async function waitForHudElement(page: Page, selector: string, present: boolean): Promise<void> {
+    await page.waitForFunction(
+        (host: string, target: string, shouldExist: boolean) =>
+            Boolean(document.querySelector(host)?.shadowRoot?.querySelector(target)) === shouldExist,
+        { timeout: 5_000 },
+        HUD_HOST,
+        selector,
+        present,
+    );
+}
+
+/** Waits until a HUD element's `attribute` equals `expected`; null means the attribute is absent. */
+export async function waitForHudAttribute(page: Page, selector: string, attribute: string, expected: string | null): Promise<void> {
+    await page.waitForFunction(
+        (host: string, target: string, name: string, value: string | null) =>
+            document.querySelector(host)?.shadowRoot?.querySelector(target)?.getAttribute(name) === value,
+        { timeout: 5_000 },
+        HUD_HOST,
+        selector,
+        attribute,
+        expected,
+    );
+}
+
+export function delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
 }

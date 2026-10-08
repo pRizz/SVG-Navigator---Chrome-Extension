@@ -17,7 +17,6 @@
 		2731849C3075CD5700CA349B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2731849B3075CD5700CA349B /* Assets.xcassets */; };
 		273184A33075CD5700CA349B /* SVG Navigator Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 273184A23075CD5700CA349B /* SVG Navigator Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		273184A83075CD5700CA349B /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 273184A73075CD5700CA349B /* SafariWebExtensionHandler.swift */; };
-		273185103075CD5800CA349B /* css in Resources */ = {isa = PBXBuildFile; fileRef = 273185003075CD5800CA349B /* css */; };
 		273185113075CD5800CA349B /* js in Resources */ = {isa = PBXBuildFile; fileRef = 273185013075CD5800CA349B /* js */; };
 		273185123075CD5800CA349B /* options in Resources */ = {isa = PBXBuildFile; fileRef = 273185023075CD5800CA349B /* options */; };
 		273185133075CD5800CA349B /* shared in Resources */ = {isa = PBXBuildFile; fileRef = 273185033075CD5800CA349B /* shared */; };
@@ -66,7 +65,6 @@
 		273184A23075CD5700CA349B /* SVG Navigator Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "SVG Navigator Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		273184A73075CD5700CA349B /* SafariWebExtensionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariWebExtensionHandler.swift; sourceTree = "<group>"; };
 		273184A93075CD5700CA349B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		273185003075CD5800CA349B /* css */ = {isa = PBXFileReference; lastKnownFileType = folder; path = css; sourceTree = "<group>"; };
 		273185013075CD5800CA349B /* js */ = {isa = PBXFileReference; lastKnownFileType = folder; path = js; sourceTree = "<group>"; };
 		273185023075CD5800CA349B /* options */ = {isa = PBXFileReference; lastKnownFileType = folder; path = options; sourceTree = "<group>"; };
 		273185033075CD5800CA349B /* shared */ = {isa = PBXFileReference; lastKnownFileType = folder; path = shared; sourceTree = "<group>"; };
@@ -148,7 +146,6 @@
 		273185203075CD5800CA349B /* Web Extension */ = {
 			isa = PBXGroup;
 			children = (
-				273185003075CD5800CA349B /* css */,
 				273185013075CD5800CA349B /* js */,
 				273185023075CD5800CA349B /* options */,
 				273185033075CD5800CA349B /* shared */,
@@ -253,7 +250,6 @@
 		273184A03075CD5700CA349B /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			files = (
-				273185103075CD5800CA349B /* css in Resources */,
 				273185113075CD5800CA349B /* js in Resources */,
 				273185123075CD5800CA349B /* options in Resources */,
 				273185133075CD5800CA349B /* shared in Resources */,

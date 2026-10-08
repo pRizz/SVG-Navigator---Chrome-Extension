@@ -16,8 +16,7 @@
                 "http://*/*",
                 "https://*/*"
             ],
-            "js": ["js/svgNavigator.js"],
-            "css": ["css/svgNavigator.css"]
+            "js": ["js/svgNavigator.js"]
         }
     ],
     "manifest_version": 3,

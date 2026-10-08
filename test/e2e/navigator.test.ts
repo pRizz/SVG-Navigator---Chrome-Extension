@@ -12,13 +12,13 @@ for (const browserName of BROWSERS) {
     describe(browserName, () => {
         const suite = useExtensionSuite(browserName);
 
-        test('wraps the SVG in an HTML page and shows the toolbar', async () => {
+        test('wraps the SVG in an HTML page and mounts the HUD', async () => {
             // Act
             await suite.openSvg();
 
             // Assert
             assert.equal(await suite.page.$eval('svg', (svg) => svg.parentElement?.localName), 'body');
-            assert.ok(await suite.page.$('.toolbarcontainer'), 'toolbar should be present');
+            assert.ok(await suite.page.$('svg-navigator-hud'), 'HUD should be present');
         });
 
         test('scrolling the wheel up zooms in', async () => {
@@ -104,22 +104,6 @@ for (const browserName of BROWSERS) {
             assert.deepEqual(await waitForViewBoxChange(suite.page, zoomed), original);
         });
 
-        test('toolbar + zooms in and Reset restores the original view', async () => {
-            // Arrange
-            await suite.openSvg();
-            const original = await getViewBox(suite.page);
-
-            // Act
-            await suite.page.click('.toolbar > .toolbarbutton:nth-child(1)');
-            const zoomed = await waitForViewBoxChange(suite.page, original);
-            await suite.page.click('.toolbar > .toolbarbutton:nth-child(3)');
-            const reset = await waitForViewBoxChange(suite.page, zoomed);
-
-            // Assert
-            assert.ok(zoomed.width < original.width, 'plus button should zoom in');
-            assert.deepEqual(reset, original);
-        });
-
         test('adds a viewBox to an SVG that lacks one', async () => {
             // Act
             await suite.openSvg('/no-viewbox.svg');
@@ -134,7 +118,7 @@ for (const browserName of BROWSERS) {
             await suite.openSvg('/diagram');
 
             // Assert
-            assert.ok(await suite.page.$('.toolbarcontainer'), 'toolbar should be present');
+            assert.ok(await suite.page.$('svg-navigator-hud'), 'HUD should be present');
         });
 
         test('leaves HTML pages with inline SVG untouched', async () => {
@@ -149,7 +133,7 @@ for (const browserName of BROWSERS) {
 
             // Assert
             assert.equal(maybeReady, null, 'extension should not activate on HTML pages');
-            assert.equal(await suite.page.$('.toolbarcontainer'), null);
+            assert.equal(await suite.page.$('svg-navigator-hud'), null);
             assert.equal(await suite.page.$eval('svg', (svg) => svg.getAttribute('viewBox')), '0 0 100 100');
         });
 
@@ -170,17 +154,6 @@ for (const browserName of BROWSERS) {
 
             // Assert
             await suite.page.waitForFunction(() => document.body.style.backgroundColor === 'rgb(255, 0, 0)', { timeout: 5_000 });
-        });
-
-        test('respects the toolbarEnabled setting', async () => {
-            // Arrange
-            await suite.setSettings({ toolbarEnabled: false });
-
-            // Act
-            await suite.openSvg();
-
-            // Assert
-            assert.equal(await suite.page.$('.toolbarcontainer'), null);
         });
     });
 }

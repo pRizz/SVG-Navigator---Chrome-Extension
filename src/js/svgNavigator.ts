@@ -36,11 +36,13 @@ import {
     isSettingKey,
     loadSettings,
     parseSettings,
+    type SettingKey,
     type Settings,
 } from '../shared/settings';
 import { UNAVAILABLE } from '../shared/provenance';
-import { addToolbar } from './toolbar';
+import { mountHud, type HudHandle } from './hud/hud';
 import {
+    displayedZoom,
     fitToAspectRatio,
     formatViewBox,
     maybeParseViewBox,
@@ -75,12 +77,15 @@ let svgDocElement: SVGSVGElement;
 let htmlDoc: Document;
 let origSVGWidth: number;
 let origSVGHeight: number;
-// the view that Escape, Ctrl+0, and Reset return to
+// the view that Escape, Ctrl+0, and the HUD's zoom readout return to
 let originalViewBox: ViewBox;
 let viewBox: ViewBox;
 
 let interaction: Interaction = { kind: 'idle' };
 let zoomRectangle: SVGRectElement;
+
+// mounted in main() before any listener that zooms is attached
+let hud: HudHandle;
 
 // current settings; replaced from storage in main() and kept live by onSettingsChanged
 let settings: Settings = { ...DEFAULT_SETTINGS };
@@ -169,10 +174,15 @@ async function main(): Promise<void> {
     svgDocument.setAttribute('viewBox', formatViewBox(viewBox));
 
     settings = await loadSettingsOrDefaults();
+    hud = mountHud(htmlDoc, {
+        actions: { zoomIn: () => zoomBy(0.8), zoomOut: () => zoomBy(1.25), reset: resetViewBox },
+        toolbarEnabled: settings.toolbarEnabled,
+        position: settings.toolbarPosition,
+    });
     addEventListeners();
-    maybeAddToolbar();
     applyBackgroundColor();
     maybePrintDebugInfo();
+    hud.setZoom(currentZoom());
     // Registered only once an SVG is wrapped, so settings changes never touch other pages.
     chrome.storage.onChanged.addListener(onSettingsChanged);
     disableSelection();
@@ -189,17 +199,6 @@ async function loadSettingsOrDefaults(): Promise<Settings> {
         console.warn('SVG Navigator: could not read settings; using defaults', e);
         return { ...DEFAULT_SETTINGS };
     }
-}
-
-function maybeAddToolbar(): void {
-    if(!settings.toolbarEnabled) {
-        return;
-    }
-    addToolbar(htmlDoc, document.body, {
-        zoomIn: () => zoomBy(0.8),
-        zoomOut: () => zoomOut(true),
-        reset: () => zoomOriginal(true),
-    }, { autoHide: settings.toolbarAutoHide });
 }
 
 // insert a rectangle object into the svg, acting as the zoom rectangle
@@ -222,17 +221,32 @@ function insertZoomRect(): SVGRectElement {
 function onSettingsChanged(changes: Record<string, chrome.storage.StorageChange>, areaName: string): void {
     if(areaName !== 'sync') { return; }
     for (const [key, { newValue }] of Object.entries(changes)) {
-        if(isSettingKey(key)) {
-            settings = parseSettings({ ...settings, [key]: newValue });
+        if(!isSettingKey(key)) { continue; }
+        settings = parseSettings({ ...settings, [key]: newValue });
+        applySetting(key);
+    }
+}
+
+// Settings without a case here take effect on the next page load.
+function applySetting(key: SettingKey): void {
+    switch(key) {
+    case 'showDebugInfo':
+        maybePrintDebugInfo();
+        if(settings.showDebugInfo) {
+            document.addEventListener('mousemove', trackMouseForDebugInfo, false);
         }
-        if(key === 'showDebugInfo') {
-            maybePrintDebugInfo();
-            if(settings.showDebugInfo) {
-                document.addEventListener('mousemove', trackMouseForDebugInfo, false);
-            }
-        } else if(key === 'svgBackgroundColor') {
-            applyBackgroundColor();
-        }
+        break;
+    case 'svgBackgroundColor':
+        applyBackgroundColor();
+        break;
+    case 'toolbarEnabled':
+        hud.setToolbarEnabled(settings.toolbarEnabled);
+        break;
+    case 'toolbarPosition':
+        hud.setPosition(settings.toolbarPosition);
+        break;
+    default:
+        break;
     }
 }
 
@@ -264,6 +278,8 @@ function addEventListeners(): void {
     }
 
     svgDocument.addEventListener('wheel', doScroll, { passive: false }); // Standard event for all modern browsers
+    // The readout compares views as displayed, which depends on the window's shape.
+    window.addEventListener('resize', () => hud.setZoom(currentZoom()));
 
     if(settings.showDebugInfo) {
         document.addEventListener('mousemove', trackMouseForDebugInfo, false);
@@ -348,13 +364,8 @@ function keyCodeOf(evt: KeyboardEvent): number {
     return evt.charCode || evt.keyCode;
 }
 
-// zoom out when user presses alt key, or unconditionally when passed `true` (toolbar)
-function zoomOut(evt: KeyboardEvent | true): void {
-    if(evt === true) {
-        zoomBy(1.25);
-        return;
-    }
-    // alt key
+// zoom out when the user taps the Alt key
+function zoomOut(evt: KeyboardEvent): void {
     if(!isZoomingOrPanning() && evt.type === 'keyup' && keyCodeOf(evt) === 18) {
         zoomBy(1.25);
     }
@@ -366,10 +377,10 @@ function zoomBy(zoomAmount: number): void {
     setViewBox();
 }
 
-// zoom back to original view when escape button is clicked or Reset button pressed
-function zoomOriginal(evt: KeyboardEvent | true): void {
+// zoom back to the original view when Escape is released
+function zoomOriginal(evt: KeyboardEvent): void {
     if(isZoomingOrPanning()) { return; }
-    if(evt === true || (evt.type === 'keyup' && keyCodeOf(evt) === 27)) {
+    if(evt.type === 'keyup' && keyCodeOf(evt) === 27) {
         resetViewBox();
     }
 }
@@ -517,7 +528,12 @@ function maybePrintDebugInfo(): void {
 
 function setViewBox(): void {
     svgDocument.setAttribute('viewBox', formatViewBox(viewBox));
+    hud.setZoom(currentZoom());
     maybePrintDebugInfo();
+}
+
+function currentZoom(): number {
+    return displayedZoom(originalViewBox, viewBox, getWidth()/getHeight());
 }
 
 // @since 2.6
