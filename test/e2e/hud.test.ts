@@ -140,6 +140,12 @@ for (const browserName of BROWSERS) {
 
             // Assert
             assert.equal(await hudComputedStyle(suite.page, '.dock', 'position'), 'fixed');
+            // A constructed sheet no page policy can block, not the `<style>` fallback.
+            const delivery = await suite.page.evaluate((host: string) => {
+                const maybeRoot = document.querySelector(host)?.shadowRoot;
+                return { adoptedSheets: maybeRoot?.adoptedStyleSheets.length, styleElements: maybeRoot?.querySelectorAll('style').length };
+            }, HUD_HOST);
+            assert.deepEqual(delivery, { adoptedSheets: 1, styleElements: 0 });
         });
 
         test('cannot be hidden by the SVG\'s own stylesheet', async () => {

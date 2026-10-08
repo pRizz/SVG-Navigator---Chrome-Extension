@@ -28,18 +28,18 @@ export function createShadowHost(htmlDoc: Document, parent: HTMLElement, css: st
     for (const [property, value] of Object.entries(HOST_STYLE)) {
         host.style.setProperty(property, value, 'important');
     }
+    // Joins the page before the shadow root exists: a root attached while the host still
+    // belongs to the wrapper document rejects the page's constructed stylesheet.
+    parent.append(host);
     // Open, so E2E tests can reach inside; the HUD holds nothing the page shouldn't see.
     const root = host.attachShadow({ mode: 'open' });
     adoptStyles(htmlDoc, root, css);
-    parent.append(host);
     return { host, root };
 }
 
 /**
- * Prefers a constructed stylesheet, which no page Content-Security-Policy can block.
- * Chrome and Firefox both reject it here (the shadow root's document is the wrapper
- * `htmlDoc`, not the page's), so they get a `<style>` element, which both still apply
- * under `default-src 'none'` because the extension injected it.
+ * Prefers a constructed stylesheet, which no page Content-Security-Policy can block;
+ * falls back to a `<style>` element only where an engine rejects it.
  */
 function adoptStyles(htmlDoc: Document, root: ShadowRoot, css: string): void {
     try {
