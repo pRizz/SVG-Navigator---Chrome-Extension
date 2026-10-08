@@ -17,7 +17,14 @@ export function button(htmlDoc: Document, { className, label, title, onClick }: 
     element.className = className;
     element.setAttribute('aria-label', label);
     element.title = title;
-    element.addEventListener('click', () => onClick());
+    element.addEventListener('click', (event) => {
+        // A mouse click would leave the button focused, and the next Space would then press it
+        // again instead of starting a spacebar pan. Keyboard activation (detail 0) keeps focus.
+        if (event.detail > 0) {
+            element.blur();
+        }
+        onClick();
+    });
     return element;
 }
 

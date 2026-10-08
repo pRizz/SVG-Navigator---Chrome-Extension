@@ -74,12 +74,16 @@ export function mountDebugCard(htmlDoc: Document, root: ShadowRoot, corner: Debu
     }
 
     function setMinimized(minimized: boolean): void {
+        // Only a keyboard user, who still has focus on the card, needs it carried across.
+        const hadFocus = root.activeElement === minimizeButton || root.activeElement === chip;
         card.hidden = minimized;
         chip.hidden = !minimized;
         if (!minimized && maybeLatest !== null) {
             renderBody(maybeLatest);
         }
-        (minimized ? chip : minimizeButton).focus();
+        if (hadFocus) {
+            (minimized ? chip : minimizeButton).focus();
+        }
     }
 
     function renderBody(info: DebugInfo): void {

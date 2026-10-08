@@ -49,6 +49,27 @@ for (const browserName of BROWSERS) {
             assert.equal(await hudText(suite.page, '.zoom-label'), '125%');
         });
 
+        test('Space after clicking a HUD button pans instead of pressing the button again', async () => {
+            // Arrange
+            await suite.openSvg();
+            const original = await getViewBox(suite.page);
+            await (await hudElement(suite.page, '.zoom-in')).click();
+            const zoomed = await waitForViewBoxChange(suite.page, original);
+            await suite.page.mouse.move(400, 300);
+
+            // Act
+            await suite.page.keyboard.down(' '); // Firefox's BiDi driver has no 'Space' key name
+            await suite.page.mouse.move(300, 250, { steps: 5 });
+            await suite.page.keyboard.up(' ');
+
+            // Assert
+            await delay(SETTLE_MS);
+            const panned = await getViewBox(suite.page);
+            assert.ok(panned.x > zoomed.x, 'moving left should move the view right');
+            assert.ok(panned.y > zoomed.y, 'moving up should move the view down');
+            assert.equal(panned.width, zoomed.width, 'Space must not re-press the zoom button');
+        });
+
         test('clicking the readout restores the original view', async () => {
             // Arrange
             await suite.openSvg();
@@ -156,6 +177,7 @@ for (const browserName of BROWSERS) {
             const box = await (await hudElement(suite.page, '.pill')).boundingBox();
             assert.ok(box && box.width > 0 && box.height > 0, 'pill should still be laid out');
             assert.equal(await suite.page.$eval(HUD_HOST, (host) => getComputedStyle(host).display), 'block');
+            assert.notEqual(await hudComputedStyle(suite.page, '.zoom-label', 'font-size'), '40px', 'page font rules should not reach the HUD text');
         });
 
         test('fades after a quiet spell and wakes on mouse movement', async () => {

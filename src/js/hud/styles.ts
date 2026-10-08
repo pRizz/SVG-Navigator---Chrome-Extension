@@ -17,8 +17,15 @@ export const HUD_CSS = `
     --radius: 10px;
     --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
     color-scheme: light dark;
+}
+
+/* Declared on the roots inside the shadow tree: a page rule like "* { font-size: 40px }"
+   matches the host and would beat the same declarations on :host. */
+.dock, .debug, .debug-chip {
     color: var(--text);
     font: 13px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif;
+    letter-spacing: normal;
+    text-transform: none;
 }
 
 @media (prefers-color-scheme: dark) {

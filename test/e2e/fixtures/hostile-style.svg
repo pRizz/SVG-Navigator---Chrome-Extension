@@ -1,5 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
     <!-- Once wrapped in HTML, an SVG's own stylesheet applies to the whole page. -->
-    <style>svg-navigator-hud, div, button { display: none !important; opacity: 0 !important; }</style>
+    <style>
+        svg-navigator-hud, div, button { display: none !important; opacity: 0 !important; }
+        * { font-size: 40px !important; letter-spacing: 5px !important; }
+    </style>
     <rect x="0" y="0" width="800" height="600" fill="#eef"/>
 </svg>
