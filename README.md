@@ -24,6 +24,8 @@ Go to a website with an SVG file. The extension begins working on the SVG graphi
 - Zoom: click and drag a zoom box of the desired area if enabled
 - Zoom out: tap alt key
 - Reset zoom: press escape
+- On-screen controls: zoom out, the zoom level (click it to reset), zoom in, background, full screen, and a
+  shortcuts list; choose their corner or edge, or turn them off, in the settings
 
 SVGs are vector graphics, so they stay sharp however far you zoom in. SVG Navigator has no zoom
 limit; only the browser's numeric precision stops it, many millions of times in.
@@ -187,7 +189,8 @@ The extension is written in TypeScript:
 
 - `src/js/svgNavigator.ts`: the content script that adds infinite zoom and panning to SVG documents
 - `src/js/viewBox.ts`: the pure viewBox geometry (parsing, fitting, zooming) the content script uses, unit tested
-- `src/js/toolbar.ts`: the floating +, -, and Reset toolbar
+- `src/js/hud/`: the on-screen controls and debug card, in a shadow root on `<svg-navigator-hud>`; the pure
+  parts (`layout`, `zoomLabel`, `visibility`, `backgroundCycle`, `debugInfo`, `shortcuts`) are unit tested
 - `src/options/`: the toolbar popup with the settings (`index.html`, `options.ts`, `options.css`)
 - `src/shared/settings.ts`: the settings, their defaults, and their storage in `chrome.storage.sync`
 - `src/shared/provenance.ts`: the version, commit, and build time shown in the popup footer; `bun run prebuild`

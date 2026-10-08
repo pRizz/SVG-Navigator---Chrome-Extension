@@ -51,12 +51,12 @@ Open an SVG file and:
 • Drag to pan, or hold Space and move the pointer
 • Drag a box around exactly the area you want to see (zoom box mode)
 • Press Esc to reset the view, or Option to zoom out
-• Use the + / − / Reset toolbar in the corner of the page
+• Use the on-screen controls to zoom, reset, switch the background, or go full screen
 
 Make it work your way from the toolbar button:
 • Choose whether click-and-drag pans or draws a zoom box
 • Adjust scroll sensitivity, or invert the scroll direction
-• Show or hide the zoom toolbar, and let it fade out when you don't need it
+• Show, hide, or move the on-screen controls, and let them fade out when you don't need them
 • Pick a background color for transparent SVGs
 
 SVG Navigator works on SVG files from any website, including ones served without a .svg file name. It leaves other pages alone.

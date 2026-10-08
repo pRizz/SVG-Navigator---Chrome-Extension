@@ -15,9 +15,9 @@ Open an SVG file and:
 • Drag to pan, or hold Space and move the pointer
 • Drag a box around exactly the area you want to see (zoom box mode)
 • Press Esc to reset the view, or Alt to zoom out
-• Use the + / − / Reset toolbar in the corner of the page
+• Use the on-screen controls to zoom, reset, switch the background, or go full screen
 
-Make it work your way from the toolbar button: choose whether click-and-drag pans or draws a zoom box, adjust scroll sensitivity or invert the scroll direction, show or auto-hide the zoom toolbar, and pick a background color for transparent SVGs.
+Make it work your way from the toolbar button: choose whether click-and-drag pans or draws a zoom box, adjust scroll sensitivity or invert the scroll direction, show, auto-hide, or reposition the on-screen controls, and pick a background color for transparent SVGs.
 
 SVG Navigator works on SVG files from any website, including ones served without a .svg file name. It leaves other pages alone, collects no data, and makes no network requests. To use it on local files, turn on "Allow access to file URLs" for SVG Navigator in chrome://extensions.
 
@@ -37,9 +37,9 @@ Open an SVG file and:
 * Drag to pan, or hold Space and move the pointer
 * Drag a box around exactly the area you want to see (zoom box mode)
 * Press Esc to reset the view, or Alt to zoom out
-* Use the + / − / Reset toolbar in the corner of the page
+* Use the on-screen controls to zoom, reset, switch the background, or go full screen
 
-Make it work your way from the toolbar button: choose whether click-and-drag pans or draws a zoom box, adjust scroll sensitivity or invert the scroll direction, show or auto-hide the zoom toolbar, and pick a background color for transparent SVGs.
+Make it work your way from the toolbar button: choose whether click-and-drag pans or draws a zoom box, adjust scroll sensitivity or invert the scroll direction, show, auto-hide, or reposition the on-screen controls, and pick a background color for transparent SVGs.
 
 SVG Navigator works on SVG files from any website, including ones served without a .svg file name. It leaves other pages alone, collects no data, and makes no network requests.
 
