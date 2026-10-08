@@ -12,11 +12,20 @@ const compactFormat = new Intl.NumberFormat('en-US', { notation: 'compact', maxi
 /** Formats a zoom ratio (1 = the original view) as a percentage. */
 export function zoomLabel(ratio: number): string {
     const percent = ratio * 100;
+    // A view narrower than the smallest double divides into Infinity; 0 by 0 gives NaN.
+    if (Number.isNaN(percent)) {
+        return '—';
+    }
+    if (percent === Infinity) {
+        return '∞%';
+    }
     if (percent < 1) {
         return `${Number(percent.toPrecision(2))}%`;
     }
-    if (percent < COMPACT_FROM_PERCENT) {
-        return `${Math.round(percent)}%`;
+    // Compare after rounding, so 9,999.6% reads 10K% rather than 10000%.
+    const wholePercent = Math.round(percent);
+    if (wholePercent < COMPACT_FROM_PERCENT) {
+        return `${wholePercent}%`;
     }
     if (percent < EXPONENT_FROM_PERCENT) {
         return `${compactFormat.format(percent)}%`;

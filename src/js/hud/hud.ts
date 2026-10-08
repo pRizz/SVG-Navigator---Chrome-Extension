@@ -137,12 +137,13 @@ export function mountHud(htmlDoc: Document, options: HudOptions): HudHandle {
         }
     }, { signal });
     // Capture phase, so an Escape that closes the popover never reaches the navigator's
-    // own Escape (reset the view), whichever element has focus.
+    // own Escape (reset the view), whichever element has focus. Focus stays where it was:
+    // a keyboard user is still on `?`, and moving a mouse user there would make the next
+    // Space reopen the list instead of panning.
     document.addEventListener('keyup', (event) => {
         if (event.key !== 'Escape' || !popover.isOpen()) { return; }
         event.stopPropagation();
         setShortcutsOpen(false);
-        pill.shortcutsButton.focus();
     }, { capture: true, signal });
     document.addEventListener('pointerdown', (event) => {
         if (popover.isOpen() && !event.composedPath().includes(dock)) {

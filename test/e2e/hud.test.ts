@@ -261,6 +261,28 @@ for (const browserName of BROWSERS) {
             assert.deepEqual(await getViewBox(suite.page), zoomed);
         });
 
+        test('Space after closing the shortcuts with Escape pans instead of reopening them', async () => {
+            // Arrange
+            await suite.openSvg();
+            const before = await getViewBox(suite.page);
+            await (await hudElement(suite.page, '.shortcuts')).click();
+            await waitForHudAttribute(suite.page, '.popover', 'hidden', null);
+            await suite.page.keyboard.press('Escape');
+            await waitForHudAttribute(suite.page, '.popover', 'hidden', '');
+            await suite.page.mouse.move(400, 300);
+
+            // Act
+            await suite.page.keyboard.down(' '); // Firefox's BiDi driver has no 'Space' key name
+            await suite.page.mouse.move(300, 250, { steps: 5 });
+            await suite.page.keyboard.up(' ');
+
+            // Assert
+            const after = await waitForViewBoxChange(suite.page, before);
+            assert.ok(after.x > before.x, 'moving left should move the view right');
+            const popover = await hudElement(suite.page, '.popover');
+            assert.equal(await popover.evaluate((element) => element.hasAttribute('hidden')), true, 'Space must not reopen the shortcuts');
+        });
+
         test('the debug card reports a viewBox derived from the size, and the authored width', async () => {
             // Arrange
             await suite.setSettings({ showDebugInfo: true });

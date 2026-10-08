@@ -14,7 +14,6 @@ export interface PillActions {
 
 export interface Pill {
     element: HTMLDivElement;
-    shortcutsButton: HTMLButtonElement;
     setZoomLabel: (text: string) => void;
     setBackgroundTitle: (title: string) => void;
     setFullscreen: (isFullscreen: boolean) => void;
@@ -77,7 +76,6 @@ export function createPill(htmlDoc: Document, actions: PillActions, { fullscreen
 
     return {
         element,
-        shortcutsButton: shortcuts,
         setZoomLabel,
         setBackgroundTitle: (title) => {
             background.title = title;

@@ -23,6 +23,10 @@ describe('zoomLabel', () => {
         assert.equal(zoomLabel(100), '10K%');
     });
 
+    test('switches to compact notation when rounding reaches 10,000%', () => {
+        assert.equal(zoomLabel(99.996), '10K%');
+    });
+
     test('uses compact notation for thousands', () => {
         assert.equal(zoomLabel(120), '12K%');
     });
@@ -33,5 +37,13 @@ describe('zoomLabel', () => {
 
     test('uses an exponent beyond compact notation', () => {
         assert.equal(zoomLabel(1.2e18), '1.2e20%');
+    });
+
+    test('shows a zoom too deep to represent as infinite', () => {
+        assert.equal(zoomLabel(Infinity), '∞%');
+    });
+
+    test('shows a dash when the zoom is undefined', () => {
+        assert.equal(zoomLabel(NaN), '—');
     });
 });
