@@ -90,7 +90,7 @@ const SCENES: Scene[] = [
     {
         fileName: '04-settings.png',
         title: 'Make it work your way',
-        subtitle: 'Choose the drag behavior, scroll sensitivity, toolbar, and background.',
+        subtitle: 'Choose the drag behavior, scroll sensitivity, on-screen controls, and background.',
         act: async (page) => {
             await zoom(page, { x: 400, y: 260 }, 2);
         },
