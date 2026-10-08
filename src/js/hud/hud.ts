@@ -6,6 +6,8 @@
  */
 
 import type { ClickAndDragBehavior, ToolbarPosition } from '../../shared/settings';
+import { mountDebugCard, type DebugCard } from './debugCard';
+import type { DebugInfo } from './debugInfo';
 import { backgroundButtonTitle, backgroundCss, nextBackground, type BackgroundState } from './backgroundCycle';
 import { hudLayout } from './layout';
 import { createPill } from './pill';
@@ -37,6 +39,7 @@ export interface HudHandle {
     setPosition: (position: ToolbarPosition) => void;
     setAutoHide: (autoHide: boolean) => void;
     setSavedBackground: (color: string) => void;
+    setDebugInfo: (maybeInfo: DebugInfo | null) => void;
     destroy: () => void;
 }
 
@@ -53,6 +56,8 @@ export function mountHud(htmlDoc: Document, options: HudOptions): HudHandle {
     let savedBackground = options.savedBackground;
     let visibility = initialVisibility(options.autoHide);
     let maybeIdleTimer: ReturnType<typeof setTimeout> | undefined;
+    let position = options.position;
+    let maybeDebugCard: DebugCard | null = null;
 
     const popover = createShortcutsPopover(htmlDoc, shortcutRows(options.clickAndDragBehavior, navigator.userAgent.includes('Mac')));
     const pill = createPill(htmlDoc, {
@@ -105,11 +110,13 @@ export function mountHud(htmlDoc: Document, options: HudOptions): HudHandle {
         restartIdleTimer();
     }
 
-    function setPosition(position: ToolbarPosition): void {
-        const layout = hudLayout(position);
-        dock.dataset.position = position;
+    function setPosition(next: ToolbarPosition): void {
+        const layout = hudLayout(next);
+        position = next;
+        dock.dataset.position = next;
         pill.element.dataset.orientation = layout.orientation;
         popover.element.dataset.direction = layout.popoverDirection;
+        maybeDebugCard?.setCorner(layout.debugCorner);
     }
 
     function setToolbarEnabled(enabled: boolean): void {
@@ -185,6 +192,15 @@ export function mountHud(htmlDoc: Document, options: HudOptions): HudHandle {
             savedBackground = color;
             background = 'saved';
             applyBackground();
+        },
+        setDebugInfo: (maybeInfo) => {
+            if (maybeInfo === null) {
+                maybeDebugCard?.remove();
+                maybeDebugCard = null;
+                return;
+            }
+            maybeDebugCard ??= mountDebugCard(htmlDoc, root, hudLayout(position).debugCorner);
+            maybeDebugCard.render(maybeInfo);
         },
         destroy: () => {
             listeners.abort();

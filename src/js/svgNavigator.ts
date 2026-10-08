@@ -39,8 +39,16 @@ import {
     type SettingKey,
     type Settings,
 } from '../shared/settings';
-import { UNAVAILABLE } from '../shared/provenance';
 import { mountHud, type HudHandle } from './hud/hud';
+import { HUD_HOST_TAG } from './hud/shadowHost';
+import {
+    describeBrowser,
+    type DebugInfo,
+    type DocumentFacts,
+    type ElementSummary,
+    type UaBrand,
+    type WheelSample,
+} from './hud/debugInfo';
 import {
     displayedZoom,
     fitToAspectRatio,
@@ -90,13 +98,11 @@ let hud: HudHandle;
 // current settings; replaced from storage in main() and kept live by onSettingsChanged
 let settings: Settings = { ...DEFAULT_SETTINGS };
 
-// for debugging
-let maybeDebugTextElement: HTMLDivElement | null = null;
-const debugChildren: HTMLDivElement[] = [];
-let debugMouseEvent: Pick<MouseEvent, 'clientX' | 'clientY'> = {
-    clientX: 0,
-    clientY: 0
-};
+// for the debug card
+let lastPointer: Point = { x: 0, y: 0 };
+let maybeLastWheel: WheelSample | null = null;
+// the SVG as authored, captured in main() before its size attributes are rewritten
+let documentFacts: DocumentFacts;
 
 main().catch((error: unknown) => {
     console.error('SVG Navigator: failed to start', error);
@@ -125,6 +131,8 @@ async function main(): Promise<void> {
         return;
     }
     svgDocument = maybeSvgDocument;
+    // Read before the code below strips sizes and inserts the zoom rectangle.
+    const authored = readAuthoredFacts(svgDocument);
 
     // @since 2.6
     // Remove of the SVG element `style` `width` and `height` in case
@@ -168,6 +176,11 @@ async function main(): Promise<void> {
     // unfortunatley, chrome's getBBox() is bugged for some SVG documents, ex: http://upload.wikimedia.org/wikipedia/commons/d/dc/USA_orthographic.svg
     // so the viewbox starts at 0,0 with the SVG's width and height
     const authoredViewBox = maybeAuthoredViewBox ?? { x: 0, y: 0, width: origSVGWidth, height: origSVGHeight };
+    documentFacts = {
+        ...authored,
+        viewBox: authoredViewBox,
+        viewBoxSource: maybeAuthoredViewBox ? 'authored' : 'derivedFromSize',
+    };
     // match the window's aspect ratio, so the whole drawing shows, centered
     originalViewBox = fitToAspectRatio(authoredViewBox, getWidth()/getHeight());
     viewBox = originalViewBox;
@@ -183,8 +196,7 @@ async function main(): Promise<void> {
         clickAndDragBehavior: settings.clickAndDragBehavior,
     });
     addEventListeners();
-    maybePrintDebugInfo();
-    hud.setZoom(currentZoom());
+    refreshHud();
     // Registered only once an SVG is wrapped, so settings changes never touch other pages.
     chrome.storage.onChanged.addListener(onSettingsChanged);
     disableSelection();
@@ -233,10 +245,10 @@ function onSettingsChanged(changes: Record<string, chrome.storage.StorageChange>
 function applySetting(key: SettingKey): void {
     switch(key) {
     case 'showDebugInfo':
-        maybePrintDebugInfo();
-        if(settings.showDebugInfo) {
-            document.addEventListener('mousemove', trackMouseForDebugInfo, false);
-        }
+    case 'clickAndDragBehavior':
+    case 'scrollSensitivity':
+    case 'invertScroll':
+        refreshHud();
         break;
     case 'svgBackgroundColor':
         hud.setSavedBackground(settings.svgBackgroundColor);
@@ -255,10 +267,9 @@ function applySetting(key: SettingKey): void {
     }
 }
 
-// A named listener, so adding it again after re-enabling debug info is a no-op.
-function trackMouseForDebugInfo(e: MouseEvent): void {
-    debugMouseEvent = e;
-    maybePrintDebugInfo();
+function trackPointer(evt: MouseEvent): void {
+    lastPointer = { x: evt.clientX, y: evt.clientY };
+    if(settings.showDebugInfo) { refreshHud(); }
 }
 
 function addEventListeners(): void {
@@ -280,11 +291,8 @@ function addEventListeners(): void {
 
     svgDocument.addEventListener('wheel', doScroll, { passive: false }); // Standard event for all modern browsers
     // The readout compares views as displayed, which depends on the window's shape.
-    window.addEventListener('resize', () => hud.setZoom(currentZoom()));
-
-    if(settings.showDebugInfo) {
-        document.addEventListener('mousemove', trackMouseForDebugInfo, false);
-    }
+    window.addEventListener('resize', refreshHud);
+    document.addEventListener('mousemove', trackPointer, false);
 }
 
 /** Converts a point in client (window) coordinates into `element`'s user space. */
@@ -304,7 +312,7 @@ function zoomMouseDown(evt: MouseEvent): void {
     if(isPanning() || evt.ctrlKey || evt.shiftKey) { return; }
 
     const start = clientToSvgPoint(evt.clientX, evt.clientY, zoomRectangle);
-    interaction = { kind: 'zoomBox', start };
+    setInteraction({ kind: 'zoomBox', start });
     zoomRectangle.setAttribute('x', String(start.x));
     zoomRectangle.setAttribute('y', String(start.y));
 
@@ -333,7 +341,7 @@ function getNumericAttribute(element: Element, name: string): number {
 function zoomMouseUp(): void {
     // the viewbox width and height is changed when the button is up
     if(interaction.kind === 'zoomBox') {
-        interaction = { kind: 'idle' };
+        setInteraction({ kind: 'idle' });
         const zoomRect = {
             x: getNumericAttribute(zoomRectangle, 'x'),
             y: getNumericAttribute(zoomRectangle, 'y'),
@@ -350,6 +358,11 @@ function zoomMouseUp(): void {
     // hide the zoom rectangle
     zoomRectangle.setAttribute('width', '0');
     zoomRectangle.setAttribute('height', '0');
+}
+
+function setInteraction(next: Interaction): void {
+    interaction = next;
+    if(settings.showDebugInfo) { refreshHud(); }
 }
 
 function isZoomingOrPanning(): boolean {
@@ -420,7 +433,7 @@ function spacebarPanEnd(evt: KeyboardEvent): void {
 // a pan starts only when nothing else is going on; held-key repeats are ignored
 function panBegin(source: PanSource): void {
     if(interaction.kind !== 'idle') { return; }
-    interaction = { kind: 'panReady', source };
+    setInteraction({ kind: 'panReady', source });
     svgDocument.style.cursor = 'move';
 }
 
@@ -428,7 +441,7 @@ function panBegin(source: PanSource): void {
 function panMove(evt: MouseEvent): void {
     if(interaction.kind === 'panReady') {
         const anchor = clientToSvgPoint(evt.clientX, evt.clientY, svgDocument);
-        interaction = { kind: 'panning', source: interaction.source, anchor };
+        setInteraction({ kind: 'panning', source: interaction.source, anchor });
         return;
     }
     if(interaction.kind !== 'panning') { return; }
@@ -440,7 +453,7 @@ function panMove(evt: MouseEvent): void {
 function panEnd(source: PanSource): void {
     if(interaction.kind !== 'panReady' && interaction.kind !== 'panning') { return; }
     if(interaction.source !== source) { return; }
-    interaction = { kind: 'idle' };
+    setInteraction({ kind: 'idle' });
     svgDocument.style.cursor = 'default';
 }
 
@@ -448,6 +461,7 @@ function panEnd(source: PanSource): void {
 // the area pointed to by the cursor will always stay under the cursor while scrolling/zooming in or out, just like google maps does
 // might be different scroll direction on Macs with "natural scroll" vs Windows
 function doScroll(evt: WheelEvent): void {
+    maybeLastWheel = { deltaY: evt.deltaY, deltaMode: evt.deltaMode };
     if(isZoomingOrPanning()) { return; }
     evt.preventDefault(); // prevent default scroll action
 
@@ -478,59 +492,14 @@ function disableSelection(): void {
     document.body.style.cursor = 'default';
 }
 
-function maybePrintDebugInfo(): void {
-    if(!settings.showDebugInfo) {
-        if(maybeDebugTextElement) {
-            document.body.removeChild(maybeDebugTextElement);
-            maybeDebugTextElement = null;
-        }
-        return;
-    }
-    const lines = [
-        'Debug Info:',
-        `ViewBox X: ${viewBox.x}`,
-        `ViewBox Y: ${viewBox.y}`,
-        `ViewBox Width: ${viewBox.width}`,
-        `ViewBox Height: ${viewBox.height}`,
-        `CurrentVBW/InitVBW: ${viewBox.width/origSVGWidth}`,
-        `CurrentVBH/InitVBH: ${viewBox.height/origSVGHeight}`,
-        `Client X: ${debugMouseEvent.clientX}`,
-        `Client Y: ${debugMouseEvent.clientY}`,
-        `SVG Navigator Version: ${getVersion()}`,
-        `Commit: ${BUILD_INFO.maybeCommit ?? UNAVAILABLE}`,
-        `Built at: ${BUILD_INFO.timestamp}`,
-    ];
-    if(!maybeDebugTextElement) {
-        maybeDebugTextElement = htmlDoc.createElement('div');
-        debugChildren.length = 0;
-        for(let count = 0; count < lines.length; count++) {
-            const child = htmlDoc.createElement('div');
-            child.style.padding = '1px 3px';
-            debugChildren.push(child);
-            maybeDebugTextElement.appendChild(child);
-        }
-        maybeDebugTextElement.style.position = 'fixed';
-        maybeDebugTextElement.style.top = '5px';
-        maybeDebugTextElement.style.left = '5px';
-        maybeDebugTextElement.style.pointerEvents = 'none';
-        maybeDebugTextElement.style.padding = '5px';
-        maybeDebugTextElement.style.background = 'rgba(0, 0, 0, 0.8)';
-        maybeDebugTextElement.style.border = '1px solid #BBB';
-        maybeDebugTextElement.style.borderRadius = '5px';
-        maybeDebugTextElement.style.color = 'white';
-        maybeDebugTextElement.style.fontFamily = '\'Consolas\', \'Lucida Grande\', sans-serif';
-
-        document.body.appendChild(maybeDebugTextElement); // add to DOM
-    }
-    debugChildren.forEach((child, index) => {
-        child.textContent = lines[index] ?? '';
-    });
-}
-
 function setViewBox(): void {
     svgDocument.setAttribute('viewBox', formatViewBox(viewBox));
+    refreshHud();
+}
+
+function refreshHud(): void {
     hud.setZoom(currentZoom());
-    maybePrintDebugInfo();
+    hud.setDebugInfo(settings.showDebugInfo ? collectDebugInfo() : null);
 }
 
 function currentZoom(): number {
@@ -543,6 +512,53 @@ function currentZoom(): number {
 function maybeGetStandaloneSvgRoot(): SVGSVGElement | null {
     const root = document.documentElement;
     return root instanceof SVGSVGElement ? root : null;
+}
+
+function readAuthoredFacts(svg: SVGSVGElement): Omit<DocumentFacts, 'viewBox' | 'viewBoxSource'> {
+    return {
+        authoredWidth: svg.getAttribute('width'),
+        authoredHeight: svg.getAttribute('height'),
+        authoredPreserveAspectRatio: svg.getAttribute('preserveAspectRatio'),
+        elementCount: svg.querySelectorAll('*').length,
+    };
+}
+
+function collectDebugInfo(): DebugInfo {
+    const svgPoint = clientToSvgPoint(lastPointer.x, lastPointer.y, svgDocument);
+    return {
+        viewBox,
+        zoomRatio: currentZoom(),
+        pointer: { client: lastPointer, svg: { x: svgPoint.x, y: svgPoint.y }, maybeElement: summarizeElementAt(lastPointer) },
+        document: documentFacts,
+        input: {
+            interaction: interaction.kind,
+            maybeLastWheel,
+            clickAndDragBehavior: settings.clickAndDragBehavior,
+            scrollSensitivity: settings.scrollSensitivity,
+            invertScroll: settings.invertScroll,
+        },
+        environment: {
+            browser: describeBrowser(navigator.userAgent, maybeUserAgentBrands()),
+            devicePixelRatio: window.devicePixelRatio,
+            windowWidth: getWidth(),
+            windowHeight: getHeight(),
+        },
+        build: { version: getVersion(), maybeCommit: BUILD_INFO.maybeCommit, timestamp: BUILD_INFO.timestamp },
+    };
+}
+
+// The zoom rectangle and the HUD sit over the artwork; report what's beneath them.
+function summarizeElementAt({ x, y }: Point): ElementSummary | null {
+    const maybeElement = document.elementsFromPoint(x, y)
+        .find((element) => element !== zoomRectangle && element.localName !== HUD_HOST_TAG);
+    if(!maybeElement) { return null; }
+    return { localName: maybeElement.localName, id: maybeElement.id, classNames: [...maybeElement.classList] };
+}
+
+// Client hints exist only in Chromium, and TypeScript's DOM types don't include them yet.
+function maybeUserAgentBrands(): readonly UaBrand[] | null {
+    const maybeData = (navigator as Navigator & { userAgentData?: { brands: readonly UaBrand[] } }).userAgentData;
+    return maybeData?.brands ?? null;
 }
 
 function getVersion(): string {

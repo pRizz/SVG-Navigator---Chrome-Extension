@@ -238,5 +238,53 @@ for (const browserName of BROWSERS) {
             await delay(SETTLE_MS);
             assert.deepEqual(await getViewBox(suite.page), zoomed);
         });
+
+        test('the debug card reports a viewBox derived from the size, and the authored width', async () => {
+            // Arrange
+            await suite.setSettings({ showDebugInfo: true });
+
+            // Act
+            await suite.openSvg('/no-viewbox.svg');
+
+            // Assert
+            const text = await hudText(suite.page, '.debug-body') ?? '';
+            assert.match(text, /derived from size/);
+            assert.match(text, /Authored width\s*400/);
+        });
+
+        test('the debug card minimizes to a chip and expands again', async () => {
+            // Arrange
+            await suite.setSettings({ showDebugInfo: true });
+            await suite.openSvg();
+
+            // Act
+            await (await hudElement(suite.page, '.debug-minimize')).click();
+            await waitForHudAttribute(suite.page, '.debug', 'hidden', '');
+            await (await hudElement(suite.page, '.debug-chip')).click();
+
+            // Assert
+            await waitForHudAttribute(suite.page, '.debug', 'hidden', null);
+            await waitForHudAttribute(suite.page, '.debug-chip', 'hidden', '');
+        });
+
+        // Firefox's WebDriver BiDi offers no clipboard permission override, so only Chrome can read it back.
+        if (browserName === 'chrome') {
+            test('Copy puts the debug info on the clipboard', async () => {
+                // Arrange
+                await suite.launched().defaultBrowserContext().overridePermissions(suite.fixtureOrigin(), ['clipboard-read', 'clipboard-sanitized-write']);
+                await suite.setSettings({ showDebugInfo: true });
+                await suite.openSvg();
+                await suite.page.bringToFront();
+
+                // Act
+                await (await hudElement(suite.page, '.debug-copy')).click();
+                await waitForHudAttribute(suite.page, '.debug-copy', 'aria-label', 'Copied');
+
+                // Assert
+                const copied = await suite.page.evaluate(() => navigator.clipboard.readText());
+                assert.match(copied, /^View\nX: /);
+                assert.match(copied, /\n\nBuild\nVersion: /);
+            });
+        }
     });
 }
