@@ -179,9 +179,10 @@ async function main(): Promise<void> {
         toolbarEnabled: settings.toolbarEnabled,
         position: settings.toolbarPosition,
         autoHide: settings.toolbarAutoHide,
+        savedBackground: settings.svgBackgroundColor,
+        clickAndDragBehavior: settings.clickAndDragBehavior,
     });
     addEventListeners();
-    applyBackgroundColor();
     maybePrintDebugInfo();
     hud.setZoom(currentZoom());
     // Registered only once an SVG is wrapped, so settings changes never touch other pages.
@@ -238,7 +239,7 @@ function applySetting(key: SettingKey): void {
         }
         break;
     case 'svgBackgroundColor':
-        applyBackgroundColor();
+        hud.setSavedBackground(settings.svgBackgroundColor);
         break;
     case 'toolbarEnabled':
         hud.setToolbarEnabled(settings.toolbarEnabled);
@@ -258,10 +259,6 @@ function applySetting(key: SettingKey): void {
 function trackMouseForDebugInfo(e: MouseEvent): void {
     debugMouseEvent = e;
     maybePrintDebugInfo();
-}
-
-function applyBackgroundColor(): void {
-    document.body.style.backgroundColor = settings.svgBackgroundColor;
 }
 
 function addEventListeners(): void {

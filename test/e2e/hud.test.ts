@@ -192,5 +192,51 @@ for (const browserName of BROWSERS) {
             // Assert
             assert.equal(await suite.page.$eval('.toolbarcontainer', (element) => getComputedStyle(element).opacity), '1');
         });
+
+        test('the background button switches to a checkerboard', async () => {
+            // Arrange
+            await suite.openSvg();
+
+            // Act
+            await (await hudElement(suite.page, '.background')).click();
+
+            // Assert
+            await suite.page.waitForFunction(
+                () => getComputedStyle(document.body).backgroundImage.includes('conic-gradient'),
+                { timeout: 5_000 },
+            );
+        });
+
+        test('a background color change mid-cycle shows the new color', async () => {
+            // Arrange
+            await suite.openSvg();
+            await (await hudElement(suite.page, '.background')).click();
+
+            // Act
+            await suite.setSettings({ svgBackgroundColor: 'rgb(255, 0, 0)' });
+
+            // Assert
+            await suite.page.waitForFunction(() => document.body.style.backgroundColor === 'rgb(255, 0, 0)', { timeout: 5_000 });
+        });
+
+        test('? lists the shortcuts, and Escape closes the list without resetting the view', async () => {
+            // Arrange
+            await suite.openSvg();
+            await suite.page.mouse.move(400, 300);
+            const original = await getViewBox(suite.page);
+            await suite.page.mouse.wheel({ deltaY: -200 });
+            const zoomed = await waitForViewBoxChange(suite.page, original);
+            await (await hudElement(suite.page, '.shortcuts')).click();
+            await waitForHudAttribute(suite.page, '.popover', 'hidden', null);
+            assert.match(await hudText(suite.page, '.popover') ?? '', /hold Space and move/i);
+
+            // Act
+            await suite.page.keyboard.press('Escape');
+
+            // Assert
+            await waitForHudAttribute(suite.page, '.popover', 'hidden', '');
+            await delay(SETTLE_MS);
+            assert.deepEqual(await getViewBox(suite.page), zoomed);
+        });
     });
 }

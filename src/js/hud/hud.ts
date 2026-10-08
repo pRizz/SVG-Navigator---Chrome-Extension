@@ -1,13 +1,16 @@
 /**
  * The heads-up display over a navigated SVG: a control pill pinned to a window edge or
- * corner, inside one shadow root so page styles can't reach it and its styles can't
- * reach the page. `svgNavigator.ts` drives it through the returned `HudHandle`.
+ * corner, its shortcuts popover, and the per-tab background cycle, all inside one
+ * shadow root so page styles can't reach them and their styles can't reach the page.
+ * `svgNavigator.ts` drives it through the returned `HudHandle`.
  */
 
-import type { ToolbarPosition } from '../../shared/settings';
+import type { ClickAndDragBehavior, ToolbarPosition } from '../../shared/settings';
+import { backgroundButtonTitle, backgroundCss, nextBackground, type BackgroundState } from './backgroundCycle';
 import { hudLayout } from './layout';
 import { createPill } from './pill';
 import { createShadowHost } from './shadowHost';
+import { createShortcutsPopover, shortcutRows } from './shortcuts';
 import { HUD_CSS } from './styles';
 import { IDLE_HIDE_MS, initialVisibility, isVisible, reduceVisibility, withAutoHide, type VisibilityEvent } from './visibility';
 import { zoomLabel } from './zoomLabel';
@@ -23,6 +26,9 @@ export interface HudOptions {
     toolbarEnabled: boolean;
     position: ToolbarPosition;
     autoHide: boolean;
+    savedBackground: string;
+    /** Fixed for the page's lifetime: the navigator binds drag behavior once, at load. */
+    clickAndDragBehavior: ClickAndDragBehavior;
 }
 
 export interface HudHandle {
@@ -30,6 +36,7 @@ export interface HudHandle {
     setToolbarEnabled: (enabled: boolean) => void;
     setPosition: (position: ToolbarPosition) => void;
     setAutoHide: (autoHide: boolean) => void;
+    setSavedBackground: (color: string) => void;
     destroy: () => void;
 }
 
@@ -42,13 +49,42 @@ export function mountHud(htmlDoc: Document, options: HudOptions): HudHandle {
     const listeners = new AbortController();
     const { signal } = listeners;
 
-    const pill = createPill(htmlDoc, options.actions);
-    const dock = htmlDoc.createElement('div');
-    dock.className = 'dock';
-    dock.append(pill.element);
-
+    let background: BackgroundState = 'saved';
+    let savedBackground = options.savedBackground;
     let visibility = initialVisibility(options.autoHide);
     let maybeIdleTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const popover = createShortcutsPopover(htmlDoc, shortcutRows(options.clickAndDragBehavior, navigator.userAgent.includes('Mac')));
+    const pill = createPill(htmlDoc, {
+        ...options.actions,
+        cycleBackground: () => {
+            background = nextBackground(background);
+            applyBackground();
+        },
+        toggleFullscreen,
+        toggleShortcuts: () => setShortcutsOpen(!popover.isOpen()),
+    }, { fullscreenEnabled: document.fullscreenEnabled });
+    const dock = htmlDoc.createElement('div');
+    dock.className = 'dock';
+    dock.append(pill.element, popover.element);
+
+    function applyBackground(): void {
+        document.body.style.background = backgroundCss(background, savedBackground);
+        pill.setBackgroundTitle(backgroundButtonTitle(background));
+    }
+
+    function toggleFullscreen(): void {
+        const request = document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+        request.catch((error: unknown) => {
+            console.warn('SVG Navigator: full screen request failed', error);
+        });
+    }
+
+    function setShortcutsOpen(open: boolean): void {
+        popover.setOpen(open);
+        pill.setShortcutsExpanded(open);
+        dispatch(open ? 'popoverOpen' : 'popoverClose');
+    }
 
     function dispatch(event: VisibilityEvent): void {
         visibility = reduceVisibility(visibility, event);
@@ -70,16 +106,21 @@ export function mountHud(htmlDoc: Document, options: HudOptions): HudHandle {
     }
 
     function setPosition(position: ToolbarPosition): void {
+        const layout = hudLayout(position);
         dock.dataset.position = position;
-        pill.element.dataset.orientation = hudLayout(position).orientation;
+        pill.element.dataset.orientation = layout.orientation;
+        popover.element.dataset.direction = layout.popoverDirection;
     }
 
     function setToolbarEnabled(enabled: boolean): void {
         if (enabled) {
             root.append(dock);
-        } else {
-            dock.remove();
+            return;
         }
+        if (popover.isOpen()) {
+            setShortcutsOpen(false);
+        }
+        dock.remove();
     }
 
     // A focused button activates on Space; the navigator must not also start a spacebar pan.
@@ -88,8 +129,23 @@ export function mountHud(htmlDoc: Document, options: HudOptions): HudHandle {
             event.stopPropagation();
         }
     }, { signal });
+    // Capture phase, so an Escape that closes the popover never reaches the navigator's
+    // own Escape (reset the view), whichever element has focus.
+    document.addEventListener('keyup', (event) => {
+        if (event.key !== 'Escape' || !popover.isOpen()) { return; }
+        event.stopPropagation();
+        setShortcutsOpen(false);
+        pill.shortcutsButton.focus();
+    }, { capture: true, signal });
+    document.addEventListener('pointerdown', (event) => {
+        if (popover.isOpen() && !event.composedPath().includes(dock)) {
+            setShortcutsOpen(false);
+        }
+    }, { capture: true, signal });
+    document.addEventListener('fullscreenchange', () => pill.setFullscreen(document.fullscreenElement !== null), { signal });
     // The navigator only zooms on wheel events over the SVG; this stops the page scrolling.
     dock.addEventListener('wheel', (event) => event.preventDefault(), { passive: false, signal });
+
     for (const type of ['mousemove', 'wheel', 'keydown'] as const) {
         document.addEventListener(type, onActivity, { passive: true, signal });
     }
@@ -112,6 +168,7 @@ export function mountHud(htmlDoc: Document, options: HudOptions): HudHandle {
 
     setPosition(options.position);
     setToolbarEnabled(options.toolbarEnabled);
+    applyBackground();
     renderVisibility();
     restartIdleTimer();
 
@@ -123,6 +180,11 @@ export function mountHud(htmlDoc: Document, options: HudOptions): HudHandle {
             visibility = withAutoHide(visibility, autoHide);
             renderVisibility();
             restartIdleTimer();
+        },
+        setSavedBackground: (color) => {
+            savedBackground = color;
+            background = 'saved';
+            applyBackground();
         },
         destroy: () => {
             listeners.abort();

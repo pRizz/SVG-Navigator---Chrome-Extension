@@ -19,3 +19,38 @@ export function shortcutRows(clickAndDragBehavior: ClickAndDragBehavior, isMac: 
         ['Reset view', 'Esc or Ctrl 0'],
     ];
 }
+
+export interface ShortcutsPopover {
+    element: HTMLDivElement;
+    isOpen: () => boolean;
+    setOpen: (open: boolean) => void;
+}
+
+export function createShortcutsPopover(htmlDoc: Document, rows: readonly ShortcutRow[]): ShortcutsPopover {
+    const element = htmlDoc.createElement('div');
+    element.className = 'popover';
+    element.id = 'shortcuts';
+    element.setAttribute('role', 'dialog');
+    element.setAttribute('aria-label', 'Shortcuts');
+    element.hidden = true;
+
+    const heading = htmlDoc.createElement('h2');
+    heading.textContent = 'Shortcuts';
+    const list = htmlDoc.createElement('dl');
+    for (const [action, keys] of rows) {
+        const term = htmlDoc.createElement('dt');
+        term.textContent = action;
+        const detail = htmlDoc.createElement('dd');
+        detail.textContent = keys;
+        list.append(term, detail);
+    }
+    element.append(heading, list);
+
+    return {
+        element,
+        isOpen: () => !element.hidden,
+        setOpen: (open) => {
+            element.hidden = !open;
+        },
+    };
+}
