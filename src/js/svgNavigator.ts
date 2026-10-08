@@ -178,6 +178,7 @@ async function main(): Promise<void> {
         actions: { zoomIn: () => zoomBy(0.8), zoomOut: () => zoomBy(1.25), reset: resetViewBox },
         toolbarEnabled: settings.toolbarEnabled,
         position: settings.toolbarPosition,
+        autoHide: settings.toolbarAutoHide,
     });
     addEventListeners();
     applyBackgroundColor();
@@ -244,6 +245,9 @@ function applySetting(key: SettingKey): void {
         break;
     case 'toolbarPosition':
         hud.setPosition(settings.toolbarPosition);
+        break;
+    case 'toolbarAutoHide':
+        hud.setAutoHide(settings.toolbarAutoHide);
         break;
     default:
         break;

@@ -158,6 +158,33 @@ for (const browserName of BROWSERS) {
             assert.equal(await suite.page.$eval(HUD_HOST, (host) => getComputedStyle(host).display), 'block');
         });
 
+        test('fades after a quiet spell and wakes on mouse movement', async () => {
+            // Arrange
+            await suite.openSvg();
+
+            // Act
+            await waitForHudAttribute(suite.page, '.dock', 'data-hidden', '');
+            await suite.page.mouse.move(200, 200);
+
+            // Assert
+            await waitForHudAttribute(suite.page, '.dock', 'data-hidden', null);
+        });
+
+        test('stays visible with auto-hide off', async () => {
+            // Arrange
+            await suite.setSettings({ toolbarAutoHide: false });
+            await suite.openSvg();
+
+            // Act
+            await delay(2_500);
+
+            // Assert
+            assert.equal(await suite.page.evaluate(
+                (host: string) => document.querySelector(host)?.shadowRoot?.querySelector('.dock')?.hasAttribute('data-hidden'),
+                HUD_HOST,
+            ), false);
+        });
+
         test('leaves the styling of HTML pages alone', async () => {
             // Act
             await suite.page.goto(`${suite.fixtureOrigin()}/styled-page.html`);

@@ -9,6 +9,7 @@ import { hudLayout } from './layout';
 import { createPill } from './pill';
 import { createShadowHost } from './shadowHost';
 import { HUD_CSS } from './styles';
+import { IDLE_HIDE_MS, initialVisibility, isVisible, reduceVisibility, withAutoHide, type VisibilityEvent } from './visibility';
 import { zoomLabel } from './zoomLabel';
 
 export interface HudActions {
@@ -21,12 +22,14 @@ export interface HudOptions {
     actions: HudActions;
     toolbarEnabled: boolean;
     position: ToolbarPosition;
+    autoHide: boolean;
 }
 
 export interface HudHandle {
     setZoom: (ratio: number) => void;
     setToolbarEnabled: (enabled: boolean) => void;
     setPosition: (position: ToolbarPosition) => void;
+    setAutoHide: (autoHide: boolean) => void;
     destroy: () => void;
 }
 
@@ -43,6 +46,28 @@ export function mountHud(htmlDoc: Document, options: HudOptions): HudHandle {
     const dock = htmlDoc.createElement('div');
     dock.className = 'dock';
     dock.append(pill.element);
+
+    let visibility = initialVisibility(options.autoHide);
+    let maybeIdleTimer: ReturnType<typeof setTimeout> | undefined;
+
+    function dispatch(event: VisibilityEvent): void {
+        visibility = reduceVisibility(visibility, event);
+        renderVisibility();
+    }
+
+    function renderVisibility(): void {
+        dock.toggleAttribute('data-hidden', !isVisible(visibility));
+    }
+
+    function restartIdleTimer(): void {
+        clearTimeout(maybeIdleTimer);
+        maybeIdleTimer = setTimeout(() => dispatch('idleElapsed'), IDLE_HIDE_MS);
+    }
+
+    function onActivity(): void {
+        dispatch('activity');
+        restartIdleTimer();
+    }
 
     function setPosition(position: ToolbarPosition): void {
         dock.dataset.position = position;
@@ -65,16 +90,43 @@ export function mountHud(htmlDoc: Document, options: HudOptions): HudHandle {
     }, { signal });
     // The navigator only zooms on wheel events over the SVG; this stops the page scrolling.
     dock.addEventListener('wheel', (event) => event.preventDefault(), { passive: false, signal });
+    for (const type of ['mousemove', 'wheel', 'keydown'] as const) {
+        document.addEventListener(type, onActivity, { passive: true, signal });
+    }
+    dock.addEventListener('pointerenter', () => dispatch('pointerEnter'), { signal });
+    dock.addEventListener('pointerleave', () => dispatch('pointerLeave'), { signal });
+    // Only keyboard focus pins the HUD: a mouse click also focuses its button, and that
+    // must not keep the HUD up once the pointer leaves.
+    root.addEventListener('focusin', (event) => {
+        const maybeTarget = event.composedPath()[0];
+        if (maybeTarget instanceof Element && maybeTarget.matches(':focus-visible')) {
+            dispatch('focusIn');
+        }
+    }, { signal });
+    root.addEventListener('focusout', (event) => {
+        const maybeNext = event instanceof FocusEvent ? event.relatedTarget : null;
+        if (!(maybeNext instanceof Node && dock.contains(maybeNext))) {
+            dispatch('focusOut');
+        }
+    }, { signal });
 
     setPosition(options.position);
     setToolbarEnabled(options.toolbarEnabled);
+    renderVisibility();
+    restartIdleTimer();
 
     return {
         setZoom: (ratio) => pill.setZoomLabel(zoomLabel(ratio)),
         setToolbarEnabled,
         setPosition,
+        setAutoHide: (autoHide) => {
+            visibility = withAutoHide(visibility, autoHide);
+            renderVisibility();
+            restartIdleTimer();
+        },
         destroy: () => {
             listeners.abort();
+            clearTimeout(maybeIdleTimer);
             host.remove();
         },
     };
