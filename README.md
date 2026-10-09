@@ -181,7 +181,9 @@ For development with hot-reload:
 
 These commands will build the extension and start a development server that watches for changes.
 For Firefox, `web-ext run` loads the bundled build in `.build/firefox`; run `bun run build:dev` after
-editing `src/` and Firefox reloads the extension automatically.
+editing `src/` and Firefox reloads the extension automatically. `start:firefox` needs Node.js on
+`PATH` as well as Bun: `scripts/runFirefox.ts` runs web-ext on Node, because under Bun it can't
+connect to Firefox.
 
 ### Source layout
 

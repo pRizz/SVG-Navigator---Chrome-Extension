@@ -11,6 +11,7 @@
 - In a standalone SVG page, `document` is an XML document: build HTML UI from the wrapper `htmlDoc` in `src/js/svgNavigator.ts`, never `document.createElement`.
 - Firefox runs through WebDriver BiDi, which has its own quirks; the workarounds are commented in `test/e2e/harness.ts` and `test/e2e/navigator.test.ts`.
 - The HUD (`src/js/hud/`) lives in an open shadow root on `<svg-navigator-hud>`; E2E tests reach inside with the `hudElement` helpers in `test/e2e/harness.ts`, not `page.$`.
+- `bun run start:firefox` runs web-ext on Node via `scripts/runFirefox.ts`: under Bun, web-ext's first refused connection to Firefox's debugger port escapes its retry loop and aborts. Inside Bun scripts, `node` is Bun's shim (`run.bun` in `bunfig.toml`).
 - `tsconfig.node.json` uses bundler resolution because unit tests import extension modules whose relative imports omit file extensions.
 - `bun run screenshots:app-store` regenerates `store/app-store/screenshots/` deterministically; an unrelated change should leave them byte-identical.
 - Releases: push a `vX.Y` tag that matches `src/manifest.json`. See "Releasing" in `README.md`.

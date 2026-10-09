@@ -6,7 +6,7 @@
   "description": "SVG Navigator is a browser extension that adds infinite zoom and panning to existing SVG files on the web.",
   "scripts": {
     "start:chrome": "bun run prebuild && webextension-toolbox dev chrome --src src",
-    "start:firefox": "bun run build:dev && web-ext run",
+    "start:firefox": "bun run build:dev && bun scripts/runFirefox.ts",
     "start:safari": "bun run prebuild && webextension-toolbox dev safari --src src",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
