@@ -54,6 +54,27 @@ for (const browserName of BROWSERS) {
             assert.equal(after.height, before.height);
         });
 
+        test('dragging with Shift held pans like a plain drag, and Escape restores the view', async () => {
+            // Arrange
+            await suite.openSvg();
+            const original = await getViewBox(suite.page);
+
+            // Act
+            await suite.page.keyboard.down('Shift');
+            await suite.page.mouse.move(400, 300);
+            await suite.page.mouse.down();
+            await suite.page.mouse.move(300, 250, { steps: 5 });
+            await suite.page.mouse.up();
+            await suite.page.keyboard.up('Shift');
+            const panned = await waitForViewBoxChange(suite.page, original);
+            await suite.page.keyboard.press('Escape');
+
+            // Assert
+            assert.ok(panned.x > original.x && panned.y > original.y, `expected a pan, got ${JSON.stringify(panned)}`);
+            assert.equal(panned.width, original.width);
+            assert.deepEqual(await waitForViewBoxChange(suite.page, panned), original);
+        });
+
         test('holding Space while moving the mouse pans without zooming', async () => {
             // Arrange
             await suite.openSvg();
