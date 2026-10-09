@@ -29,6 +29,18 @@ export function maybeParseViewBox(text: string): ViewBox | null {
     return isUsable ? { x, y, width, height } : null;
 }
 
+/**
+ * Whether the browser can show `viewBox`: every number finite, a positive size, and
+ * a size big enough to move its own coordinates. Zooming far enough in makes
+ * `x + width === x` in double precision, after which every further step breaks the
+ * view, and in the end it overflows to Infinity or NaN.
+ */
+export function isRepresentableViewBox({ x, y, width, height }: ViewBox): boolean {
+    return [x, y, width, height].every(Number.isFinite)
+        && width > 0 && height > 0
+        && x + width > x && y + height > y;
+}
+
 /** The axis-aligned rectangle spanned by two opposite corners. */
 export function rectFromCorners(a: Point, b: Point): ViewBox {
     return {

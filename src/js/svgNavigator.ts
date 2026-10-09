@@ -53,6 +53,7 @@ import {
     displayedZoom,
     fitToAspectRatio,
     formatViewBox,
+    isRepresentableViewBox,
     maybeParseViewBox,
     panViewBox,
     rectFromCorners,
@@ -350,8 +351,7 @@ function zoomMouseUp(): void {
         };
         if((zoomRect.width*zoomRect.height) > 1e-6) { // prevent zooming on tiny area; svg visual starts acting weird
             // make aspect ratio of new viewbox match the screen aspect ratio; useful later, when adding debug info to corner of screen
-            viewBox = fitToAspectRatio(zoomRect, getWidth()/getHeight());
-            setViewBox();
+            showViewBox(fitToAspectRatio(zoomRect, getWidth()/getHeight()));
         }
     }
 
@@ -387,8 +387,7 @@ function zoomOut(evt: KeyboardEvent): void {
 
 // below 1 zooms in, above 1 zooms out
 function zoomBy(zoomAmount: number): void {
-    viewBox = zoomAroundCenter(viewBox, zoomAmount);
-    setViewBox();
+    showViewBox(zoomAroundCenter(viewBox, zoomAmount));
 }
 
 // zoom back to the original view when Escape is released
@@ -400,8 +399,7 @@ function zoomOriginal(evt: KeyboardEvent): void {
 }
 
 function resetViewBox(): void {
-    viewBox = originalViewBox;
-    setViewBox();
+    showViewBox(originalViewBox);
 }
 
 // zoom according to ctrl keys
@@ -446,8 +444,7 @@ function panMove(evt: MouseEvent): void {
     }
     if(interaction.kind !== 'panning') { return; }
 
-    viewBox = panViewBox(viewBox, interaction.anchor, clientToSvgPoint(evt.clientX, evt.clientY, svgDocument));
-    setViewBox();
+    showViewBox(panViewBox(viewBox, interaction.anchor, clientToSvgPoint(evt.clientX, evt.clientY, svgDocument)));
 }
 
 function panEnd(source: PanSource): void {
@@ -471,8 +468,7 @@ function doScroll(evt: WheelEvent): void {
         invert: settings.invertScroll,
     });
     const p = clientToSvgPoint(evt.clientX, evt.clientY, svgDocument);
-    viewBox = zoomAroundPoint(viewBox, p, zoomAmount);
-    setViewBox();
+    showViewBox(zoomAroundPoint(viewBox, p, zoomAmount));
 }
 
 // function to get the height of the window containing the svg in pixels; this is not the same as the svg viewbox or screen resolution
@@ -490,6 +486,14 @@ function getWidth(): number {
 function disableSelection(): void {
     document.onselectstart = function () {return false;};
     document.body.style.cursor = 'default';
+}
+
+// Every view change goes through here. A step the browser can't show is ignored, so
+// zooming stops at the deepest usable view instead of breaking it (#23).
+function showViewBox(next: ViewBox): void {
+    if(!isRepresentableViewBox(next)) { return; }
+    viewBox = next;
+    setViewBox();
 }
 
 function setViewBox(): void {

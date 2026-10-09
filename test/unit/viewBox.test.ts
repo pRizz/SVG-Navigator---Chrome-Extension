@@ -4,6 +4,7 @@ import {
     displayedZoom,
     fitToAspectRatio,
     formatViewBox,
+    isRepresentableViewBox,
     maybeParseViewBox,
     panViewBox,
     rectFromCorners,
@@ -191,5 +192,54 @@ describe('displayedZoom', () => {
 
         // Assert
         assert.equal(zoom, 2);
+    });
+});
+
+describe('isRepresentableViewBox', () => {
+    test('accepts an ordinary view', () => {
+        assert.equal(isRepresentableViewBox({ x: -10, y: 20, width: 300, height: 200 }), true);
+    });
+
+    test('rejects a view that overflowed to Infinity', () => {
+        assert.equal(isRepresentableViewBox({ x: -Infinity, y: 0, width: 1, height: 1 }), false);
+    });
+
+    test('rejects a view with a NaN coordinate', () => {
+        assert.equal(isRepresentableViewBox({ x: 0, y: NaN, width: 1, height: 1 }), false);
+    });
+
+    test('rejects a view with no size', () => {
+        assert.equal(isRepresentableViewBox({ x: 0, y: 0, width: 0, height: 10 }), false);
+    });
+
+    test('rejects a view too narrow to change its x coordinate', () => {
+        // Arrange: at x = 400, a double can't tell 400 from 400 + 1e-14
+        const tooNarrow = { x: 400, y: 0, width: 1e-14, height: 1 };
+
+        // Act
+        const isRepresentable = isRepresentableViewBox(tooNarrow);
+
+        // Assert
+        assert.equal(isRepresentable, false);
+    });
+
+    test('rejects a view too short to change its y coordinate', () => {
+        assert.equal(isRepresentableViewBox({ x: 0, y: 1e20, width: 10, height: 1 }), false);
+    });
+
+    test('lets repeated zooming in stop at a representable view instead of breaking', () => {
+        // Arrange
+        let view = { x: 0, y: 0, width: 800, height: 600 };
+
+        // Act: keep halving around an off-grid point until the next step is refused
+        for (let step = 0; step < 2_000; step++) {
+            const next = zoomAroundPoint(view, { x: 400.123, y: 300.456 }, 0.5);
+            if (!isRepresentableViewBox(next)) { break; }
+            view = next;
+        }
+
+        // Assert
+        assert.ok([view.x, view.y, view.width, view.height].every(Number.isFinite), JSON.stringify(view));
+        assert.ok(view.width > 0 && view.height > 0, JSON.stringify(view));
     });
 });
