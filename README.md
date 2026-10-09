@@ -29,7 +29,6 @@ Go to a website with an SVG file. The extension begins working on the SVG graphi
 
 SVGs are vector graphics, so they stay sharp however far you zoom in. SVG Navigator has no zoom
 limit; only the browser's numeric precision stops it, many millions of times in.
-Trying to pan on an SVG by shift click and dragging currently causes undesirable panning; possibly a Google Chrome bug/feature.
 
 ## Browser notes
 
