@@ -113,6 +113,16 @@ for (const browserName of BROWSERS) {
             assert.ok(viewBox.width > 0 && viewBox.height > 0, `unexpected viewBox ${JSON.stringify(viewBox)}`);
         });
 
+        test('sizes the view of a percent-sized SVG without a viewBox to the window', async () => {
+            // Act
+            await suite.openSvg('/percent-size.svg');
+
+            // Assert: 100% of the window, not 100 user units
+            const viewBox = await getViewBox(suite.page);
+            const windowWidth = await suite.page.evaluate(() => innerWidth);
+            assert.equal(viewBox.width, windowWidth);
+        });
+
         test('handles an SVG served from a URL without an .svg extension', async () => {
             // Act
             await suite.openSvg('/diagram');

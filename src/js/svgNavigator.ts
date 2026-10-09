@@ -54,6 +54,7 @@ import {
     fitToAspectRatio,
     formatViewBox,
     isRepresentableViewBox,
+    lengthToPixels,
     maybeParseViewBox,
     panViewBox,
     rectFromCorners,
@@ -84,8 +85,6 @@ let svgDocument: SVGSVGElement;
 // wrap the svg document in an html document
 let svgDocElement: SVGSVGElement;
 let htmlDoc: Document;
-let origSVGWidth: number;
-let origSVGHeight: number;
 // the view that Escape, Ctrl+0, and the HUD's zoom readout return to
 let originalViewBox: ViewBox;
 let viewBox: ViewBox;
@@ -161,10 +160,9 @@ async function main(): Promise<void> {
     // keep aspect ratio; just remove attribute if it exists
     svgDocument.removeAttribute('preserveAspectRatio');
 
-    // save original svg width and height
-    // TODO problematic when width or height contain percent character
-    origSVGWidth = parseFloat(svgDocument.getAttribute('width') || String(getWidth()));
-    origSVGHeight = parseFloat(svgDocument.getAttribute('height') || String(getHeight()));
+    // the authored size in pixels, which sizes the view when there's no viewBox (#9)
+    const authoredWidth = lengthToPixels(svgDocument.getAttribute('width'), getWidth());
+    const authoredHeight = lengthToPixels(svgDocument.getAttribute('height'), getHeight());
     // make width and height 100% to fill client web browser
     svgDocument.setAttribute('width', '100%');
     svgDocument.setAttribute('height', '100%');
@@ -176,7 +174,7 @@ async function main(): Promise<void> {
     // preferably, a missing viewbox would be the bounding box of the SVG from getBBox();
     // unfortunatley, chrome's getBBox() is bugged for some SVG documents, ex: http://upload.wikimedia.org/wikipedia/commons/d/dc/USA_orthographic.svg
     // so the viewbox starts at 0,0 with the SVG's width and height
-    const authoredViewBox = maybeAuthoredViewBox ?? { x: 0, y: 0, width: origSVGWidth, height: origSVGHeight };
+    const authoredViewBox = maybeAuthoredViewBox ?? { x: 0, y: 0, width: authoredWidth, height: authoredHeight };
     documentFacts = {
         ...authored,
         viewBox: authoredViewBox,

@@ -5,6 +5,7 @@ import {
     fitToAspectRatio,
     formatViewBox,
     isRepresentableViewBox,
+    lengthToPixels,
     maybeParseViewBox,
     panViewBox,
     rectFromCorners,
@@ -241,5 +242,27 @@ describe('isRepresentableViewBox', () => {
         // Assert
         assert.ok([view.x, view.y, view.width, view.height].every(Number.isFinite), JSON.stringify(view));
         assert.ok(view.width > 0 && view.height > 0, JSON.stringify(view));
+    });
+});
+
+describe('lengthToPixels', () => {
+    test('reads a unitless length as pixels', () => {
+        assert.equal(lengthToPixels('400', 1000), 400);
+    });
+
+    test('reads a percentage of the viewport', () => {
+        assert.equal(lengthToPixels('50%', 800), 400);
+    });
+
+    test('converts absolute units to CSS pixels', () => {
+        assert.equal(lengthToPixels('72pt', 800), 96);
+    });
+
+    test('uses the whole viewport when the length is missing', () => {
+        assert.equal(lengthToPixels(null, 800), 800);
+    });
+
+    test('uses the whole viewport when the length is not a number', () => {
+        assert.equal(lengthToPixels('auto', 800), 800);
     });
 });

@@ -41,6 +41,30 @@ export function isRepresentableViewBox({ x, y, width, height }: ViewBox): boolea
         && x + width > x && y + height > y;
 }
 
+/** CSS pixels per absolute unit an SVG `width` or `height` may use. */
+const PIXELS_PER_UNIT: Readonly<Record<string, number>> = {
+    px: 1, pt: 4 / 3, pc: 16, in: 96, cm: 96 / 2.54, mm: 96 / 25.4,
+};
+
+/**
+ * Converts an SVG `width` or `height` attribute to CSS pixels, the size of one user
+ * unit when there's no viewBox. Percentages are of `viewportPixels`, as they are for a
+ * standalone SVG; a missing or unreadable length fills the viewport. Relative units
+ * other than `%` are read as pixels.
+ */
+export function lengthToPixels(maybeLength: string | null, viewportPixels: number): number {
+    const match = /^\s*([+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)\s*([a-z%]*)\s*$/i.exec(maybeLength ?? '');
+    if (!match) {
+        return viewportPixels;
+    }
+    const value = Number(match[1]);
+    const unit = (match[2] ?? '').toLowerCase();
+    if (unit === '%') {
+        return (viewportPixels * value) / 100;
+    }
+    return value * (PIXELS_PER_UNIT[unit] ?? 1);
+}
+
 /** The axis-aligned rectangle spanned by two opposite corners. */
 export function rectFromCorners(a: Point, b: Point): ViewBox {
     return {
