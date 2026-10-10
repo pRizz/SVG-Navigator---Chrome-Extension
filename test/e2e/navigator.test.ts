@@ -125,7 +125,10 @@ for (const browserName of BROWSERS) {
             const after = await waitForViewBoxChange(suite.page, before);
             const pointAfter = await svgPointAt(200, 150);
             assert.ok(Math.abs(after.width - before.width / 2) < 1e-6, `width ${after.width} should be ${before.width / 2}`);
-            assert.ok(Math.abs(pointAfter.x - pointBefore.x) < 1e-6 && Math.abs(pointAfter.y - pointBefore.y) < 1e-6,
+            // Firefox on Linux computes screen transforms in single precision (float32), so
+            // allow a hundredth of a pixel rather than an exact match.
+            const hundredthOfAPixel = (0.01 * after.width) / await suite.page.evaluate(() => innerWidth);
+            assert.ok(Math.abs(pointAfter.x - pointBefore.x) < hundredthOfAPixel && Math.abs(pointAfter.y - pointBefore.y) < hundredthOfAPixel,
                 `point moved from ${JSON.stringify(pointBefore)} to ${JSON.stringify(pointAfter)}`);
         });
 
