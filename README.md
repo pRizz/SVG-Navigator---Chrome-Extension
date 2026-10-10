@@ -25,6 +25,8 @@ Go to a website with an SVG file. The extension begins working on the SVG graphi
 - Zoom: click and drag a zoom box of the desired area if enabled
 - Zoom out: tap alt key
 - Reset zoom: press Esc or 0
+- Steps from the buttons, keys, double-clicks, and zoom boxes ease smoothly into place (instantly with the
+  OS's reduced motion setting); the wheel, pinch, and dragging stay direct
 - Share a view: the address bar keeps the current view (`#svgView(viewBox(...))`), so reloading or
   sending the link opens that exact spot
 - Keyboard: arrow keys pan (hold Shift for bigger steps), + and − zoom (also with Ctrl or ⌘), F

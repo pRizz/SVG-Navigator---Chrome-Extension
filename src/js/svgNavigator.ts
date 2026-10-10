@@ -43,6 +43,7 @@ import { keyAction, type KeyAction } from './input/keyActions';
 import { attachPointerInput, clientToSvgPoint, type PointerInput } from './input/pointer';
 import { formatSvgViewFragment, maybeParseSvgViewFragment, ownsFragment } from './viewFragment';
 import { listenForPageSwitch, readPageState } from './offSwitch';
+import { createViewAnimator } from './viewAnimation';
 import { HUD_HOST_TAG } from './hud/shadowHost';
 import {
     describeBrowser,
@@ -89,6 +90,21 @@ let settings: Settings = { ...DEFAULT_SETTINGS };
 // how long the view must rest before the URL's view link is rewritten
 const VIEW_LINK_DELAY_MS = 300;
 let maybeViewLinkTimer: ReturnType<typeof setTimeout> | undefined;
+
+// How long a discrete step (a button, a key, a double-click) takes to ease into place (#46).
+const STEP_ANIMATION_MS = 150;
+const viewAnimator = createViewAnimator({
+    frames: {
+        now: () => performance.now(),
+        request: (callback) => requestAnimationFrame(callback),
+        cancel: (handle) => cancelAnimationFrame(handle),
+    },
+    durationMs: STEP_ANIMATION_MS,
+    current: () => viewBox,
+    show: applyViewBox,
+    // Lets E2E tests wait for a step to settle before reading the view.
+    onAnimatingChange: (animating) => document.documentElement.toggleAttribute('data-svg-navigator-animating', animating),
+});
 
 // for the debug card
 let lastPointer: Point = { x: 0, y: 0 };
@@ -262,7 +278,9 @@ function addEventListeners(): void {
         svg: svgDocument,
         clickAndDragBehavior: settings.clickAndDragBehavior,
         view: () => viewBox,
+        stepView,
         showViewBox,
+        animateViewBox,
         wheelSettings: () => ({ sensitivity: settings.scrollSensitivity, invert: settings.invertScroll }),
         onInteractionChange: () => { if(settings.showDebugInfo) { refreshHud(); } },
         onWheel: (sample) => { maybeLastWheel = sample; },
@@ -318,18 +336,18 @@ function runKeyAction(action: KeyAction): void {
         resetViewBox();
         return;
     case 'nudge':
-        showViewBox(nudgeViewBox(viewBox, action.dx, action.dy));
+        animateViewBox(nudgeViewBox(stepView(), action.dx, action.dy));
         return;
     }
 }
 
 // below 1 zooms in, above 1 zooms out
 function zoomBy(zoomAmount: number): void {
-    showViewBox(zoomAroundCenter(viewBox, zoomAmount));
+    animateViewBox(zoomAroundCenter(stepView(), zoomAmount));
 }
 
 function resetViewBox(): void {
-    showViewBox(originalViewBox);
+    animateViewBox(originalViewBox);
 }
 
 // function to get the height of the window containing the svg in pixels; this is not the same as the svg viewbox or screen resolution
@@ -349,9 +367,31 @@ function disableSelection(): void {
     document.body.style.cursor = 'default';
 }
 
+// Direct view changes (the wheel, a drag, a link) take over from any step still easing in.
+function showViewBox(next: ViewBox): void {
+    viewAnimator.cancel();
+    applyViewBox(next);
+}
+
+// Discrete steps ease into place, unless the OS asks for reduced motion.
+function animateViewBox(next: ViewBox): void {
+    if(!isRepresentableViewBox(next)) { return; }
+    if(matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        showViewBox(next);
+        return;
+    }
+    viewAnimator.animateTo(next);
+}
+
+// The view the next step builds on: a step still easing in counts as done, so quick
+// repeated steps end exactly where the same steps would without animation.
+function stepView(): ViewBox {
+    return viewAnimator.maybeTarget() ?? viewBox;
+}
+
 // Every view change goes through here. A step the browser can't show is ignored, so
 // zooming stops at the deepest usable view instead of breaking it (#23).
-function showViewBox(next: ViewBox): void {
+function applyViewBox(next: ViewBox): void {
     if(!isRepresentableViewBox(next)) { return; }
     viewBox = next;
     setViewBox();

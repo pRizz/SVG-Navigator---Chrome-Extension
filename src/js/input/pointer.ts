@@ -36,8 +36,14 @@ export interface PointerDeps {
     /** The root `<svg>`, which receives the mouse and wheel events. */
     svg: SVGSVGElement;
     clickAndDragBehavior: ClickAndDragBehavior;
+    /** The view on screen, which drags and the wheel work from. */
     view: () => ViewBox;
+    /** The view a discrete step builds on: the target of a step still easing in, if any. */
+    stepView: () => ViewBox;
+    /** Shows a view at once, cancelling any step still easing in. */
     showViewBox: (next: ViewBox) => void;
+    /** Eases to a view, for discrete steps such as a double-click. */
+    animateViewBox: (next: ViewBox) => void;
     /** The current wheel settings; read on every wheel event, so changes apply live. */
     wheelSettings: () => { sensitivity: number, invert: boolean };
     onInteractionChange: () => void;
@@ -145,7 +151,7 @@ export function attachPointerInput(deps: PointerDeps): PointerInput {
             };
             if(zoomRect.width * zoomRect.height > MIN_ZOOM_BOX_AREA) {
                 // match the window's aspect ratio, so the whole box shows, centered
-                deps.showViewBox(fitToAspectRatio(zoomRect, innerWidth/innerHeight));
+                deps.animateViewBox(fitToAspectRatio(zoomRect, innerWidth/innerHeight));
             }
         }
         zoomRectangle.setAttribute('width', '0');
@@ -178,7 +184,7 @@ export function attachPointerInput(deps: PointerDeps): PointerInput {
         if(evt.button !== 0 || interaction.kind !== 'idle') { return; }
         if(!shouldZoomOnDoubleClick(evt.timeStamp, maybeLastDragEndMs)) { return; }
         evt.preventDefault();
-        deps.showViewBox(zoomAroundPoint(deps.view(), toSvgPoint(evt, svg), doubleClickZoomFactor(evt.shiftKey)));
+        deps.animateViewBox(zoomAroundPoint(deps.stepView(), toSvgPoint(evt, svg), doubleClickZoomFactor(evt.shiftKey)));
     }
 
     // registered before the drag handlers, so a press is seen before a pan or zoom box starts

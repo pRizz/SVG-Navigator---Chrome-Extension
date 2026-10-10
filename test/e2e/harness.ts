@@ -139,11 +139,15 @@ export async function getViewBox(page: Page): Promise<ViewBox> {
     return { x, y, width, height };
 }
 
-/** Waits until the root SVG's viewBox differs from `previous`, then returns it. */
+/**
+ * Waits until the root SVG's viewBox differs from `previous` and any smooth zoom has
+ * settled (the navigator marks the page root while it animates), then returns it.
+ */
 export async function waitForViewBoxChange(page: Page, previous: ViewBox): Promise<ViewBox> {
     const previousText = [previous.x, previous.y, previous.width, previous.height].join(' ');
     await page.waitForFunction(
-        (expected) => (document.querySelector('svg')?.getAttribute('viewBox') ?? '').trim().split(/[\s,]+/).map(Number).join(' ') !== expected,
+        (expected) => !document.documentElement.hasAttribute('data-svg-navigator-animating')
+            && (document.querySelector('svg')?.getAttribute('viewBox') ?? '').trim().split(/[\s,]+/).map(Number).join(' ') !== expected,
         { timeout: 5_000 },
         previousText,
     );

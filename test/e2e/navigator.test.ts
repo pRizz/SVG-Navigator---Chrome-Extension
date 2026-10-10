@@ -225,6 +225,83 @@ for (const browserName of BROWSERS) {
             assert.deepEqual(await waitForViewBoxChange(suite.page, zoomed), original);
         });
 
+        /**
+         * Starts recording every viewBox width the page shows, and every switch of the
+         * navigator's animating marker; read them back with `recording`.
+         */
+        async function startRecording(): Promise<void> {
+            await suite.page.evaluate(() => {
+                const svg = document.querySelector('svg');
+                if (!svg) { throw new Error('no <svg>'); }
+                const recording = { widths: [] as number[], animating: [] as boolean[] };
+                Object.assign(window, { recording });
+                new MutationObserver(() => {
+                    recording.widths.push(Number((svg.getAttribute('viewBox') ?? '').trim().split(/[\s,]+/)[2]));
+                }).observe(svg, { attributeFilter: ['viewBox'] });
+                new MutationObserver(() => {
+                    recording.animating.push(document.documentElement.hasAttribute('data-svg-navigator-animating'));
+                }).observe(document.documentElement, { attributeFilter: ['data-svg-navigator-animating'] });
+            });
+        }
+
+        async function recording(): Promise<{ widths: number[], animating: boolean[] }> {
+            return suite.page.evaluate(() => (window as unknown as { recording: { widths: number[], animating: boolean[] } }).recording);
+        }
+
+        test('a zoom step eases into place and ends exactly on the step', async () => {
+            // Arrange
+            await suite.openSvg();
+            const original = await getViewBox(suite.page);
+            await startRecording();
+
+            // Act
+            await suite.page.keyboard.press('Equal');
+            const settled = await waitForViewBoxChange(suite.page, original);
+
+            // Assert
+            // Headless browsers deliver animation frames too irregularly to count in-between
+            // views here; unit tests check those against a hand-driven clock.
+            const { animating } = await recording();
+            assert.deepEqual(animating, [true, false], 'the step should animate, then settle');
+            assert.equal(settled.width, original.width * 0.8);
+        });
+
+        test('quick repeated zoom steps end exactly where the same steps would without animation', async () => {
+            // Arrange
+            await suite.openSvg();
+            const original = await getViewBox(suite.page);
+
+            // Act: three presses, faster than one step takes to settle
+            await suite.page.keyboard.press('Equal');
+            await suite.page.keyboard.press('Equal');
+            await suite.page.keyboard.press('Equal');
+            const settled = await waitForViewBoxChange(suite.page, original);
+
+            // Assert
+            assert.ok(Math.abs(settled.width - original.width * 0.8 ** 3) < 1e-9 * original.width, `width ${settled.width}`);
+            assert.ok(Math.abs((settled.x + settled.width / 2) - (original.x + original.width / 2)) < 1e-9 * original.width, 'stays centered');
+        });
+
+        // Firefox's WebDriver BiDi can't emulate media features, so only Chrome checks reduced motion.
+        if (browserName === 'chrome') {
+            test('jumps straight to each step when the OS asks for reduced motion', async () => {
+                // Arrange
+                await suite.page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
+                await suite.openSvg();
+                const original = await getViewBox(suite.page);
+                await startRecording();
+
+                // Act
+                await suite.page.keyboard.press('Equal');
+                await waitForViewBoxChange(suite.page, original);
+
+                // Assert
+                const { widths, animating } = await recording();
+                assert.deepEqual(widths, [original.width * 0.8]);
+                assert.deepEqual(animating, []);
+            });
+        }
+
         test('consumes Ctrl =, so the browser does not zoom the whole page as well', async () => {
             // Arrange: the page's own listener runs after the extension's and sees whether it was consumed
             await suite.openSvg();
