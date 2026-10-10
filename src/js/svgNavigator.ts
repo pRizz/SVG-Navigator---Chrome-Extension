@@ -32,7 +32,6 @@
 import { BUILD_INFO } from './buildInfo';
 import {
     DEFAULT_SETTINGS,
-    SCROLL_SENSITIVITY_RANGE,
     isSettingKey,
     loadSettings,
     parseSettings,
@@ -41,6 +40,7 @@ import {
 } from '../shared/settings';
 import { mountHud, type HudHandle } from './hud/hud';
 import { keyAction, type KeyAction } from './input/keyActions';
+import { attachPointerInput, clientToSvgPoint, type PointerInput } from './input/pointer';
 import { HUD_HOST_TAG } from './hud/shadowHost';
 import {
     describeBrowser,
@@ -58,30 +58,14 @@ import {
     lengthToPixels,
     maybeParseViewBox,
     nudgeViewBox,
-    panViewBox,
-    rectFromCorners,
-    wheelZoomFactor,
     zoomAroundCenter,
-    zoomAroundPoint,
     type Point,
     type ViewBox,
 } from './viewBox';
 
-type PanSource = 'spacebar' | 'mouse';
-
-/** What the user is doing with the pointer: at most one zoom box or pan at a time. */
-type Interaction =
-    | { kind: 'idle' }
-    | { kind: 'zoomBox', start: Point }
-    // The pan key or button is down; the pan anchors at the next mouse move.
-    | { kind: 'panReady', source: PanSource }
-    | { kind: 'panning', source: PanSource, anchor: Point };
-
 // TODO: Reduce the need for globals. They are assigned in main() before any
 // listener that reads them is attached.
 
-// define svg namespace
-const svgNS = 'http://www.w3.org/2000/svg';
 let svgDocument: SVGSVGElement;
 
 // wrap the svg document in an html document
@@ -91,8 +75,8 @@ let htmlDoc: Document;
 let originalViewBox: ViewBox;
 let viewBox: ViewBox;
 
-let interaction: Interaction = { kind: 'idle' };
-let zoomRectangle: SVGRectElement;
+// attached in addEventListeners(): drag, Space + move, and wheel input on the drawing
+let pointer: PointerInput;
 
 // mounted in main() before any listener that zooms is attached
 let hud: HudHandle;
@@ -157,8 +141,6 @@ async function main(): Promise<void> {
     }
     // end @since
 
-    zoomRectangle = insertZoomRect();
-
     // keep aspect ratio; just remove attribute if it exists
     svgDocument.removeAttribute('preserveAspectRatio');
 
@@ -216,23 +198,6 @@ async function loadSettingsOrDefaults(): Promise<Settings> {
     }
 }
 
-// insert a rectangle object into the svg, acting as the zoom rectangle
-function insertZoomRect(): SVGRectElement {
-    const zoomRectangle = document.createElementNS(svgNS, 'rect');
-    zoomRectangle.setAttributeNS(null, 'x', '0');
-    zoomRectangle.setAttributeNS(null, 'y', '0');
-    zoomRectangle.setAttributeNS(null, 'rx', '0.01');
-    zoomRectangle.setAttributeNS(null, 'width', '0');
-    zoomRectangle.setAttributeNS(null, 'height', '0');
-    zoomRectangle.setAttributeNS(null, 'opacity', '1');
-    zoomRectangle.setAttributeNS(null, 'stroke', 'blue');
-    zoomRectangle.setAttributeNS(null, 'stroke-width', '1.0');
-    zoomRectangle.setAttributeNS(null, 'fill', 'blue');
-    zoomRectangle.setAttributeNS(null, 'fill-opacity', '0.1');
-    svgDocument.appendChild(zoomRectangle);
-    return zoomRectangle;
-}
-
 function onSettingsChanged(changes: Record<string, chrome.storage.StorageChange>, areaName: string): void {
     if(areaName !== 'sync') { return; }
     for (const [key, { newValue }] of Object.entries(changes)) {
@@ -277,97 +242,18 @@ function addEventListeners(): void {
     // event listeners
     document.addEventListener('keydown', onKey, false);
     document.addEventListener('keyup', onKey, false);
-    document.addEventListener('mousemove', panMove, false); // spacebar and mouse panning
-    if(settings.clickAndDragBehavior === 'zoomBox') {
-        svgDocument.addEventListener('mousedown', zoomMouseDown, false); // zoom box
-        svgDocument.addEventListener('mousemove', zoomMouseMove, false); // zoom box
-        svgDocument.addEventListener('mouseup', zoomMouseUp, false); // zoom box
-    } else {
-        svgDocument.addEventListener('mousedown', () => panBegin('mouse'), false);
-        document.addEventListener('mouseup', () => panEnd('mouse'), false);
-    }
-
-    svgDocument.addEventListener('wheel', doScroll, { passive: false }); // Standard event for all modern browsers
+    pointer = attachPointerInput({
+        svg: svgDocument,
+        clickAndDragBehavior: settings.clickAndDragBehavior,
+        view: () => viewBox,
+        showViewBox,
+        wheelSettings: () => ({ sensitivity: settings.scrollSensitivity, invert: settings.invertScroll }),
+        onInteractionChange: () => { if(settings.showDebugInfo) { refreshHud(); } },
+        onWheel: (sample) => { maybeLastWheel = sample; },
+    });
     // The readout compares views as displayed, which depends on the window's shape.
     window.addEventListener('resize', refreshHud);
     document.addEventListener('mousemove', trackPointer, false);
-}
-
-/** Converts a point in client (window) coordinates into `element`'s user space. */
-function clientToSvgPoint(clientX: number, clientY: number, element: SVGGraphicsElement): DOMPoint {
-    const p = svgDocElement.createSVGPoint();
-    p.x = clientX;
-    p.y = clientY;
-    const m = element.getScreenCTM();
-    return m ? p.matrixTransform(m.inverse()) : p;
-}
-
-/* Zoom Functions */
-// click and drag to zoom in
-// press escape to zoom out
-function zoomMouseDown(evt: MouseEvent): void {
-    // only a plain click (no ctrl or shift) outside a pan starts a zoom box
-    if(isPanning() || evt.ctrlKey || evt.shiftKey) { return; }
-
-    const start = clientToSvgPoint(evt.clientX, evt.clientY, zoomRectangle);
-    setInteraction({ kind: 'zoomBox', start });
-    zoomRectangle.setAttribute('x', String(start.x));
-    zoomRectangle.setAttribute('y', String(start.y));
-
-    // one screen pixel in viewBox units, as the browser displays the viewBox
-    const relativeStrokeWidth = fitToAspectRatio(viewBox, getWidth()/getHeight()).width/getWidth();
-    zoomRectangle.setAttributeNS(null, 'stroke-width', String(relativeStrokeWidth));
-    zoomRectangle.setAttributeNS(null, 'rx', String(relativeStrokeWidth));
-}
-
-// blue zoombox drawn as mouse is moved across screen
-function zoomMouseMove(evt: MouseEvent): void {
-    if(interaction.kind !== 'zoomBox') { return; }
-
-    const rect = rectFromCorners(interaction.start, clientToSvgPoint(evt.clientX, evt.clientY, zoomRectangle));
-    zoomRectangle.setAttribute('x', String(rect.x));
-    zoomRectangle.setAttribute('y', String(rect.y));
-    zoomRectangle.setAttribute('width', String(rect.width));
-    zoomRectangle.setAttribute('height', String(rect.height));
-}
-
-function getNumericAttribute(element: Element, name: string): number {
-    return parseFloat(element.getAttribute(name) ?? '');
-}
-
-// function that completes zoombox, then zooms view to zoombox
-function zoomMouseUp(): void {
-    // the viewbox width and height is changed when the button is up
-    if(interaction.kind === 'zoomBox') {
-        setInteraction({ kind: 'idle' });
-        const zoomRect = {
-            x: getNumericAttribute(zoomRectangle, 'x'),
-            y: getNumericAttribute(zoomRectangle, 'y'),
-            width: getNumericAttribute(zoomRectangle, 'width'),
-            height: getNumericAttribute(zoomRectangle, 'height'),
-        };
-        if((zoomRect.width*zoomRect.height) > 1e-6) { // prevent zooming on tiny area; svg visual starts acting weird
-            // make aspect ratio of new viewbox match the screen aspect ratio; useful later, when adding debug info to corner of screen
-            showViewBox(fitToAspectRatio(zoomRect, getWidth()/getHeight()));
-        }
-    }
-
-    // hide the zoom rectangle
-    zoomRectangle.setAttribute('width', '0');
-    zoomRectangle.setAttribute('height', '0');
-}
-
-function setInteraction(next: Interaction): void {
-    interaction = next;
-    if(settings.showDebugInfo) { refreshHud(); }
-}
-
-function isZoomingOrPanning(): boolean {
-    return interaction.kind !== 'idle';
-}
-
-function isPanning(): boolean {
-    return interaction.kind === 'panReady' || interaction.kind === 'panning';
 }
 
 // The bindings live in input/keyActions.ts; this runs whichever action a key triggers.
@@ -384,10 +270,10 @@ function onKey(evt: KeyboardEvent): void {
 function runKeyAction(action: KeyAction): void {
     switch(action.kind) {
     case 'panStart':
-        panBegin('spacebar');
+        pointer.beginSpacePan();
         return;
     case 'panEnd':
-        panEnd('spacebar');
+        pointer.endSpacePan();
         return;
     case 'toggleFullscreen':
         hud.toggleFullscreen();
@@ -399,7 +285,7 @@ function runKeyAction(action: KeyAction): void {
         break;
     }
     // view changes never interrupt a pan or a zoom box
-    if(isZoomingOrPanning()) { return; }
+    if(pointer.isBusy()) { return; }
     switch(action.kind) {
     case 'zoomIn':
         zoomBy(0.8);
@@ -423,49 +309,6 @@ function zoomBy(zoomAmount: number): void {
 
 function resetViewBox(): void {
     showViewBox(originalViewBox);
-}
-
-// a pan starts only when nothing else is going on; held-key repeats are ignored
-function panBegin(source: PanSource): void {
-    if(interaction.kind !== 'idle') { return; }
-    setInteraction({ kind: 'panReady', source });
-    svgDocument.style.cursor = 'move';
-}
-
-// the first move anchors the point under the cursor; later moves keep it there
-function panMove(evt: MouseEvent): void {
-    if(interaction.kind === 'panReady') {
-        const anchor = clientToSvgPoint(evt.clientX, evt.clientY, svgDocument);
-        setInteraction({ kind: 'panning', source: interaction.source, anchor });
-        return;
-    }
-    if(interaction.kind !== 'panning') { return; }
-
-    showViewBox(panViewBox(viewBox, interaction.anchor, clientToSvgPoint(evt.clientX, evt.clientY, svgDocument)));
-}
-
-function panEnd(source: PanSource): void {
-    if(interaction.kind !== 'panReady' && interaction.kind !== 'panning') { return; }
-    if(interaction.source !== source) { return; }
-    setInteraction({ kind: 'idle' });
-    svgDocument.style.cursor = 'default';
-}
-
-// implementation for scroll zooming
-// the area pointed to by the cursor will always stay under the cursor while scrolling/zooming in or out, just like google maps does
-// might be different scroll direction on Macs with "natural scroll" vs Windows
-function doScroll(evt: WheelEvent): void {
-    maybeLastWheel = { deltaY: evt.deltaY, deltaMode: evt.deltaMode };
-    if(isZoomingOrPanning()) { return; }
-    evt.preventDefault(); // prevent default scroll action
-
-    const zoomAmount = wheelZoomFactor(evt.deltaY, {
-        sensitivity: settings.scrollSensitivity,
-        maxSensitivity: SCROLL_SENSITIVITY_RANGE.max,
-        invert: settings.invertScroll,
-    });
-    const p = clientToSvgPoint(evt.clientX, evt.clientY, svgDocument);
-    showViewBox(zoomAroundPoint(viewBox, p, zoomAmount));
 }
 
 // function to get the height of the window containing the svg in pixels; this is not the same as the svg viewbox or screen resolution
@@ -525,14 +368,14 @@ function readAuthoredFacts(svg: SVGSVGElement): Omit<DocumentFacts, 'viewBox' | 
 }
 
 function collectDebugInfo(): DebugInfo {
-    const svgPoint = clientToSvgPoint(lastPointer.x, lastPointer.y, svgDocument);
+    const svgPoint = clientToSvgPoint(svgDocument, lastPointer.x, lastPointer.y, svgDocument);
     return {
         viewBox,
         zoomRatio: currentZoom(),
         pointer: { client: lastPointer, svg: { x: svgPoint.x, y: svgPoint.y }, maybeElement: summarizeElementAt(lastPointer) },
         document: documentFacts,
         input: {
-            interaction: interaction.kind,
+            interaction: pointer.interactionKind(),
             maybeLastWheel,
             clickAndDragBehavior: settings.clickAndDragBehavior,
             scrollSensitivity: settings.scrollSensitivity,
@@ -551,7 +394,7 @@ function collectDebugInfo(): DebugInfo {
 // The zoom rectangle and the HUD sit over the artwork; report what's beneath them.
 function summarizeElementAt({ x, y }: Point): ElementSummary | null {
     const maybeElement = document.elementsFromPoint(x, y)
-        .find((element) => element !== zoomRectangle && element.localName !== HUD_HOST_TAG);
+        .find((element) => !pointer.isZoomRectangle(element) && element.localName !== HUD_HOST_TAG);
     if(!maybeElement) { return null; }
     return { localName: maybeElement.localName, id: maybeElement.id, classNames: [...maybeElement.classList] };
 }
