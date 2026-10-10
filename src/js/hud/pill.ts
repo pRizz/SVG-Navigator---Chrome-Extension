@@ -29,7 +29,7 @@ export function createPill(htmlDoc: Document, actions: PillActions, { fullscreen
     const zoomLabelButton = button(htmlDoc, {
         className: 'zoom-label',
         label: 'Reset zoom',
-        title: 'Reset to 100% (Esc)',
+        title: 'Reset to 100% (Esc or 0)',
         onClick: actions.reset,
     });
     const separator = htmlDoc.createElement('span');
@@ -44,13 +44,13 @@ export function createPill(htmlDoc: Document, actions: PillActions, { fullscreen
     const fullscreen = iconButton(htmlDoc, 'maximize', {
         className: 'utility fullscreen',
         label: 'Enter full screen',
-        title: 'Enter full screen',
+        title: 'Enter full screen (F)',
         onClick: actions.toggleFullscreen,
     });
     const shortcuts = iconButton(htmlDoc, 'help', {
         className: 'utility shortcuts',
         label: 'Shortcuts',
-        title: 'Keyboard and mouse shortcuts',
+        title: 'Keyboard and mouse shortcuts (?)',
         onClick: actions.toggleShortcuts,
     });
     shortcuts.setAttribute('aria-haspopup', 'dialog');
@@ -58,9 +58,9 @@ export function createPill(htmlDoc: Document, actions: PillActions, { fullscreen
     shortcuts.setAttribute('aria-expanded', 'false');
 
     element.append(
-        iconButton(htmlDoc, 'minus', { className: 'zoom-out', label: 'Zoom out', title: 'Zoom out (Ctrl −)', onClick: actions.zoomOut }),
+        iconButton(htmlDoc, 'minus', { className: 'zoom-out', label: 'Zoom out', title: 'Zoom out (−)', onClick: actions.zoomOut }),
         zoomLabelButton,
-        iconButton(htmlDoc, 'plus', { className: 'zoom-in', label: 'Zoom in', title: 'Zoom in (Ctrl =)', onClick: actions.zoomIn }),
+        iconButton(htmlDoc, 'plus', { className: 'zoom-in', label: 'Zoom in', title: 'Zoom in (+)', onClick: actions.zoomIn }),
         separator,
         background,
         // Inside an iframe that disallows it, full screen can't work, so don't offer it.
@@ -84,7 +84,7 @@ export function createPill(htmlDoc: Document, actions: PillActions, { fullscreen
             const label = isFullscreen ? 'Exit full screen' : 'Enter full screen';
             fullscreen.replaceChildren(icon(htmlDoc, isFullscreen ? 'minimize' : 'maximize'));
             fullscreen.setAttribute('aria-label', label);
-            fullscreen.title = label;
+            fullscreen.title = `${label} (F)`;
         },
         setShortcutsExpanded: (expanded) => {
             shortcuts.setAttribute('aria-expanded', String(expanded));

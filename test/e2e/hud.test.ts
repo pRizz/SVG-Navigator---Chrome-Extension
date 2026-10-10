@@ -261,6 +261,19 @@ for (const browserName of BROWSERS) {
             assert.deepEqual(await getViewBox(suite.page), zoomed);
         });
 
+        test('? opens and closes the shortcuts list from the keyboard', async () => {
+            // Arrange
+            await suite.openSvg();
+
+            // Act
+            await suite.page.keyboard.press('?');
+            await waitForHudAttribute(suite.page, '.popover', 'hidden', null);
+            await suite.page.keyboard.press('?');
+
+            // Assert
+            await waitForHudAttribute(suite.page, '.popover', 'hidden', '');
+        });
+
         test('Space after closing the shortcuts with Escape pans instead of reopening them', async () => {
             // Arrange
             await suite.openSvg();

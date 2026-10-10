@@ -52,7 +52,7 @@ for (const browserName of BROWSERS) {
                 keys: [...row.querySelectorAll('kbd')].map((kbd) => kbd.textContent),
             })));
             assert.ok(controls.some(({ action }) => action === 'Zoom to an area'), JSON.stringify(controls));
-            assert.deepEqual(controls.find(({ action }) => action === 'Reset view')?.keys, ['Esc', 'Ctrl', '0']);
+            assert.deepEqual(controls.find(({ action }) => action === 'Reset view')?.keys, ['Esc', '0']);
         });
 
         test('options popup shows the stored settings', async () => {

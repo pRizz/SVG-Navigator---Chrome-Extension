@@ -7,6 +7,7 @@ import {
     isRepresentableViewBox,
     lengthToPixels,
     maybeParseViewBox,
+    nudgeViewBox,
     panViewBox,
     rectFromCorners,
     wheelZoomFactor,
@@ -264,5 +265,15 @@ describe('lengthToPixels', () => {
 
     test('uses the whole viewport when the length is not a number', () => {
         assert.equal(lengthToPixels('auto', 800), 800);
+    });
+});
+
+describe('nudgeViewBox', () => {
+    test('moves the view by fractions of its own size', () => {
+        // Act
+        const nudged = nudgeViewBox({ x: 10, y: 20, width: 200, height: 100 }, 0.1, -0.5);
+
+        // Assert
+        assert.deepEqual(nudged, { x: 30, y: -30, width: 200, height: 100 });
     });
 });

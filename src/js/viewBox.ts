@@ -83,6 +83,11 @@ export function panViewBox(viewBox: ViewBox, anchor: Point, cursor: Point): View
     return { ...viewBox, x: viewBox.x - (cursor.x - anchor.x), y: viewBox.y - (cursor.y - anchor.y) };
 }
 
+/** Moves `viewBox` by `dx` and `dy`, given as fractions of its width and height. */
+export function nudgeViewBox(viewBox: ViewBox, dx: number, dy: number): ViewBox {
+    return { ...viewBox, x: viewBox.x + dx * viewBox.width, y: viewBox.y + dy * viewBox.height };
+}
+
 export function formatViewBox({ x, y, width, height }: ViewBox): string {
     return `${x} ${y} ${width} ${height}`;
 }

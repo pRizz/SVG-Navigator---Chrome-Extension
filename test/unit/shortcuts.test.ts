@@ -43,8 +43,22 @@ describe('shortcutRows', () => {
         const rows = shortcutRows('pan', false);
 
         // Assert
-        assert.equal(keysFor(rows, 'Zoom in / out'), 'Ctrl = / Ctrl −');
-        assert.equal(keysFor(rows, 'Reset view'), 'Esc or Ctrl 0');
+        assert.equal(keysFor(rows, 'Zoom in / out'), '+ / −, also with Ctrl');
+        assert.equal(keysFor(rows, 'Reset view'), 'Esc or 0');
+    });
+
+    test('names ⌘ for the keyboard zoom on macOS', () => {
+        assert.equal(keysFor(shortcutRows('pan', true), 'Zoom in / out'), '+ / −, also with ⌘');
+    });
+
+    test('lists arrow-key panning, full screen, and the shortcuts key', () => {
+        // Act
+        const rows = shortcutRows('pan', false);
+
+        // Assert
+        assert.equal(keysFor(rows, 'Move the view'), '← ↑ → ↓, with Shift for bigger steps');
+        assert.equal(keysFor(rows, 'Full screen'), 'F');
+        assert.equal(keysFor(rows, 'Show these shortcuts'), '?');
     });
 
     test('marks keys and gestures as key caps, separate from connecting text', () => {
@@ -52,6 +66,6 @@ describe('shortcutRows', () => {
         const maybeRow = shortcutRows('pan', false).find((row) => row.action === 'Reset view');
 
         // Assert
-        assert.deepEqual(maybeRow?.parts, [{ key: 'Esc' }, ' or ', { key: 'Ctrl' }, ' ', { key: '0' }]);
+        assert.deepEqual(maybeRow?.parts, [{ key: 'Esc' }, ' or ', { key: '0' }]);
     });
 });

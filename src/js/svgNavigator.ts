@@ -57,6 +57,7 @@ import {
     isRepresentableViewBox,
     lengthToPixels,
     maybeParseViewBox,
+    nudgeViewBox,
     panViewBox,
     rectFromCorners,
     wheelZoomFactor,
@@ -370,26 +371,36 @@ function isPanning(): boolean {
 }
 
 // The bindings live in input/keyActions.ts; this runs whichever action a key triggers.
-function onKey({ type, key, code, ctrlKey, metaKey, altKey, shiftKey }: KeyboardEvent): void {
+// A bound key is consumed, so Ctrl/⌘ + = zooms the drawing rather than the whole page.
+function onKey(evt: KeyboardEvent): void {
+    const { type, key, code, ctrlKey, metaKey, altKey, shiftKey } = evt;
     if(type !== 'keydown' && type !== 'keyup') { return; }
     const maybeAction = keyAction({ type, key, code, ctrlKey, metaKey, altKey, shiftKey });
-    if(maybeAction !== null) { runKeyAction(maybeAction); }
+    if(maybeAction === null) { return; }
+    evt.preventDefault();
+    runKeyAction(maybeAction);
 }
 
 function runKeyAction(action: KeyAction): void {
-    switch(action) {
+    switch(action.kind) {
     case 'panStart':
         panBegin('spacebar');
         return;
     case 'panEnd':
         panEnd('spacebar');
         return;
+    case 'toggleFullscreen':
+        hud.toggleFullscreen();
+        return;
+    case 'toggleShortcuts':
+        hud.toggleShortcuts();
+        return;
     default:
         break;
     }
-    // zoom and reset keys never interrupt a pan or a zoom box
+    // view changes never interrupt a pan or a zoom box
     if(isZoomingOrPanning()) { return; }
-    switch(action) {
+    switch(action.kind) {
     case 'zoomIn':
         zoomBy(0.8);
         return;
@@ -398,6 +409,9 @@ function runKeyAction(action: KeyAction): void {
         return;
     case 'reset':
         resetViewBox();
+        return;
+    case 'nudge':
+        showViewBox(nudgeViewBox(viewBox, action.dx, action.dy));
         return;
     }
 }

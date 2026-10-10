@@ -38,13 +38,19 @@ export function shortcutRows(drag: DragContext, isMac: boolean): ShortcutRow[] {
     return [
         { action: 'Zoom at the pointer', parts: [key('Scroll')] },
         ...DRAG_ROWS[drag],
-        { action: 'Zoom in / out', parts: [key('Ctrl'), ' ', key('='), ' / ', key('Ctrl'), ' ', key('−')] },
+        {
+            action: 'Move the view',
+            parts: [key('←'), ' ', key('↑'), ' ', key('→'), ' ', key('↓'), ', with ', key('Shift'), ' for bigger steps'],
+        },
+        { action: 'Zoom in / out', parts: [key('+'), ' / ', key('−'), ', also with ', key(isMac ? '⌘' : 'Ctrl')] },
         { action: 'Zoom out', parts: ['Tap ', key(isMac ? 'Option' : 'Alt')] },
-        { action: 'Reset view', parts: [key('Esc'), ' or ', key('Ctrl'), ' ', key('0')] },
+        { action: 'Reset view', parts: [key('Esc'), ' or ', key('0')] },
+        { action: 'Full screen', parts: [key('F')] },
+        { action: 'Show these shortcuts', parts: [key('?')] },
     ];
 }
 
-/** A row's keys as plain text, e.g. `Esc or Ctrl 0`. */
+/** A row's keys as plain text, e.g. `Esc or 0`. */
 export function shortcutText({ parts }: ShortcutRow): string {
     return parts.map((part) => (typeof part === 'string' ? part : part.key)).join('');
 }

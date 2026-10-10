@@ -127,6 +127,38 @@ for (const browserName of BROWSERS) {
             assert.deepEqual(await waitForViewBoxChange(suite.page, zoomed), original);
         });
 
+        test('consumes Ctrl =, so the browser does not zoom the whole page as well', async () => {
+            // Arrange: the page's own listener runs after the extension's and sees whether it was consumed
+            await suite.openSvg();
+            await suite.page.evaluate(() => {
+                window.addEventListener('keydown', (event) => {
+                    document.documentElement.dataset.lastKeyConsumed = String(event.defaultPrevented);
+                });
+            });
+
+            // Act
+            await suite.page.keyboard.down('Control');
+            await suite.page.keyboard.press('Equal');
+            await suite.page.keyboard.up('Control');
+
+            // Assert
+            assert.equal(await suite.page.evaluate(() => document.documentElement.dataset.lastKeyConsumed), 'true');
+        });
+
+        test('the right arrow key moves the view right by a tenth of its width', async () => {
+            // Arrange
+            await suite.openSvg();
+            const before = await getViewBox(suite.page);
+
+            // Act
+            await suite.page.keyboard.press('ArrowRight');
+
+            // Assert
+            const after = await waitForViewBoxChange(suite.page, before);
+            assert.ok(Math.abs(after.x - (before.x + before.width / 10)) < 1e-6, `x ${after.x} should be ${before.x + before.width / 10}`);
+            assert.equal(after.width, before.width);
+        });
+
         test('Ctrl - zooms out', async () => {
             // Arrange
             await suite.openSvg();

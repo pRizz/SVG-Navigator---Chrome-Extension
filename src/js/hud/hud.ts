@@ -41,6 +41,10 @@ export interface HudHandle {
     setAutoHide: (autoHide: boolean) => void;
     setSavedBackground: (color: string) => void;
     setDebugInfo: (maybeInfo: DebugInfo | null) => void;
+    /** Works with the controls hidden or turned off; full screen doesn't need them. */
+    toggleFullscreen: () => void;
+    /** Opens or closes the shortcuts list; does nothing while the controls are turned off. */
+    toggleShortcuts: () => void;
     destroy: () => void;
 }
 
@@ -203,6 +207,11 @@ export function mountHud(htmlDoc: Document, options: HudOptions): HudHandle {
             }
             maybeDebugCard ??= mountDebugCard(htmlDoc, root, hudLayout(position).debugCorner);
             maybeDebugCard.render(maybeInfo);
+        },
+        toggleFullscreen,
+        toggleShortcuts: () => {
+            if (!dock.isConnected) { return; }
+            setShortcutsOpen(!popover.isOpen());
         },
         destroy: () => {
             listeners.abort();

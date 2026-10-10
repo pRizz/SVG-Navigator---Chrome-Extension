@@ -23,7 +23,9 @@ Go to a website with an SVG file. The extension begins working on the SVG graphi
 - Zoom in infinitely, or back out: use the mouse scroll wheel
 - Zoom: click and drag a zoom box of the desired area if enabled
 - Zoom out: tap alt key
-- Reset zoom: press escape
+- Reset zoom: press Esc or 0
+- Keyboard: arrow keys pan (hold Shift for bigger steps), + and − zoom (also with Ctrl or ⌘), F
+  toggles full screen, and ? lists every shortcut
 - On-screen controls: zoom out, the zoom level (click it to reset), zoom in, background, full screen, and a
   shortcuts list; choose their corner or edge, or turn them off, in the settings
 
