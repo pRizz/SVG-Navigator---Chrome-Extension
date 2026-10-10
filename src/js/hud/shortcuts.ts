@@ -1,24 +1,8 @@
 /**
- * The `?` popover: the mouse and keyboard bindings that `svgNavigator.ts` listens for.
- * Keep these rows in step with the handlers there and the popup's Information tab.
+ * The `?` popover: renders the shared shortcut list (`src/shared/shortcuts.ts`) as text.
  */
 
-import type { ClickAndDragBehavior } from '../../shared/settings';
-
-export type ShortcutRow = readonly [action: string, keys: string];
-
-export function shortcutRows(clickAndDragBehavior: ClickAndDragBehavior, isMac: boolean): ShortcutRow[] {
-    const dragRows: ShortcutRow[] = clickAndDragBehavior === 'pan'
-        ? [['Pan', 'Drag, or hold Space and move']]
-        : [['Zoom to an area', 'Drag'], ['Pan', 'Hold Space and move']];
-    return [
-        ['Zoom at the pointer', 'Scroll'],
-        ...dragRows,
-        ['Zoom in / out', 'Ctrl = / Ctrl −'],
-        ['Zoom out', isMac ? 'Tap Option' : 'Tap Alt'],
-        ['Reset view', 'Esc or Ctrl 0'],
-    ];
-}
+import { shortcutText, type ShortcutRow } from '../../shared/shortcuts';
 
 export interface ShortcutsPopover {
     element: HTMLDivElement;
@@ -37,11 +21,11 @@ export function createShortcutsPopover(htmlDoc: Document, rows: readonly Shortcu
     const heading = htmlDoc.createElement('h2');
     heading.textContent = 'Shortcuts';
     const list = htmlDoc.createElement('dl');
-    for (const [action, keys] of rows) {
+    for (const row of rows) {
         const term = htmlDoc.createElement('dt');
-        term.textContent = action;
+        term.textContent = row.action;
         const detail = htmlDoc.createElement('dd');
-        detail.textContent = keys;
+        detail.textContent = shortcutText(row);
         list.append(term, detail);
     }
     element.append(heading, list);

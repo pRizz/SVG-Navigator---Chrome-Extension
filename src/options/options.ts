@@ -15,6 +15,7 @@ import {
     type SettingKey,
     type Settings,
 } from '../shared/settings';
+import { shortcutRows, type ShortcutPart } from '../shared/shortcuts';
 
 type BooleanSettingKey = { [K in SettingKey]: Settings[K] extends boolean ? K : never }[SettingKey];
 
@@ -42,6 +43,7 @@ const controls = {
     resetAll: requireElement('resetAll', HTMLButtonElement),
     status: requireElement('status', HTMLSpanElement),
     versionInfo: requireElement('versionInfo', HTMLElement),
+    controls: requireElement('controls', HTMLDivElement),
     switches: Object.fromEntries(
         SWITCH_KEYS.map((key) => [key, requireElement(key, HTMLInputElement)]),
     ) as Record<BooleanSettingKey, HTMLInputElement>,
@@ -207,6 +209,32 @@ function setUpTabs(): void {
     }
 }
 
+/** Lists the shortcuts, both drag behaviors included, as the HUD's `?` popover does. */
+function renderControls(): void {
+    const rows = shortcutRows('either', navigator.userAgent.includes('Mac'));
+    controls.controls.replaceChildren(...rows.map(({ action, parts }) => {
+        const row = document.createElement('div');
+        row.className = 'row';
+        const label = document.createElement('span');
+        label.className = 'row-label';
+        label.textContent = action;
+        const keys = document.createElement('span');
+        keys.className = 'keys';
+        keys.append(...parts.map(renderShortcutPart));
+        row.append(label, keys);
+        return row;
+    }));
+}
+
+function renderShortcutPart(part: ShortcutPart): Node | string {
+    if (typeof part === 'string') {
+        return part;
+    }
+    const kbd = document.createElement('kbd');
+    kbd.textContent = part.key;
+    return kbd;
+}
+
 /** Shows which build this is, linking the commit and the CI run when known. */
 function renderVersionInfo(): void {
     const fields = provenanceFields(chrome.runtime.getManifest().version, BUILD_INFO);
@@ -237,6 +265,7 @@ async function init(): Promise<void> {
         preset.style.setProperty('--swatch-color', preset.dataset.color ?? 'transparent');
     }
     setUpTabs();
+    renderControls();
     renderVersionInfo();
     render(await loadSettings());
     addEventListeners();

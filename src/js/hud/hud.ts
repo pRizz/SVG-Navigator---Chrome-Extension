@@ -6,13 +6,14 @@
  */
 
 import type { ClickAndDragBehavior, ToolbarPosition } from '../../shared/settings';
+import { shortcutRows } from '../../shared/shortcuts';
 import { mountDebugCard, type DebugCard } from './debugCard';
 import type { DebugInfo } from './debugInfo';
 import { backgroundButtonTitle, backgroundCss, nextBackground, type BackgroundState } from './backgroundCycle';
 import { hudLayout } from './layout';
 import { createPill } from './pill';
 import { createShadowHost } from './shadowHost';
-import { createShortcutsPopover, shortcutRows } from './shortcuts';
+import { createShortcutsPopover } from './shortcuts';
 import { HUD_CSS } from './styles';
 import { IDLE_HIDE_MS, initialVisibility, isVisible, reduceVisibility, withAutoHide, type VisibilityEvent } from './visibility';
 import { zoomLabel } from './zoomLabel';

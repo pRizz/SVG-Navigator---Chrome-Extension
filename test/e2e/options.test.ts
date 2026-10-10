@@ -42,6 +42,19 @@ for (const browserName of BROWSERS) {
             assert.deepEqual(link, { target: '_blank', rel: 'noopener noreferrer' });
         });
 
+        test('options popup lists the controls from the shared shortcut list', async () => {
+            // Act
+            await openOptionsPage(suite.page, suite.extensionOrigin());
+
+            // Assert
+            const controls = await suite.page.$$eval('#controls .row', (rows) => rows.map((row) => ({
+                action: row.querySelector('.row-label')?.textContent,
+                keys: [...row.querySelectorAll('kbd')].map((kbd) => kbd.textContent),
+            })));
+            assert.ok(controls.some(({ action }) => action === 'Zoom to an area'), JSON.stringify(controls));
+            assert.deepEqual(controls.find(({ action }) => action === 'Reset view')?.keys, ['Esc', 'Ctrl', '0']);
+        });
+
         test('options popup shows the stored settings', async () => {
             // Arrange
             await suite.setSettings({

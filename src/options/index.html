@@ -112,14 +112,8 @@
 
             <section class="panel" id="panel-information" role="tabpanel" aria-labelledby="tab-information" hidden>
                 <h2 class="section-title" id="shortcuts-title">Controls</h2>
-                <div class="card" role="group" aria-labelledby="shortcuts-title">
-                    <div class="row"><span class="row-label">Pan</span><span class="keys"><kbd>Drag</kbd> or <kbd>Space</kbd> + move</span></div>
-                    <div class="row"><span class="row-label">Zoom at cursor</span><span class="keys"><kbd>Scroll</kbd></span></div>
-                    <div class="row"><span class="row-label">Zoom to an area</span><span class="keys"><kbd>Drag</kbd> in Zoom box mode</span></div>
-                    <div class="row"><span class="row-label">Zoom in / out</span><span class="keys"><kbd>Ctrl</kbd> <kbd>=</kbd> / <kbd>Ctrl</kbd> <kbd>-</kbd></span></div>
-                    <div class="row"><span class="row-label">Zoom out</span><span class="keys"><kbd>Alt</kbd></span></div>
-                    <div class="row"><span class="row-label">Reset view</span><span class="keys"><kbd>Esc</kbd> or <kbd>Ctrl</kbd> <kbd>0</kbd></span></div>
-                </div>
+                <!-- Rows come from src/shared/shortcuts.ts, shared with the HUD's ? popover. -->
+                <div class="card" role="group" aria-labelledby="shortcuts-title" id="controls"></div>
 
                 <h2 class="section-title" id="about-title">About</h2>
                 <div class="card prose" role="group" aria-labelledby="about-title">
