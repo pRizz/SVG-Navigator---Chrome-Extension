@@ -41,6 +41,7 @@ import {
 import { mountHud, type HudHandle } from './hud/hud';
 import { keyAction, type KeyAction } from './input/keyActions';
 import { attachPointerInput, clientToSvgPoint, type PointerInput } from './input/pointer';
+import { formatSvgViewFragment, maybeParseSvgViewFragment, ownsFragment } from './viewFragment';
 import { HUD_HOST_TAG } from './hud/shadowHost';
 import {
     describeBrowser,
@@ -83,6 +84,10 @@ let hud: HudHandle;
 
 // current settings; replaced from storage in main() and kept live by onSettingsChanged
 let settings: Settings = { ...DEFAULT_SETTINGS };
+
+// how long the view must rest before the URL's view link is rewritten
+const VIEW_LINK_DELAY_MS = 300;
+let maybeViewLinkTimer: ReturnType<typeof setTimeout> | undefined;
 
 // for the debug card
 let lastPointer: Point = { x: 0, y: 0 };
@@ -166,7 +171,7 @@ async function main(): Promise<void> {
     };
     // match the window's aspect ratio, so the whole drawing shows, centered
     originalViewBox = fitToAspectRatio(authoredViewBox, getWidth()/getHeight());
-    viewBox = originalViewBox;
+    viewBox = maybeLinkedView(location.hash) ?? originalViewBox;
     svgDocument.setAttribute('viewBox', formatViewBox(viewBox));
 
     settings = await loadSettingsOrDefaults();
@@ -250,6 +255,11 @@ function addEventListeners(): void {
         wheelSettings: () => ({ sensitivity: settings.scrollSensitivity, invert: settings.invertScroll }),
         onInteractionChange: () => { if(settings.showDebugInfo) { refreshHud(); } },
         onWheel: (sample) => { maybeLastWheel = sample; },
+    });
+    // A link's view can also change in place: an edited fragment, or a link within the page.
+    window.addEventListener('hashchange', () => {
+        const maybeView = maybeLinkedView(location.hash);
+        if(maybeView) { showViewBox(maybeView); }
     });
     // The readout compares views as displayed, which depends on the window's shape.
     window.addEventListener('resize', refreshHud);
@@ -339,6 +349,31 @@ function showViewBox(next: ViewBox): void {
 function setViewBox(): void {
     svgDocument.setAttribute('viewBox', formatViewBox(viewBox));
     refreshHud();
+    scheduleViewLinkUpdate();
+}
+
+// The view a #svgView(...) link names, fitted to this window's shape (#49).
+function maybeLinkedView(hash: string): ViewBox | null {
+    const maybeView = maybeParseSvgViewFragment(hash);
+    if(!maybeView) { return null; }
+    const fitted = fitToAspectRatio(maybeView, getWidth()/getHeight());
+    return isRepresentableViewBox(fitted) ? fitted : null;
+}
+
+// Keeps the current view in the URL, without adding history entries, once the view
+// rests. The whole drawing needs no link, and another fragment belongs to the SVG.
+function scheduleViewLinkUpdate(): void {
+    if(!ownsFragment(location.hash)) { return; }
+    clearTimeout(maybeViewLinkTimer);
+    maybeViewLinkTimer = setTimeout(() => {
+        const url = new URL(location.href);
+        url.hash = isSameView(viewBox, originalViewBox) ? '' : formatSvgViewFragment(viewBox);
+        history.replaceState(history.state, '', url.href);
+    }, VIEW_LINK_DELAY_MS);
+}
+
+function isSameView(a: ViewBox, b: ViewBox): boolean {
+    return a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
 }
 
 function refreshHud(): void {

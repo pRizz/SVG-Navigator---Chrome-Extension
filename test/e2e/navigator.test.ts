@@ -5,7 +5,7 @@
 
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { BROWSERS, delay, getViewBox, waitForViewBoxChange } from './harness.ts';
+import { BROWSERS, delay, getViewBox, waitForNavigator, waitForViewBoxChange } from './harness.ts';
 import { useExtensionSuite } from './suite.ts';
 
 for (const browserName of BROWSERS) {
@@ -275,6 +275,62 @@ for (const browserName of BROWSERS) {
 
             // Assert
             assert.deepEqual(await waitForViewBoxChange(suite.page, zoomed), original);
+        });
+
+        test('opens an #svgView link at the view it names', async () => {
+            // Act: 200 × 150 matches the 4:3 window, so no fitting changes it
+            await suite.openSvg('/simple.svg#svgView(viewBox(100,100,200,150))');
+
+            // Assert
+            assert.deepEqual(await getViewBox(suite.page), { x: 100, y: 100, width: 200, height: 150 });
+        });
+
+        test('keeps the view in the URL, so a reload returns to it', async () => {
+            // Arrange
+            await suite.openSvg();
+            const original = await getViewBox(suite.page);
+            await suite.page.keyboard.press('Equal');
+            const zoomed = await waitForViewBoxChange(suite.page, original);
+            await suite.page.waitForFunction(() => location.hash.startsWith('#svgView('), { timeout: 5_000 });
+
+            // Act
+            await suite.page.reload();
+            await waitForNavigator(suite.page);
+
+            // Assert
+            const reloaded = await getViewBox(suite.page);
+            for (const key of ['x', 'y', 'width', 'height'] as const) {
+                assert.ok(Math.abs(reloaded[key] - zoomed[key]) < zoomed.width / 1000, `${key}: ${reloaded[key]} vs ${zoomed[key]}`);
+            }
+        });
+
+        test('clears the link from the URL when the view goes back to the whole drawing', async () => {
+            // Arrange
+            await suite.openSvg();
+            const original = await getViewBox(suite.page);
+            await suite.page.keyboard.press('Equal');
+            await waitForViewBoxChange(suite.page, original);
+            await suite.page.waitForFunction(() => location.hash.startsWith('#svgView('), { timeout: 5_000 });
+
+            // Act
+            await suite.page.keyboard.press('Escape');
+
+            // Assert
+            await suite.page.waitForFunction(() => location.hash === '' && !location.href.endsWith('#'), { timeout: 5_000 });
+        });
+
+        test('leaves a fragment that belongs to the SVG alone', async () => {
+            // Arrange
+            await suite.openSvg('/simple.svg#layer1');
+            const original = await getViewBox(suite.page);
+
+            // Act
+            await suite.page.keyboard.press('Equal');
+            await waitForViewBoxChange(suite.page, original);
+            await delay(800);
+
+            // Assert
+            assert.equal(await suite.page.evaluate(() => location.hash), '#layer1');
         });
 
         test('adds a viewBox to an SVG that lacks one', async () => {
