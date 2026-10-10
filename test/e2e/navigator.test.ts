@@ -7,6 +7,9 @@ import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { BROWSERS, HUD_HOST, delay, evaluateInExtension, getViewBox, waitForNavigator, waitForViewBoxChange } from './harness.ts';
 import { pageOffKey } from '../../src/shared/pageSwitch.ts';
+
+/** Longer than a glide, so the view has come to rest. */
+const GLIDE_SETTLE_MS = 800;
 import { useExtensionSuite } from './suite.ts';
 
 for (const browserName of BROWSERS) {
@@ -156,21 +159,77 @@ for (const browserName of BROWSERS) {
         });
 
         test('a double-click right after a drag does not zoom', async () => {
-            // Arrange: pan first
+            // Arrange: pan, then double-click straight away, while the pan still glides
             await suite.openSvg();
             const original = await getViewBox(suite.page);
             await suite.page.mouse.move(400, 300);
             await suite.page.mouse.down();
             await suite.page.mouse.move(300, 250, { steps: 5 });
             await suite.page.mouse.up();
-            const panned = await waitForViewBoxChange(suite.page, original);
 
             // Act
             await suite.page.mouse.click(300, 250, { count: 2 });
+            await waitForViewBoxChange(suite.page, original);
             await delay(300);
 
+            // Assert: pans and glides never change the width; a zoom would
+            assert.equal((await getViewBox(suite.page)).width, original.width);
+        });
+
+        /** Drags from (400, 300) to (300, 250), optionally pausing before release; returns the settled view. */
+        async function dragAndRelease({ pauseMs }: { pauseMs: number }): Promise<{ before: { x: number }, released: { x: number }, settled: { x: number } }> {
+            const before = await getViewBox(suite.page);
+            await suite.page.mouse.move(400, 300);
+            await suite.page.mouse.down();
+            await suite.page.mouse.move(300, 250, { steps: 5 });
+            if (pauseMs > 0) { await delay(pauseMs); }
+            const released = await getViewBox(suite.page);
+            await suite.page.mouse.up();
+            await waitForViewBoxChange(suite.page, before);
+            await delay(GLIDE_SETTLE_MS);
+            return { before, released, settled: await getViewBox(suite.page) };
+        }
+
+        test('a quick drag glides on after release, further than a slow one', async () => {
+            // Arrange
+            await suite.openSvg();
+            const slow = await dragAndRelease({ pauseMs: 200 });
+            await suite.openSvg();
+
+            // Act
+            const quick = await dragAndRelease({ pauseMs: 0 });
+
             // Assert
-            assert.equal((await getViewBox(suite.page)).width, panned.width);
+            const slowDistance = slow.settled.x - slow.before.x;
+            const quickDistance = quick.settled.x - quick.before.x;
+            assert.ok(quickDistance > slowDistance * 1.2, `quick ${quickDistance} should glide past slow ${slowDistance}`);
+        });
+
+        test('a drag that stops before release does not glide', async () => {
+            // Arrange
+            await suite.openSvg();
+
+            // Act
+            const { released, settled } = await dragAndRelease({ pauseMs: 200 });
+
+            // Assert
+            assert.equal(settled.x, released.x);
+        });
+
+        test('pressing the mouse stops a glide at once', async () => {
+            // Arrange
+            await suite.openSvg();
+            await suite.page.mouse.move(400, 300);
+            await suite.page.mouse.down();
+            await suite.page.mouse.move(300, 250, { steps: 5 });
+            await suite.page.mouse.up();
+
+            // Act
+            await suite.page.mouse.down();
+
+            // Assert
+            assert.equal(await suite.page.evaluate(() => document.documentElement.hasAttribute('data-svg-navigator-animating')), false);
+            await suite.page.mouse.up();
         });
 
         test('holding Space while moving the mouse pans without zooming', async () => {

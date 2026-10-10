@@ -114,6 +114,9 @@ async function pan(page: Page, from: { x: number, y: number }, to: { x: number, 
     await page.mouse.move(from.x, from.y);
     await page.mouse.down();
     await page.mouse.move(to.x, to.y, { steps: 10 });
+    // Stop before letting go, so the pan doesn't glide on: a glide's length depends on
+    // event timing, which would make the screenshots differ from run to run.
+    await new Promise((resolve) => setTimeout(resolve, 100));
     await page.mouse.up();
     await waitForViewBoxChange(page, before);
 }

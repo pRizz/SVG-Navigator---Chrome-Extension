@@ -1,6 +1,7 @@
 /**
  * Mouse and wheel input on the drawing: drag to pan or to draw a zoom box, Space + move
- * to pan, the wheel or a trackpad pinch to zoom at the pointer, and double-click to zoom 2× there. Owns the interaction state (at most one
+ * to pan (gliding on after a quick release), the wheel or a trackpad pinch to zoom at the
+ * pointer, and double-click to zoom 2× there. Owns the interaction state (at most one
  * pan or zoom box at a time) and the zoom box's rectangle; `svgNavigator.ts` supplies
  * the view through `PointerDeps`.
  */
@@ -8,6 +9,7 @@
 import { SCROLL_SENSITIVITY_RANGE, type ClickAndDragBehavior } from '../../shared/settings';
 import type { InteractionKind, WheelSample } from '../hud/debugInfo';
 import { doubleClickZoomFactor, isDrag, shouldZoomOnDoubleClick } from './doubleClick';
+import { GLIDE_MS, glideDistance, releaseVelocity, type PointerSample } from './momentum';
 import { wheelZoomFactor } from './wheelZoom';
 import {
     fitToAspectRatio,
@@ -19,6 +21,8 @@ import {
 } from '../viewBox';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
+// Enough recent moves to measure a pan's release speed.
+const MAX_PAN_SAMPLES = 20;
 // Below this area (in user units squared) a zoom box is a click, not a drag.
 const MIN_ZOOM_BOX_AREA = 1e-6;
 
@@ -44,6 +48,10 @@ export interface PointerDeps {
     showViewBox: (next: ViewBox) => void;
     /** Eases to a view, for discrete steps such as a double-click. */
     animateViewBox: (next: ViewBox) => void;
+    /** Glides to a view after a quick pan (#28); skipped with reduced motion. */
+    glideViewBox: (target: ViewBox, durationMs: number) => void;
+    /** Stops any glide or step still moving the view, as grabbing the drawing does. */
+    cancelAnimation: () => void;
     /** The current wheel settings; read on every wheel event, so changes apply live. */
     wheelSettings: () => { sensitivity: number, invert: boolean };
     onInteractionChange: () => void;
@@ -77,6 +85,8 @@ export function attachPointerInput(deps: PointerDeps): PointerInput {
     // for telling a double-click from two quick drags
     let maybePress: Point | null = null;
     let maybeLastDragEndMs: number | null = null;
+    // the current pan's recent pointer moves, for its release speed
+    let panSamples: PointerSample[] = [];
 
     const toSvgPoint = (evt: MouseEvent, element: SVGGraphicsElement): DOMPoint =>
         clientToSvgPoint(svg, evt.clientX, evt.clientY, element);
@@ -93,12 +103,17 @@ export function attachPointerInput(deps: PointerDeps): PointerInput {
     // a pan starts only when nothing else is going on; held-key repeats are ignored
     function panBegin(source: PanSource): void {
         if(interaction.kind !== 'idle') { return; }
+        panSamples = [];
         setInteraction({ kind: 'panReady', source });
         svg.style.cursor = 'move';
     }
 
     // the first move anchors the point under the cursor; later moves keep it there
     function panMove(evt: MouseEvent): void {
+        if(interaction.kind === 'panReady' || interaction.kind === 'panning') {
+            panSamples.push({ x: evt.clientX, y: evt.clientY, t: evt.timeStamp });
+            if(panSamples.length > MAX_PAN_SAMPLES) { panSamples.shift(); }
+        }
         if(interaction.kind === 'panReady') {
             setInteraction({ kind: 'panning', source: interaction.source, anchor: toSvgPoint(evt, svg) });
             return;
@@ -110,8 +125,25 @@ export function attachPointerInput(deps: PointerDeps): PointerInput {
     function panEnd(source: PanSource): void {
         if(interaction.kind !== 'panReady' && interaction.kind !== 'panning') { return; }
         if(interaction.source !== source) { return; }
+        const wasPanning = interaction.kind === 'panning';
         setInteraction({ kind: 'idle' });
         svg.style.cursor = 'default';
+        if(wasPanning) { glide(); }
+    }
+
+    // After a quick release the view carries on in the same direction and slows to a stop.
+    function glide(): void {
+        const maybeDistance = glideDistance(releaseVelocity(panSamples, performance.now()));
+        panSamples = [];
+        if(maybeDistance === null) { return; }
+        const view = deps.view();
+        const unitsPerPixel = fitToAspectRatio(view, innerWidth/innerHeight).width/innerWidth;
+        // the drawing follows the pointer, so the view moves the opposite way
+        deps.glideViewBox({
+            ...view,
+            x: view.x - maybeDistance.dx * unitsPerPixel,
+            y: view.y - maybeDistance.dy * unitsPerPixel,
+        }, GLIDE_MS);
     }
 
     function zoomBoxDown(evt: MouseEvent): void {
@@ -170,7 +202,9 @@ export function attachPointerInput(deps: PointerDeps): PointerInput {
     }
 
     function rememberPress(evt: MouseEvent): void {
-        if(evt.button === 0) { maybePress = { x: evt.clientX, y: evt.clientY }; }
+        if(evt.button !== 0) { return; }
+        deps.cancelAnimation();
+        maybePress = { x: evt.clientX, y: evt.clientY };
     }
 
     function noteDragEnd(evt: MouseEvent): void {

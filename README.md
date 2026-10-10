@@ -19,7 +19,8 @@ SVG Navigator is a browser extension that adds infinite zoom and panning to exis
 
 Go to a website with an SVG file. The extension begins working on the SVG graphic and you may:
 
-- Pan: click and drag or hold the space bar and drag the cursor to pan around the image
+- Pan: click and drag or hold the space bar and drag the cursor to pan around the image; let go
+  mid-motion and the view glides on and slows to a stop (click to stop it sooner)
 - Zoom in infinitely, or back out: use the mouse scroll wheel
 - Zoom in 2× at a spot: double-click it (Shift + double-click zooms out)
 - Zoom: click and drag a zoom box of the desired area if enabled

@@ -281,6 +281,11 @@ function addEventListeners(): void {
         stepView,
         showViewBox,
         animateViewBox,
+        glideViewBox: (target, durationMs) => {
+            if(prefersReducedMotion() || !isRepresentableViewBox(target)) { return; }
+            viewAnimator.animateTo(target, durationMs);
+        },
+        cancelAnimation: () => viewAnimator.cancel(),
         wheelSettings: () => ({ sensitivity: settings.scrollSensitivity, invert: settings.invertScroll }),
         onInteractionChange: () => { if(settings.showDebugInfo) { refreshHud(); } },
         onWheel: (sample) => { maybeLastWheel = sample; },
@@ -376,11 +381,15 @@ function showViewBox(next: ViewBox): void {
 // Discrete steps ease into place, unless the OS asks for reduced motion.
 function animateViewBox(next: ViewBox): void {
     if(!isRepresentableViewBox(next)) { return; }
-    if(matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if(prefersReducedMotion()) {
         showViewBox(next);
         return;
     }
     viewAnimator.animateTo(next);
+}
+
+function prefersReducedMotion(): boolean {
+    return matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
 // The view the next step builds on: a step still easing in counts as done, so quick

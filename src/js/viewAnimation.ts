@@ -44,6 +44,7 @@ export interface FrameScheduler {
 
 export interface ViewAnimatorDeps {
     frames: FrameScheduler;
+    /** The default duration, for discrete steps. */
     durationMs: number;
     /** The view on screen now, where an animation starts. */
     current: () => ViewBox;
@@ -52,8 +53,11 @@ export interface ViewAnimatorDeps {
 }
 
 export interface ViewAnimator {
-    /** Eases to `target` from the current view; a new target replaces one in flight. */
-    animateTo: (target: ViewBox) => void;
+    /**
+     * Eases to `target` from the current view, over `durationMs` if given; a new
+     * target replaces one in flight.
+     */
+    animateTo: (target: ViewBox, durationMs?: number) => void;
     /** Where the running animation ends, so the next step can build on it; null when idle. */
     maybeTarget: () => ViewBox | null;
     /** Stops where the view is, e.g. when a drag or the wheel takes over. */
@@ -64,6 +68,7 @@ interface Run {
     from: ViewBox;
     to: ViewBox;
     startMs: number;
+    durationMs: number;
     handle: number;
 }
 
@@ -80,7 +85,7 @@ export function createViewAnimator(deps: ViewAnimatorDeps): ViewAnimator {
 
     function frame(time: number): void {
         if (maybeRun === null) { return; }
-        const t = Math.min(1, (time - maybeRun.startMs) / deps.durationMs);
+        const t = Math.min(1, (time - maybeRun.startMs) / maybeRun.durationMs);
         deps.show(interpolateViewBox(maybeRun.from, maybeRun.to, easeOutCubic(t)));
         if (t >= 1) {
             setRun(null);
@@ -96,11 +101,11 @@ export function createViewAnimator(deps: ViewAnimatorDeps): ViewAnimator {
     }
 
     return {
-        animateTo: (target) => {
+        animateTo: (target, durationMs = deps.durationMs) => {
             if (maybeRun !== null) { deps.frames.cancel(maybeRun.handle); }
             const startMs = deps.frames.now();
             const handle = deps.frames.request(frame);
-            setRun({ from: deps.current(), to: target, startMs, handle });
+            setRun({ from: deps.current(), to: target, startMs, durationMs, handle });
         },
         maybeTarget: () => maybeRun?.to ?? null,
         cancel,

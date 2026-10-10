@@ -98,6 +98,22 @@ describe('createViewAnimator', () => {
         assert.equal(animator.maybeTarget(), null);
     });
 
+    test('takes a longer duration for one animation when asked, as a glide does', () => {
+        // Arrange
+        const frames = fakeFrames();
+        const shown: ViewBox[] = [];
+        const animator = createViewAnimator({ frames, durationMs: 100, current: () => shown.at(-1) ?? START, show: (view) => shown.push(view) });
+        const target = { ...START, x: 100 };
+
+        // Act
+        animator.animateTo(target, 400);
+        frames.tick(200);
+
+        // Assert: halfway through 400 ms, not finished as it would be at 100 ms
+        assert.notDeepEqual(shown.at(-1), target);
+        assert.deepEqual(animator.maybeTarget(), target);
+    });
+
     test('reports its target while animating, so the next step can build on it', () => {
         // Arrange
         const frames = fakeFrames();
