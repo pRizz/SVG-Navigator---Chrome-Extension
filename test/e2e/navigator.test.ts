@@ -179,18 +179,26 @@ for (const browserName of BROWSERS) {
             assert.equal((await getViewBox(suite.page)).width, original.width);
         });
 
-        /** Drags from (400, 300) to (300, 250), optionally pausing before release; returns the settled view. */
-        async function dragAndRelease({ pauseMs }: { pauseMs: number }): Promise<{ before: { x: number }, released: { x: number }, settled: { x: number } }> {
+        /**
+         * Drags from (400, 300) to (300, 250) and releases, after `pauseMs` of stillness
+         * if given; returns the views before, at release (only when paused), and settled.
+         */
+        async function dragAndRelease({ pauseMs }: { pauseMs: number }): Promise<{ before: { x: number }, maybeReleased: { x: number } | null, settled: { x: number } }> {
             const before = await getViewBox(suite.page);
             await suite.page.mouse.move(400, 300);
             await suite.page.mouse.down();
             await suite.page.mouse.move(300, 250, { steps: 5 });
-            if (pauseMs > 0) { await delay(pauseMs); }
-            const released = await getViewBox(suite.page);
+            // Reading the view takes a round trip, which on a slow machine can outlast the
+            // 50 ms after which a pointer counts as stopped, so only a paused drag reads it.
+            let maybeReleased: { x: number } | null = null;
+            if (pauseMs > 0) {
+                await delay(pauseMs);
+                maybeReleased = await getViewBox(suite.page);
+            }
             await suite.page.mouse.up();
             await waitForViewBoxChange(suite.page, before);
             await delay(GLIDE_SETTLE_MS);
-            return { before, released, settled: await getViewBox(suite.page) };
+            return { before, maybeReleased, settled: await getViewBox(suite.page) };
         }
 
         test('a quick drag glides on after release, further than a slow one', async () => {
@@ -213,10 +221,10 @@ for (const browserName of BROWSERS) {
             await suite.openSvg();
 
             // Act
-            const { released, settled } = await dragAndRelease({ pauseMs: 200 });
+            const { maybeReleased, settled } = await dragAndRelease({ pauseMs: 200 });
 
             // Assert
-            assert.equal(settled.x, released.x);
+            assert.equal(settled.x, maybeReleased?.x);
         });
 
         test('pressing the mouse stops a glide at once', async () => {
