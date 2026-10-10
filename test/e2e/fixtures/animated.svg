@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+    <style>
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #spinner { animation: spin 2s linear infinite; transform-origin: 600px 300px; }
+    </style>
+    <rect x="0" y="0" width="800" height="600" fill="#eef"/>
+    <rect id="spinner" x="550" y="250" width="100" height="100" fill="#c63"/>
+    <circle cx="200" cy="300" r="50" fill="#36c">
+        <animate attributeName="r" values="50;100;50" dur="2s" repeatCount="indefinite"/>
+    </circle>
+</svg>

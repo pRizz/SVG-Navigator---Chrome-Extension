@@ -4,14 +4,19 @@
  * to pan. The overview is a copy of the drawing's own markup, made the first time it's
  * needed: inline markup works under any page Content-Security-Policy, renders once, and
  * the copy's scripts never run. The copy sits in a shadow root of its own, so the
- * drawing's stylesheet styles only the copy, never the HUD around it. Panning only
- * moves the outline.
+ * drawing's stylesheet styles only the copy, never the HUD around it. It's cached on
+ * its own compositing layer, so panning only moves the outline, and its animations are
+ * paused. A drawing too large to copy gets the outline on a plain box instead.
  */
 
 import { ZOOM_BOX_ATTRIBUTE } from '../input/pointer';
 import { formatViewBox, type Point, type ViewBox } from '../viewBox';
 import type { MinimapCorner } from './layout';
-import { drawingPointAt, minimapSize, outlineRect, showsWholeDrawing, viewCenteredOn, type Size } from './minimapGeometry';
+import { copiesDrawing, drawingPointAt, minimapSize, outlineRect, showsWholeDrawing, viewCenteredOn, type Size } from './minimapGeometry';
+import { adoptStyles } from './shadowHost';
+
+// The copy is too small to follow animations, and running them would cost CPU for nothing.
+const STILL_COPY_CSS = '*, *::before, *::after { animation-play-state: paused !important; transition: none !important; }';
 
 export interface MinimapActions {
     /** Shows a view at once, as a drag does. */
@@ -43,6 +48,13 @@ export function createMinimap(htmlDoc: Document, drawing: SVGSVGElement, corner:
     let maybeGrabOffset: Point | null = null;
 
     function buildOverview(whole: ViewBox, size: Size): void {
+        element.style.width = `${size.width}px`;
+        element.style.height = `${size.height}px`;
+        isOverviewBuilt = true;
+        if (!copiesDrawing(drawing.getElementsByTagName('*').length)) {
+            element.classList.add('minimap-plain');
+            return;
+        }
         const copy = drawing.cloneNode(true);
         if (!(copy instanceof SVGSVGElement)) { return; }
         for (const zoomBox of copy.querySelectorAll(`[${ZOOM_BOX_ATTRIBUTE}]`)) {
@@ -56,13 +68,14 @@ export function createMinimap(htmlDoc: Document, drawing: SVGSVGElement, corner:
         copy.setAttribute('width', '100%');
         copy.setAttribute('height', '100%');
         copy.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-        element.style.width = `${size.width}px`;
-        element.style.height = `${size.height}px`;
         const frame = htmlDoc.createElement('div');
         frame.className = 'minimap-frame';
-        frame.attachShadow({ mode: 'open' }).append(copy);
+        const frameRoot = frame.attachShadow({ mode: 'open' });
+        adoptStyles(htmlDoc, frameRoot, STILL_COPY_CSS);
+        frameRoot.append(copy);
         element.prepend(frame);
-        isOverviewBuilt = true;
+        // SMIL animations are paused separately from CSS ones.
+        copy.pauseAnimations();
     }
 
     function localPoint(evt: PointerEvent): Point {

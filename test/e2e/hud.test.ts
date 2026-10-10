@@ -420,6 +420,37 @@ for (const browserName of BROWSERS) {
             assert.notEqual(await hudComputedStyle(suite.page, '.zoom-in path', 'stroke'), 'rgb(255, 0, 0)');
         });
 
+        test('the minimap\'s copy sits on its own layer, so panning only moves the outline', async () => {
+            // Arrange
+            await suite.openSvg();
+
+            // Act
+            await zoomInForMinimap();
+
+            // Assert
+            assert.equal(await hudComputedStyle(suite.page, '.minimap-frame', 'will-change'), 'transform');
+            assert.equal(await hudComputedStyle(suite.page, '.minimap-frame', 'contain'), 'strict');
+        });
+
+        test('the minimap\'s copy of an animated drawing stays still', async () => {
+            // Arrange
+            await suite.openSvg('/animated.svg');
+
+            // Act
+            await zoomInForMinimap();
+
+            // Assert
+            const copy = await suite.page.evaluate((host: string) => {
+                const maybeCopy = document.querySelector(host)?.shadowRoot?.querySelector('.minimap-frame')?.shadowRoot?.querySelector('svg');
+                const maybeSpinner = maybeCopy?.querySelector('#spinner');
+                return {
+                    smilPaused: maybeCopy?.animationsPaused(),
+                    cssPlayState: maybeSpinner ? getComputedStyle(maybeSpinner).animationPlayState : null,
+                };
+            }, HUD_HOST);
+            assert.deepEqual(copy, { smilPaused: true, cssPlayState: 'paused' });
+        });
+
         test('the minimap setting turns it off, live', async () => {
             // Arrange
             await suite.openSvg();

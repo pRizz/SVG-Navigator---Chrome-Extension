@@ -41,7 +41,7 @@ export function createShadowHost(htmlDoc: Document, parent: HTMLElement, css: st
  * Prefers a constructed stylesheet, which no page Content-Security-Policy can block;
  * falls back to a `<style>` element only where an engine rejects it.
  */
-function adoptStyles(htmlDoc: Document, root: ShadowRoot, css: string): void {
+export function adoptStyles(htmlDoc: Document, root: ShadowRoot, css: string): void {
     try {
         const sheet = new CSSStyleSheet();
         sheet.replaceSync(css);

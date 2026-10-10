@@ -214,7 +214,10 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .minimap[data-corner="bottom-left"] { left: calc(var(--edge) + env(safe-area-inset-left, 0px)); }
 .minimap[data-corner="bottom-right"] { right: calc(var(--edge) + env(safe-area-inset-right, 0px)); }
 .minimap[data-hidden] { opacity: 0; pointer-events: none; }
-.minimap-frame { display: block; width: 100%; height: 100%; pointer-events: none; }
+/* Its own cached layer: moving the outline mustn't redraw the copy (#48). */
+.minimap-frame { display: block; width: 100%; height: 100%; pointer-events: none; will-change: transform; contain: strict; }
+/* A drawing too large to copy: the outline on a plain box. */
+.minimap-plain { background: var(--hover); }
 .minimap-outline {
     position: absolute;
     border: 2px solid var(--accent);
@@ -222,6 +225,7 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
     background: color-mix(in srgb, var(--accent) 12%, transparent);
     cursor: grab;
     pointer-events: none;
+    will-change: transform;
 }
 
 @media (prefers-reduced-motion: reduce) {

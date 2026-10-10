@@ -17,8 +17,15 @@ export interface Rect extends Size {
 }
 
 const MAX_SIZE: Size = { width: 160, height: 120 };
+// Above this, copying the drawing for the overview costs too much memory and time.
+const MAX_COPIED_ELEMENTS = 100_000;
 // Rounding slack when the view sits exactly on the drawing's edges.
 const EDGE_SLACK = 1e-9;
+
+/** Whether the overview shows a copy of the drawing; past the limit it's the outline alone. */
+export function copiesDrawing(elementCount: number): boolean {
+    return elementCount <= MAX_COPIED_ELEMENTS;
+}
 
 /** The minimap's size: the drawing's shape, as large as fits in 160 × 120. */
 export function minimapSize(whole: ViewBox): Size {

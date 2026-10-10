@@ -1,6 +1,7 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+    copiesDrawing,
     drawingPointAt,
     minimapSize,
     outlineRect,
@@ -57,5 +58,15 @@ describe('drawingPointAt', () => {
 describe('viewCenteredOn', () => {
     test('moves the view, keeping its size, so the point is in the middle', () => {
         assert.deepEqual(viewCenteredOn({ x: 0, y: 0, width: 200, height: 100 }, { x: 500, y: 400 }), { x: 400, y: 350, width: 200, height: 100 });
+    });
+});
+
+describe('copiesDrawing', () => {
+    test('copies an ordinary drawing for the overview', () => {
+        assert.equal(copiesDrawing(50_000), true);
+    });
+
+    test('skips the copy above 100,000 elements, keeping only the outline', () => {
+        assert.equal(copiesDrawing(100_001), false);
     });
 });
