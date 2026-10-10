@@ -181,6 +181,7 @@ async function main(): Promise<void> {
         position: settings.toolbarPosition,
         autoHide: settings.toolbarAutoHide,
         savedBackground: settings.svgBackgroundColor,
+        drawing: svgDocument,
         clickAndDragBehavior: settings.clickAndDragBehavior,
     });
     addEventListeners();

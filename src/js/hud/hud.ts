@@ -9,7 +9,7 @@ import type { ClickAndDragBehavior, ToolbarPosition } from '../../shared/setting
 import { shortcutRows } from '../../shared/shortcuts';
 import { mountDebugCard, type DebugCard } from './debugCard';
 import type { DebugInfo } from './debugInfo';
-import { backgroundButtonTitle, backgroundCss, nextBackground, type BackgroundState } from './backgroundCycle';
+import { backgroundButtonTitle, backgroundCss, drawingFilter, nextBackground, type BackgroundState } from './backgroundCycle';
 import { hudLayout } from './layout';
 import { createPill } from './pill';
 import { createShadowHost } from './shadowHost';
@@ -30,6 +30,8 @@ export interface HudOptions {
     position: ToolbarPosition;
     autoHide: boolean;
     savedBackground: string;
+    /** The drawing's root `<svg>`, which the inverted background step filters. */
+    drawing: SVGSVGElement;
     /** Fixed for the page's lifetime: the navigator binds drag behavior once, at load. */
     clickAndDragBehavior: ClickAndDragBehavior;
 }
@@ -80,6 +82,7 @@ export function mountHud(htmlDoc: Document, options: HudOptions): HudHandle {
 
     function applyBackground(): void {
         document.body.style.background = backgroundCss(background, savedBackground);
+        options.drawing.style.filter = drawingFilter(background);
         pill.setBackgroundTitle(backgroundButtonTitle(background));
     }
 

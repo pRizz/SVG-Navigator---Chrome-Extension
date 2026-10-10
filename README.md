@@ -31,6 +31,8 @@ Go to a website with an SVG file. The extension begins working on the SVG graphi
   toggles full screen, and ? lists every shortcut
 - On-screen controls: zoom out, the zoom level (click it to reset), zoom in, background, full screen, and a
   shortcuts list; choose their corner or edge, or turn them off, in the settings
+- Background button: cycles a transparency checkerboard, a dark background, and an inverted drawing
+  (black lines turn white, colors keep their hue) for dark-mode viewing, just for this tab
 
 SVGs are vector graphics, so they stay sharp however far you zoom in. SVG Navigator has no zoom
 limit; only the browser's numeric precision stops it, many millions of times in.

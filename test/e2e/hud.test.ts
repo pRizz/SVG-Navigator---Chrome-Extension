@@ -229,6 +229,37 @@ for (const browserName of BROWSERS) {
             );
         });
 
+        test('the background button\'s fourth step inverts the drawing, but not the HUD', async () => {
+            // Arrange
+            await suite.openSvg();
+            const background = await hudElement(suite.page, '.background');
+
+            // Act: saved → checkerboard → dark → inverted
+            for (let click = 0; click < 3; click++) {
+                await background.click();
+            }
+
+            // Assert
+            await suite.page.waitForFunction(() => getComputedStyle(document.querySelector('svg') ?? document.body).filter.includes('invert'), { timeout: 5_000 });
+            assert.equal(await suite.page.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(27, 28, 30)');
+            assert.equal(await suite.page.$eval(HUD_HOST, (host) => getComputedStyle(host).filter), 'none');
+        });
+
+        test('the next click after inverted restores the drawing', async () => {
+            // Arrange
+            await suite.openSvg();
+            const background = await hudElement(suite.page, '.background');
+            for (let click = 0; click < 3; click++) {
+                await background.click();
+            }
+
+            // Act
+            await background.click();
+
+            // Assert
+            await suite.page.waitForFunction(() => getComputedStyle(document.querySelector('svg') ?? document.body).filter === 'none', { timeout: 5_000 });
+        });
+
         test('a background color change mid-cycle shows the new color', async () => {
             // Arrange
             await suite.openSvg();
