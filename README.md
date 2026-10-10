@@ -236,7 +236,8 @@ CI runs these tests on every push and pull request.
 
 ### Releasing
 
-Releases are published by the [Release workflow](.github/workflows/release.yml):
+Releases are published by the [Release workflow](.github/workflows/release.yml). Before tagging, go
+through the [release checklist](docs/release-checklist.md).
 
 1. Bump `version` in `src/manifest.json` (both stores reject a version that isn't higher
    than the published one) and push to `master`.
