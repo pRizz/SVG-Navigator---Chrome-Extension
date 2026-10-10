@@ -110,6 +110,51 @@ for (const browserName of BROWSERS) {
             assert.ok(after.width < before.width, `width ${after.width} should be < ${before.width}`);
         });
 
+        test('Ctrl = zooms in and Ctrl 0 restores the original view', async () => {
+            // Arrange
+            await suite.openSvg();
+            const original = await getViewBox(suite.page);
+
+            // Act
+            await suite.page.keyboard.down('Control');
+            await suite.page.keyboard.press('Equal');
+            const zoomed = await waitForViewBoxChange(suite.page, original);
+            await suite.page.keyboard.press('Digit0');
+            await suite.page.keyboard.up('Control');
+
+            // Assert
+            assert.ok(zoomed.width < original.width, `width ${zoomed.width} should be < ${original.width}`);
+            assert.deepEqual(await waitForViewBoxChange(suite.page, zoomed), original);
+        });
+
+        test('Ctrl - zooms out', async () => {
+            // Arrange
+            await suite.openSvg();
+            const original = await getViewBox(suite.page);
+
+            // Act
+            await suite.page.keyboard.down('Control');
+            await suite.page.keyboard.press('Minus');
+            await suite.page.keyboard.up('Control');
+
+            // Assert
+            const zoomed = await waitForViewBoxChange(suite.page, original);
+            assert.ok(zoomed.width > original.width, `width ${zoomed.width} should be > ${original.width}`);
+        });
+
+        test('tapping Alt zooms out', async () => {
+            // Arrange
+            await suite.openSvg();
+            const original = await getViewBox(suite.page);
+
+            // Act
+            await suite.page.keyboard.press('Alt');
+
+            // Assert
+            const zoomed = await waitForViewBoxChange(suite.page, original);
+            assert.ok(zoomed.width > original.width, `width ${zoomed.width} should be > ${original.width}`);
+        });
+
         test('pressing Escape restores the original view', async () => {
             // Arrange
             await suite.openSvg();

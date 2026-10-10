@@ -40,6 +40,7 @@ import {
     type Settings,
 } from '../shared/settings';
 import { mountHud, type HudHandle } from './hud/hud';
+import { keyAction, type KeyAction } from './input/keyActions';
 import { HUD_HOST_TAG } from './hud/shadowHost';
 import {
     describeBrowser,
@@ -273,12 +274,9 @@ function trackPointer(evt: MouseEvent): void {
 
 function addEventListeners(): void {
     // event listeners
-    document.addEventListener('keydown', spacebarPanBegin, false);
+    document.addEventListener('keydown', onKey, false);
+    document.addEventListener('keyup', onKey, false);
     document.addEventListener('mousemove', panMove, false); // spacebar and mouse panning
-    document.addEventListener('keyup', spacebarPanEnd, false);
-    document.addEventListener('keyup', zoomOut, false); // alt key zoom out
-    document.addEventListener('keyup', zoomOriginal, false); // escape key zoom out
-    document.addEventListener('keyup', zoomCtrlKeys, false); // ctrl key zoom in/out
     if(settings.clickAndDragBehavior === 'zoomBox') {
         svgDocument.addEventListener('mousedown', zoomMouseDown, false); // zoom box
         svgDocument.addEventListener('mousemove', zoomMouseMove, false); // zoom box
@@ -371,15 +369,36 @@ function isPanning(): boolean {
     return interaction.kind === 'panReady' || interaction.kind === 'panning';
 }
 
-// KeyboardEvent.keyCode is deprecated but is what these key bindings were written against.
-function keyCodeOf(evt: KeyboardEvent): number {
-    return evt.charCode || evt.keyCode;
+// The bindings live in input/keyActions.ts; this runs whichever action a key triggers.
+function onKey({ type, key, code, ctrlKey, metaKey, altKey, shiftKey }: KeyboardEvent): void {
+    if(type !== 'keydown' && type !== 'keyup') { return; }
+    const maybeAction = keyAction({ type, key, code, ctrlKey, metaKey, altKey, shiftKey });
+    if(maybeAction !== null) { runKeyAction(maybeAction); }
 }
 
-// zoom out when the user taps the Alt key
-function zoomOut(evt: KeyboardEvent): void {
-    if(!isZoomingOrPanning() && evt.type === 'keyup' && keyCodeOf(evt) === 18) {
+function runKeyAction(action: KeyAction): void {
+    switch(action) {
+    case 'panStart':
+        panBegin('spacebar');
+        return;
+    case 'panEnd':
+        panEnd('spacebar');
+        return;
+    default:
+        break;
+    }
+    // zoom and reset keys never interrupt a pan or a zoom box
+    if(isZoomingOrPanning()) { return; }
+    switch(action) {
+    case 'zoomIn':
+        zoomBy(0.8);
+        return;
+    case 'zoomOut':
         zoomBy(1.25);
+        return;
+    case 'reset':
+        resetViewBox();
+        return;
     }
 }
 
@@ -388,42 +407,8 @@ function zoomBy(zoomAmount: number): void {
     showViewBox(zoomAroundCenter(viewBox, zoomAmount));
 }
 
-// zoom back to the original view when Escape is released
-function zoomOriginal(evt: KeyboardEvent): void {
-    if(isZoomingOrPanning()) { return; }
-    if(evt.type === 'keyup' && keyCodeOf(evt) === 27) {
-        resetViewBox();
-    }
-}
-
 function resetViewBox(): void {
     showViewBox(originalViewBox);
-}
-
-// zoom according to ctrl keys
-function zoomCtrlKeys(evt: KeyboardEvent): void {
-    if(!isZoomingOrPanning() && evt.type === 'keyup' && evt.ctrlKey) {
-        const charCode = keyCodeOf(evt);
-        if (charCode === 48) { // ctrl-0, reset zoom
-            resetViewBox();
-        } else if (charCode === 187) { // ctrl-+, zoom in
-            zoomBy(0.8);
-        } else if (charCode === 189) { // ctrl--, zoom out
-            zoomBy(1.25);
-        }
-    }
-}
-
-function spacebarPanBegin(evt: KeyboardEvent): void {
-    if(evt.type === 'keydown' && keyCodeOf(evt) === 32) {
-        panBegin('spacebar');
-    }
-}
-
-function spacebarPanEnd(evt: KeyboardEvent): void {
-    if(evt.type === 'keyup' && keyCodeOf(evt) === 32) {
-        panEnd('spacebar');
-    }
 }
 
 // a pan starts only when nothing else is going on; held-key repeats are ignored
