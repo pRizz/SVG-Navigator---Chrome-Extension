@@ -31,6 +31,8 @@ Go to a website with an SVG file. The extension begins working on the SVG graphi
   toggles full screen, and ? lists every shortcut
 - On-screen controls: zoom out, the zoom level (click it to reset), zoom in, background, full screen, and a
   shortcuts list; choose their corner or edge, or turn them off, in the settings
+- See the original SVG: on an SVG page, the popup's "This page" switch turns SVG Navigator off for that
+  page in that tab (it reloads untouched) until you turn it back on
 - Background button: cycles a transparency checkerboard, a dark background, and an inverted drawing
   (black lines turn white, colors keep their hue) for dark-mode viewing, just for this tab
 

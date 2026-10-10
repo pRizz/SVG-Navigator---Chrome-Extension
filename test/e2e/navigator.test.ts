@@ -5,7 +5,8 @@
 
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { BROWSERS, delay, getViewBox, waitForNavigator, waitForViewBoxChange } from './harness.ts';
+import { BROWSERS, HUD_HOST, delay, evaluateInExtension, getViewBox, waitForNavigator, waitForViewBoxChange } from './harness.ts';
+import { pageOffKey } from '../../src/shared/pageSwitch.ts';
 import { useExtensionSuite } from './suite.ts';
 
 for (const browserName of BROWSERS) {
@@ -396,6 +397,49 @@ for (const browserName of BROWSERS) {
             assert.equal(maybeReady, null, 'extension should not activate on HTML pages');
             assert.equal(await suite.page.$('svg-navigator-hud'), null);
             assert.equal(await suite.page.$eval('svg', (svg) => svg.getAttribute('viewBox')), '0 0 100 100');
+        });
+
+        test('stays off on a page turned off in this tab, leaving the original SVG', async () => {
+            // Arrange
+            await suite.openSvg();
+            await suite.page.evaluate((key: string) => sessionStorage.setItem(key, 'true'), pageOffKey(suite.page.url()));
+
+            // Act
+            await suite.page.reload();
+            await suite.page.waitForSelector('svg[data-svg-navigator="off"]', { timeout: 10_000 });
+
+            // Assert
+            assert.equal(await suite.page.evaluate(() => document.documentElement.localName), 'svg');
+            assert.equal(await suite.page.$(HUD_HOST), null);
+        });
+
+        test('turns off and back on when the popup asks, reloading each time', async () => {
+            // Arrange
+            await suite.openSvg();
+            // The popup messages the active tab; here every tab is asked, and only the SVG answers.
+            const setEnabled = (enabled: boolean): Promise<number> => evaluateInExtension(suite.launched(), suite.extensionOrigin(), async (on: boolean) => {
+                let answered = 0;
+                for (const tab of await chrome.tabs.query({})) {
+                    if (tab.id === undefined) { continue; }
+                    try {
+                        await chrome.tabs.sendMessage(tab.id, { type: 'setPageEnabled', enabled: on });
+                        answered++;
+                    } catch {
+                        // no content script listening in this tab
+                    }
+                }
+                return answered;
+            }, enabled);
+
+            // Act
+            const answeredOff = await setEnabled(false);
+            await suite.page.waitForSelector('svg[data-svg-navigator="off"]', { timeout: 10_000 });
+            const answeredOn = await setEnabled(true);
+
+            // Assert
+            await waitForNavigator(suite.page);
+            assert.ok(await suite.page.$(HUD_HOST), 'HUD should be back');
+            assert.deepEqual([answeredOff, answeredOn], [1, 1], 'only the SVG tab should answer');
         });
 
         test('loads without page errors', async () => {

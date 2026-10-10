@@ -42,6 +42,7 @@ import { mountHud, type HudHandle } from './hud/hud';
 import { keyAction, type KeyAction } from './input/keyActions';
 import { attachPointerInput, clientToSvgPoint, type PointerInput } from './input/pointer';
 import { formatSvgViewFragment, maybeParseSvgViewFragment, ownsFragment } from './viewFragment';
+import { listenForPageSwitch, readPageState } from './offSwitch';
 import { HUD_HOST_TAG } from './hud/shadowHost';
 import {
     describeBrowser,
@@ -102,6 +103,15 @@ main().catch((error: unknown) => {
 async function main(): Promise<void> {
     const maybeSvgRoot = maybeGetStandaloneSvgRoot();
     if(!maybeSvgRoot) { return; }
+
+    // The popup's per-tab off switch (#55): answer it even while off, so it can turn us back on.
+    const pageState = readPageState();
+    listenForPageSwitch(pageState);
+    if(!pageState.enabled) {
+        // Marks the untouched SVG, so E2E tests can wait on it.
+        maybeSvgRoot.dataset.svgNavigator = 'off';
+        return;
+    }
 
     // wrap the svg document in an html document
     svgDocElement = maybeSvgRoot;

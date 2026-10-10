@@ -20,6 +20,20 @@
 
         <main>
             <section class="panel" id="panel-settings" role="tabpanel" aria-labelledby="tab-settings">
+                <!-- Shown only when the active tab is an SVG the navigator runs on (#55). -->
+                <div id="page-card" hidden>
+                    <h2 class="section-title" id="page-title">This page</h2>
+                    <div class="card" role="group" aria-labelledby="page-title">
+                        <label class="row">
+                            <span class="row-label">
+                                SVG Navigator on this page
+                                <span class="row-hint" id="pageEnabledHint"></span>
+                            </span>
+                            <input type="checkbox" class="switch" role="switch" id="pageEnabled">
+                        </label>
+                    </div>
+                </div>
+
                 <h2 class="section-title" id="behavior-title">Behavior</h2>
                 <div class="card" role="group" aria-labelledby="behavior-title">
                     <div class="row">

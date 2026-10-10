@@ -5,7 +5,7 @@
 
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { BROWSERS, clickInExtensionPage, openOptionsPage, waitForStoredSetting } from './harness.ts';
+import { BROWSERS, clickInExtensionPage, delay, openOptionsPage, waitForStoredSetting } from './harness.ts';
 import { useExtensionSuite } from './suite.ts';
 
 for (const browserName of BROWSERS) {
@@ -53,6 +53,15 @@ for (const browserName of BROWSERS) {
             })));
             assert.ok(controls.some(({ action }) => action === 'Zoom to an area'), JSON.stringify(controls));
             assert.deepEqual(controls.find(({ action }) => action === 'Reset view')?.keys, ['Esc', '0']);
+        });
+
+        test('options popup hides the page switch when the active tab is not an SVG', async () => {
+            // Act: the popup itself is the active tab here, which isn't an SVG
+            await openOptionsPage(suite.page, suite.extensionOrigin());
+            await delay(500);
+
+            // Assert
+            assert.equal(await suite.page.$eval('#page-card', (card) => (card as HTMLElement).hidden), true);
         });
 
         test('options popup shows the stored settings', async () => {

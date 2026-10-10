@@ -15,6 +15,7 @@ import {
     type SettingKey,
     type Settings,
 } from '../shared/settings';
+import { isPageState, pageSwitchView, type PageState, type PageSwitchMessage } from '../shared/pageSwitch';
 import { shortcutRows, type ShortcutPart } from '../shared/shortcuts';
 
 type BooleanSettingKey = { [K in SettingKey]: Settings[K] extends boolean ? K : never }[SettingKey];
@@ -44,6 +45,9 @@ const controls = {
     status: requireElement('status', HTMLSpanElement),
     versionInfo: requireElement('versionInfo', HTMLElement),
     controls: requireElement('controls', HTMLDivElement),
+    pageCard: requireElement('page-card', HTMLDivElement),
+    pageEnabled: requireElement('pageEnabled', HTMLInputElement),
+    pageEnabledHint: requireElement('pageEnabledHint', HTMLSpanElement),
     switches: Object.fromEntries(
         SWITCH_KEYS.map((key) => [key, requireElement(key, HTMLInputElement)]),
     ) as Record<BooleanSettingKey, HTMLInputElement>,
@@ -257,6 +261,37 @@ function renderFieldValue({ text, maybeHref }: ProvenanceField): Node | string {
     return link;
 }
 
+/** The per-tab off switch (#55): asks the active tab's content script, if it has one. */
+async function setUpPageSwitch(): Promise<void> {
+    const [maybeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const maybeTabId = maybeTab?.id;
+    if (maybeTabId === undefined) { return; }
+    renderPageSwitch(await maybeAskPage(maybeTabId, { type: 'getPageState' }));
+    controls.pageEnabled.addEventListener('change', () => {
+        const message: PageSwitchMessage = { type: 'setPageEnabled', enabled: controls.pageEnabled.checked };
+        maybeAskPage(maybeTabId, message).then(renderPageSwitch, showError);
+    });
+}
+
+// A tab with no navigator (any page but an SVG) has no listener, so sendMessage rejects.
+async function maybeAskPage(tabId: number, message: PageSwitchMessage): Promise<PageState | null> {
+    try {
+        const reply: unknown = await chrome.tabs.sendMessage(tabId, message);
+        return isPageState(reply) ? reply : null;
+    } catch {
+        return null;
+    }
+}
+
+function renderPageSwitch(maybeState: PageState | null): void {
+    const maybeView = pageSwitchView(maybeState);
+    controls.pageCard.hidden = maybeView === null;
+    if (maybeView === null) { return; }
+    controls.pageEnabled.checked = maybeView.checked;
+    controls.pageEnabled.disabled = maybeView.disabled;
+    controls.pageEnabledHint.textContent = maybeView.hint;
+}
+
 async function init(): Promise<void> {
     controls.scrollSensitivity.min = String(SCROLL_SENSITIVITY_RANGE.min);
     controls.scrollSensitivity.max = String(SCROLL_SENSITIVITY_RANGE.max);
@@ -269,6 +304,7 @@ async function init(): Promise<void> {
     renderVersionInfo();
     render(await loadSettings());
     addEventListeners();
+    await setUpPageSwitch();
     // Lets E2E tests wait until stored settings are shown and changes are saved.
     document.documentElement.dataset.optionsReady = 'true';
 }
