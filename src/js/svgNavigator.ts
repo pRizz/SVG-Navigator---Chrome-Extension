@@ -202,12 +202,13 @@ async function main(): Promise<void> {
 
     settings = await loadSettingsOrDefaults();
     hud = mountHud(htmlDoc, {
-        actions: { zoomIn: () => zoomBy(0.8), zoomOut: () => zoomBy(1.25), reset: resetViewBox },
+        actions: { zoomIn: () => zoomBy(0.8), zoomOut: () => zoomBy(1.25), reset: resetViewBox, showView: showViewBox, animateView: animateViewBox },
         toolbarEnabled: settings.toolbarEnabled,
         position: settings.toolbarPosition,
         autoHide: settings.toolbarAutoHide,
         savedBackground: settings.svgBackgroundColor,
         drawing: svgDocument,
+        minimapEnabled: settings.minimapEnabled,
         clickAndDragBehavior: settings.clickAndDragBehavior,
     });
     addEventListeners();
@@ -256,6 +257,9 @@ function applySetting(key: SettingKey): void {
         break;
     case 'toolbarPosition':
         hud.setPosition(settings.toolbarPosition);
+        break;
+    case 'minimapEnabled':
+        hud.setMinimapEnabled(settings.minimapEnabled);
         break;
     case 'toolbarAutoHide':
         hud.setAutoHide(settings.toolbarAutoHide);
@@ -438,6 +442,7 @@ function isSameView(a: ViewBox, b: ViewBox): boolean {
 
 function refreshHud(): void {
     hud.setZoom(currentZoom());
+    hud.setView(viewBox, originalViewBox);
     hud.setDebugInfo(settings.showDebugInfo ? collectDebugInfo() : null);
 }
 

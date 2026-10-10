@@ -44,4 +44,16 @@ describe('hudLayout', () => {
             'bottom-left': 'top-left', 'bottom': 'top-left', 'bottom-right': 'top-left',
         });
     });
+
+    test('puts the minimap in the bottom corner across from the pill', () => {
+        // Act
+        const corners = layoutsBy((position) => hudLayout(position).minimapCorner);
+
+        // Assert
+        assert.deepEqual(corners, {
+            'top-left': 'bottom-right', 'top': 'bottom-left', 'top-right': 'bottom-left',
+            'left': 'bottom-right', 'right': 'bottom-left',
+            'bottom-left': 'bottom-right', 'bottom': 'bottom-left', 'bottom-right': 'bottom-left',
+        });
+    });
 });

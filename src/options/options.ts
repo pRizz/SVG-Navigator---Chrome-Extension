@@ -20,7 +20,7 @@ import { shortcutRows, type ShortcutPart } from '../shared/shortcuts';
 
 type BooleanSettingKey = { [K in SettingKey]: Settings[K] extends boolean ? K : never }[SettingKey];
 
-const SWITCH_KEYS = ['invertScroll', 'toolbarAutoHide', 'toolbarEnabled', 'showDebugInfo'] as const satisfies readonly BooleanSettingKey[];
+const SWITCH_KEYS = ['invertScroll', 'toolbarAutoHide', 'toolbarEnabled', 'minimapEnabled', 'showDebugInfo'] as const satisfies readonly BooleanSettingKey[];
 
 const SAVED_NOTICE_MS = 1_500;
 const RESET_CONFIRM_MS = 4_000;

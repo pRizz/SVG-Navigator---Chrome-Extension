@@ -327,6 +327,111 @@ for (const browserName of BROWSERS) {
             assert.equal(await popover.evaluate((element) => element.hasAttribute('hidden')), true, 'Space must not reopen the shortcuts');
         });
 
+        /** Zooms in with two + presses and waits for the minimap to appear; returns the view before. */
+        async function zoomInForMinimap(): Promise<{ x: number, y: number, width: number, height: number }> {
+            const original = await getViewBox(suite.page);
+            await suite.page.keyboard.press('Equal');
+            await suite.page.keyboard.press('Equal');
+            await waitForViewBoxChange(suite.page, original);
+            await waitForHudAttribute(suite.page, '.minimap', 'hidden', null);
+            return original;
+        }
+
+        test('the minimap stays hidden while the whole drawing is in view', async () => {
+            // Act
+            await suite.openSvg();
+
+            // Assert
+            assert.equal(await suite.page.evaluate(
+                (host: string) => document.querySelector(host)?.shadowRoot?.querySelector('.minimap')?.hasAttribute('hidden'),
+                HUD_HOST,
+            ), true);
+        });
+
+        test('zooming in shows the minimap, with a copy of the drawing and the view outlined', async () => {
+            // Arrange
+            await suite.openSvg();
+
+            // Act
+            await zoomInForMinimap();
+
+            // Assert
+            const minimap = await (await hudElement(suite.page, '.minimap')).boundingBox();
+            const outline = await (await hudElement(suite.page, '.minimap-outline')).boundingBox();
+            assert.ok(minimap && outline, 'minimap and outline should be laid out');
+            assert.ok(outline.width < minimap.width * 0.75, `outline ${outline.width} should be smaller than minimap ${minimap.width}`);
+            assert.equal(await suite.page.evaluate(
+                (host: string) => document.querySelector(host)?.shadowRoot?.querySelector('.minimap-frame')?.shadowRoot?.querySelector('svg')?.localName,
+                HUD_HOST,
+            ), 'svg', 'the minimap should hold a copy of the drawing, in its own shadow root');
+        });
+
+        test('clicking the minimap moves the view to that spot', async () => {
+            // Arrange
+            await suite.openSvg();
+            const original = await zoomInForMinimap();
+            const before = await getViewBox(suite.page);
+            const minimap = await (await hudElement(suite.page, '.minimap')).boundingBox();
+            assert.ok(minimap, 'minimap should be laid out');
+
+            // Act: a tenth of the way across and down, outside the outline (which spans 18% to 82%)
+            await suite.page.mouse.click(minimap.x + minimap.width / 10, minimap.y + minimap.height / 10);
+
+            // Assert
+            const after = await waitForViewBoxChange(suite.page, before);
+            const center = { x: after.x + after.width / 2, y: after.y + after.height / 2 };
+            const expected = { x: original.x + original.width / 10, y: original.y + original.height / 10 };
+            const tolerance = original.width / 50;
+            assert.ok(Math.abs(center.x - expected.x) < tolerance && Math.abs(center.y - expected.y) < tolerance,
+                `center ${JSON.stringify(center)} should be near ${JSON.stringify(expected)}`);
+        });
+
+        test('dragging the minimap\'s outline pans the view', async () => {
+            // Arrange
+            await suite.openSvg();
+            await zoomInForMinimap();
+            const before = await getViewBox(suite.page);
+            const outline = await (await hudElement(suite.page, '.minimap-outline')).boundingBox();
+            assert.ok(outline, 'outline should be laid out');
+            const grab = { x: outline.x + outline.width / 2, y: outline.y + outline.height / 2 };
+
+            // Act
+            await suite.page.mouse.move(grab.x, grab.y);
+            await suite.page.mouse.down();
+            await suite.page.mouse.move(grab.x + 20, grab.y, { steps: 4 });
+            await suite.page.mouse.up();
+
+            // Assert
+            const after = await waitForViewBoxChange(suite.page, before);
+            assert.ok(after.x > before.x, `x ${after.x} should be > ${before.x}`);
+            assert.ok(Math.abs(after.y - before.y) < before.height / 20, 'a horizontal drag barely moves the view vertically');
+            assert.equal(after.width, before.width);
+        });
+
+        test('the drawing\'s own styles never reach the HUD, even once the minimap copies it', async () => {
+            // Arrange: the fixture's stylesheet paints every path red
+            await suite.openSvg('/hostile-style.svg');
+
+            // Act
+            await zoomInForMinimap();
+
+            // Assert
+            assert.equal(await hudComputedStyle(suite.page, '.zoom-in path', 'fill'), 'none');
+            assert.notEqual(await hudComputedStyle(suite.page, '.zoom-in path', 'stroke'), 'rgb(255, 0, 0)');
+        });
+
+        test('the minimap setting turns it off, live', async () => {
+            // Arrange
+            await suite.openSvg();
+            await zoomInForMinimap();
+
+            // Act
+            await suite.setSettings({ minimapEnabled: false });
+
+            // Assert
+            await waitForHudElement(suite.page, '.minimap', false);
+        });
+
         test('the debug card reports a viewBox derived from the size, and the authored width', async () => {
             // Arrange
             await suite.setSettings({ showDebugInfo: true });

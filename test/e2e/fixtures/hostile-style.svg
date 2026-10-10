@@ -3,6 +3,7 @@
     <style>
         svg-navigator-hud, div, button { display: none !important; opacity: 0 !important; }
         * { font-size: 40px !important; letter-spacing: 5px !important; }
+        path, circle { fill: rgb(255, 0, 0) !important; stroke: rgb(255, 0, 0) !important; }
     </style>
     <rect x="0" y="0" width="800" height="600" fill="#eef"/>
 </svg>

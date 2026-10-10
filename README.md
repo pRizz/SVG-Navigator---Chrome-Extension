@@ -28,6 +28,8 @@ Go to a website with an SVG file. The extension begins working on the SVG graphi
 - Reset zoom: press Esc or 0
 - Steps from the buttons, keys, double-clicks, and zoom boxes ease smoothly into place (instantly with the
   OS's reduced motion setting); the wheel, pinch, and dragging stay direct
+- Minimap: while part of the drawing is out of view, an overview in the bottom corner outlines where you
+  are; click it to jump, or drag the outline to pan (turn it off in the settings)
 - Share a view: the address bar keeps the current view (`#svgView(viewBox(...))`), so reloading or
   sending the link opens that exact spot
 - Keyboard: arrow keys pan (hold Shift for bigger steps), + and − zoom (also with Ctrl or ⌘), F

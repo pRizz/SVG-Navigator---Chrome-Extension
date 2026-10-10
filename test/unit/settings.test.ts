@@ -66,3 +66,13 @@ describe('toolbarPosition', () => {
         assert.equal(parseSetting('toolbarPosition', 'center'), 'bottom-right');
     });
 });
+
+describe('minimapEnabled', () => {
+    test('is on by default', () => {
+        assert.equal(parseSettings({}).minimapEnabled, true);
+    });
+
+    test('falls back to the default for a value that is not a boolean', () => {
+        assert.equal(parseSetting('minimapEnabled', 'off'), true);
+    });
+});

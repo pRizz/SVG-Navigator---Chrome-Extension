@@ -6,11 +6,13 @@
  */
 
 import type { ClickAndDragBehavior, ToolbarPosition } from '../../shared/settings';
+import type { ViewBox } from '../viewBox';
 import { shortcutRows } from '../../shared/shortcuts';
 import { mountDebugCard, type DebugCard } from './debugCard';
 import type { DebugInfo } from './debugInfo';
 import { backgroundButtonTitle, backgroundCss, drawingFilter, nextBackground, type BackgroundState } from './backgroundCycle';
 import { hudLayout } from './layout';
+import { createMinimap, type Minimap } from './minimap';
 import { createPill } from './pill';
 import { createShadowHost } from './shadowHost';
 import { createShortcutsPopover } from './shortcuts';
@@ -22,6 +24,10 @@ export interface HudActions {
     zoomIn: () => void;
     zoomOut: () => void;
     reset: () => void;
+    /** Shows a view at once, as dragging the minimap's outline does. */
+    showView: (next: ViewBox) => void;
+    /** Eases to a view, as clicking the minimap does. */
+    animateView: (next: ViewBox) => void;
 }
 
 export interface HudOptions {
@@ -30,8 +36,9 @@ export interface HudOptions {
     position: ToolbarPosition;
     autoHide: boolean;
     savedBackground: string;
-    /** The drawing's root `<svg>`, which the inverted background step filters. */
+    /** The drawing's root `<svg>`, which the inverted background step filters and the minimap copies. */
     drawing: SVGSVGElement;
+    minimapEnabled: boolean;
     /** Fixed for the page's lifetime: the navigator binds drag behavior once, at load. */
     clickAndDragBehavior: ClickAndDragBehavior;
 }
@@ -43,6 +50,9 @@ export interface HudHandle {
     setAutoHide: (autoHide: boolean) => void;
     setSavedBackground: (color: string) => void;
     setDebugInfo: (maybeInfo: DebugInfo | null) => void;
+    /** The current view and the whole drawing at 100%, for the minimap. */
+    setView: (view: ViewBox, whole: ViewBox) => void;
+    setMinimapEnabled: (enabled: boolean) => void;
     /** Works with the controls hidden or turned off; full screen doesn't need them. */
     toggleFullscreen: () => void;
     /** Opens or closes the shortcuts list; does nothing while the controls are turned off. */
@@ -65,6 +75,8 @@ export function mountHud(htmlDoc: Document, options: HudOptions): HudHandle {
     let maybeIdleTimer: ReturnType<typeof setTimeout> | undefined;
     let position = options.position;
     let maybeDebugCard: DebugCard | null = null;
+    let maybeMinimap: Minimap | null = null;
+    let maybeLastView: { view: ViewBox, whole: ViewBox } | null = null;
 
     const popover = createShortcutsPopover(htmlDoc, shortcutRows(options.clickAndDragBehavior, navigator.userAgent.includes('Mac')));
     const pill = createPill(htmlDoc, {
@@ -106,6 +118,24 @@ export function mountHud(htmlDoc: Document, options: HudOptions): HudHandle {
 
     function renderVisibility(): void {
         dock.toggleAttribute('data-hidden', !isVisible(visibility));
+        maybeMinimap?.element.toggleAttribute('data-hidden', !isVisible(visibility));
+    }
+
+    function setMinimapEnabled(enabled: boolean): void {
+        if (!enabled) {
+            maybeMinimap?.element.remove();
+            maybeMinimap = null;
+            return;
+        }
+        if (maybeMinimap !== null) { return; }
+        const minimap = createMinimap(htmlDoc, options.drawing, hudLayout(position).minimapCorner, options.actions);
+        // Like the pill: hovering the minimap keeps the HUD up.
+        minimap.element.addEventListener('pointerenter', () => dispatch('pointerEnter'), { signal });
+        minimap.element.addEventListener('pointerleave', () => dispatch('pointerLeave'), { signal });
+        root.append(minimap.element);
+        maybeMinimap = minimap;
+        renderVisibility();
+        if (maybeLastView) { minimap.update(maybeLastView.view, maybeLastView.whole); }
     }
 
     function restartIdleTimer(): void {
@@ -125,6 +155,7 @@ export function mountHud(htmlDoc: Document, options: HudOptions): HudHandle {
         pill.element.dataset.orientation = layout.orientation;
         popover.element.dataset.direction = layout.popoverDirection;
         maybeDebugCard?.setCorner(layout.debugCorner);
+        maybeMinimap?.setCorner(layout.minimapCorner);
     }
 
     function setToolbarEnabled(enabled: boolean): void {
@@ -184,6 +215,7 @@ export function mountHud(htmlDoc: Document, options: HudOptions): HudHandle {
 
     setPosition(options.position);
     setToolbarEnabled(options.toolbarEnabled);
+    setMinimapEnabled(options.minimapEnabled);
     applyBackground();
     renderVisibility();
     restartIdleTimer();
@@ -211,6 +243,11 @@ export function mountHud(htmlDoc: Document, options: HudOptions): HudHandle {
             maybeDebugCard ??= mountDebugCard(htmlDoc, root, hudLayout(position).debugCorner);
             maybeDebugCard.render(maybeInfo);
         },
+        setView: (view, whole) => {
+            maybeLastView = { view, whole };
+            maybeMinimap?.update(view, whole);
+        },
+        setMinimapEnabled,
         toggleFullscreen,
         toggleShortcuts: () => {
             if (!dock.isConnected) { return; }

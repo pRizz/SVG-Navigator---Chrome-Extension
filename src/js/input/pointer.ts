@@ -21,6 +21,8 @@ import {
 } from '../viewBox';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
+/** Marks the zoom box's rectangle, which copies of the drawing (the minimap's) leave out. */
+export const ZOOM_BOX_ATTRIBUTE = 'data-svg-navigator-zoom-box';
 // Enough recent moves to measure a pan's release speed.
 const MAX_PAN_SAMPLES = 20;
 // Below this area (in user units squared) a zoom box is a click, not a drag.
@@ -248,6 +250,7 @@ export function attachPointerInput(deps: PointerDeps): PointerInput {
 // the zoom box's rectangle, drawn inside the SVG and hidden at zero size until a drag
 function insertZoomRectangle(svg: SVGSVGElement): SVGRectElement {
     const rect = document.createElementNS(SVG_NS, 'rect');
+    rect.setAttribute(ZOOM_BOX_ATTRIBUTE, '');
     rect.setAttributeNS(null, 'x', '0');
     rect.setAttributeNS(null, 'y', '0');
     rect.setAttributeNS(null, 'rx', '0.01');

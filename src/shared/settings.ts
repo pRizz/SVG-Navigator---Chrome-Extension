@@ -22,6 +22,8 @@ export interface Settings {
     toolbarAutoHide: boolean;
     toolbarEnabled: boolean;
     toolbarPosition: ToolbarPosition;
+    /** The overview of the whole drawing shown while zoomed in (#48). */
+    minimapEnabled: boolean;
     showDebugInfo: boolean;
     /** Any valid CSS color. */
     svgBackgroundColor: string;
@@ -36,6 +38,7 @@ export const DEFAULT_SETTINGS: Readonly<Settings> = {
     toolbarAutoHide: true,
     toolbarEnabled: true,
     toolbarPosition: 'bottom-right',
+    minimapEnabled: true,
     showDebugInfo: false,
     svgBackgroundColor: 'white',
 };
@@ -51,6 +54,7 @@ const VALIDATORS: { [K in SettingKey]: (value: unknown) => value is Settings[K] 
     invertScroll: isBoolean,
     toolbarAutoHide: isBoolean,
     toolbarEnabled: isBoolean,
+    minimapEnabled: isBoolean,
     toolbarPosition: (value): value is ToolbarPosition =>
         typeof value === 'string' && (TOOLBAR_POSITIONS as readonly string[]).includes(value),
     showDebugInfo: isBoolean,

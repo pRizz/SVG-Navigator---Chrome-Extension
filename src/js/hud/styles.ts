@@ -197,7 +197,34 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
     pointer-events: auto;
 }
 
+/* The minimap: an overview of the drawing in a bottom corner, the view outlined. */
+.minimap {
+    position: fixed;
+    bottom: calc(var(--edge) + env(safe-area-inset-bottom, 0px));
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    pointer-events: auto;
+    touch-action: none;
+    transition: opacity 200ms ease;
+}
+.minimap[data-corner="bottom-left"] { left: calc(var(--edge) + env(safe-area-inset-left, 0px)); }
+.minimap[data-corner="bottom-right"] { right: calc(var(--edge) + env(safe-area-inset-right, 0px)); }
+.minimap[data-hidden] { opacity: 0; pointer-events: none; }
+.minimap-frame { display: block; width: 100%; height: 100%; pointer-events: none; }
+.minimap-outline {
+    position: absolute;
+    border: 2px solid var(--accent);
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    cursor: grab;
+    pointer-events: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
-    .dock { transition: none; }
+    .dock, .minimap { transition: none; }
 }
 `;
