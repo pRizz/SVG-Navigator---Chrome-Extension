@@ -72,7 +72,7 @@ jobs:
       run: |
         unzip -q release/chrome.zip -d unpacked-chrome
         unzip -q release/firefox.xpi -d unpacked-firefox
-        E2E_CHROME_EXT=unpacked-chrome E2E_FIREFOX_EXT=unpacked-firefox bun test test/e2e
+        E2E_CHROME_EXT=unpacked-chrome E2E_FIREFOX_EXT=unpacked-firefox bun test --timeout 30000 test/e2e
 
     - name: Upload failure screenshots
       if: failure()

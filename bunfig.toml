@@ -5,4 +5,6 @@ bun = true
 
 [test]
 # The browser tests launch real browsers; bun's 5 s per-test default is too tight for CI.
+# Hooks ignore this setting (the browser launch in test/e2e/suite.ts takes 8-10 s for
+# Firefox on a busy machine), so `test:e2e` and the release workflow also pass --timeout.
 timeout = 30000
