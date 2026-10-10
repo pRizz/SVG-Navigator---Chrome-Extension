@@ -337,6 +337,31 @@ for (const browserName of BROWSERS) {
             return original;
         }
 
+        /** Waits for the minimap's copy of the drawing, built once the view rests. */
+        async function waitForMinimapCopy(): Promise<void> {
+            await waitForHudElement(suite.page, '.minimap-frame', true);
+        }
+
+        test('the minimap shows the outline at once and adds the copy once the view rests', async () => {
+            // Arrange
+            await suite.openSvg();
+
+            // Act
+            await zoomInForMinimap();
+            const isPlainAtFirst = await suite.page.evaluate(
+                (host: string) => document.querySelector(host)?.shadowRoot?.querySelector('.minimap')?.classList.contains('minimap-plain'),
+                HUD_HOST,
+            );
+
+            // Assert
+            assert.equal(isPlainAtFirst, true, 'the outline shows on a plain box before the copy exists');
+            await waitForMinimapCopy();
+            assert.equal(await suite.page.evaluate(
+                (host: string) => document.querySelector(host)?.shadowRoot?.querySelector('.minimap')?.classList.contains('minimap-plain'),
+                HUD_HOST,
+            ), false);
+        });
+
         test('the minimap stays hidden while the whole drawing is in view', async () => {
             // Act
             await suite.openSvg();
@@ -354,6 +379,7 @@ for (const browserName of BROWSERS) {
 
             // Act
             await zoomInForMinimap();
+            await waitForMinimapCopy();
 
             // Assert
             const minimap = await (await hudElement(suite.page, '.minimap')).boundingBox();
@@ -414,6 +440,7 @@ for (const browserName of BROWSERS) {
 
             // Act
             await zoomInForMinimap();
+            await waitForMinimapCopy();
 
             // Assert
             assert.equal(await hudComputedStyle(suite.page, '.zoom-in path', 'fill'), 'none');
@@ -426,6 +453,7 @@ for (const browserName of BROWSERS) {
 
             // Act
             await zoomInForMinimap();
+            await waitForMinimapCopy();
 
             // Assert
             assert.equal(await hudComputedStyle(suite.page, '.minimap-frame', 'will-change'), 'transform');
@@ -438,6 +466,7 @@ for (const browserName of BROWSERS) {
 
             // Act
             await zoomInForMinimap();
+            await waitForMinimapCopy();
 
             // Assert
             const copy = await suite.page.evaluate((host: string) => {

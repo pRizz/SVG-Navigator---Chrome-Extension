@@ -98,6 +98,17 @@ const SCENES: Scene[] = [
     },
 ];
 
+/**
+ * The minimap builds its copy of the drawing once the view rests, so a screenshot taken
+ * straight after zooming could catch it either way; wait until it's hidden or built.
+ */
+async function waitForMinimapToSettle(page: Page): Promise<void> {
+    await page.waitForFunction(() => {
+        const maybeMinimap = document.querySelector('svg-navigator-hud')?.shadowRoot?.querySelector('.minimap');
+        return !maybeMinimap || maybeMinimap.hasAttribute('hidden') || maybeMinimap.querySelector('.minimap-frame') !== null;
+    }, { timeout: 10_000 });
+}
+
 /** Scrolls up `ticks` times at `point`, waiting for each zoom step to land. */
 async function zoom(page: Page, point: { x: number, y: number }, ticks: number): Promise<void> {
     await page.mouse.move(point.x, point.y);
@@ -153,6 +164,7 @@ async function captureScene(browser: Browser, extensionOrigin: string, origin: s
         await waitForNavigator(page);
         await freezeAnimations(page);
         await scene.act(page);
+        await waitForMinimapToSettle(page);
         return await page.screenshot({ type: 'png' });
     } finally {
         await page.close();

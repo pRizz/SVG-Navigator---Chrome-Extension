@@ -6,7 +6,9 @@
  * the copy's scripts never run. The copy sits in a shadow root of its own, so the
  * drawing's stylesheet styles only the copy, never the HUD around it. It's cached on
  * its own compositing layer, so panning only moves the outline, and its animations are
- * paused. A drawing too large to copy gets the outline on a plain box instead.
+ * paused. The outline shows at once on a plain box; the copy is built only once the view
+ * rests and the browser is idle, so building it never stalls a zoom or pan. A drawing
+ * too large to copy keeps the plain box.
  */
 
 import { ZOOM_BOX_ATTRIBUTE } from '../input/pointer';
@@ -16,6 +18,9 @@ import { copiesDrawing, drawingPointAt, minimapSize, outlineRect, showsWholeDraw
 import { adoptStyles } from './shadowHost';
 
 // The copy is too small to follow animations, and running them would cost CPU for nothing.
+// How long the view must rest before the copy is built.
+const COPY_AFTER_QUIET_MS = 300;
+
 const STILL_COPY_CSS = '*, *::before, *::after { animation-play-state: paused !important; transition: none !important; }';
 
 export interface MinimapActions {
@@ -43,18 +48,31 @@ export function createMinimap(htmlDoc: Document, drawing: SVGSVGElement, corner:
     element.append(outline);
 
     let maybeLatest: { view: ViewBox, whole: ViewBox, size: Size } | null = null;
-    let isOverviewBuilt = false;
+    // none: never needed yet; pending: the outline shows on a plain box, the copy waits
+    // for a quiet moment; done: the copy is in (or the drawing was too large to copy).
+    let overview: 'none' | 'pending' | 'done' = 'none';
+    let maybeQuietTimer: ReturnType<typeof setTimeout> | undefined;
     // While dragging: where in the outline the pointer grabbed it, so it doesn't jump.
     let maybeGrabOffset: Point | null = null;
 
-    function buildOverview(whole: ViewBox, size: Size): void {
+    function startOverview(size: Size): void {
         element.style.width = `${size.width}px`;
         element.style.height = `${size.height}px`;
-        isOverviewBuilt = true;
-        if (!copiesDrawing(drawing.getElementsByTagName('*').length)) {
-            element.classList.add('minimap-plain');
-            return;
-        }
+        element.classList.add('minimap-plain');
+        overview = 'pending';
+    }
+
+    // Each view change re-arms the timer, so the copy waits until zooming and panning pause.
+    function scheduleCopy(): void {
+        clearTimeout(maybeQuietTimer);
+        maybeQuietTimer = setTimeout(() => whenIdle(buildCopy), COPY_AFTER_QUIET_MS);
+    }
+
+    function buildCopy(): void {
+        if (overview !== 'pending' || maybeLatest === null || !element.isConnected) { return; }
+        overview = 'done';
+        if (!copiesDrawing(drawing.getElementsByTagName('*').length)) { return; }
+        const { whole } = maybeLatest;
         const copy = drawing.cloneNode(true);
         if (!(copy instanceof SVGSVGElement)) { return; }
         for (const zoomBox of copy.querySelectorAll(`[${ZOOM_BOX_ATTRIBUTE}]`)) {
@@ -74,6 +92,7 @@ export function createMinimap(htmlDoc: Document, drawing: SVGSVGElement, corner:
         adoptStyles(htmlDoc, frameRoot, STILL_COPY_CSS);
         frameRoot.append(copy);
         element.prepend(frame);
+        element.classList.remove('minimap-plain');
         // SMIL animations are paused separately from CSS ones.
         copy.pauseAnimations();
     }
@@ -132,8 +151,9 @@ export function createMinimap(htmlDoc: Document, drawing: SVGSVGElement, corner:
             element.hidden = !isNeeded;
             if (!isNeeded) { return; }
             const size = minimapSize(whole);
-            if (!isOverviewBuilt) { buildOverview(whole, size); }
             maybeLatest = { view, whole, size };
+            if (overview === 'none') { startOverview(size); }
+            if (overview === 'pending') { scheduleCopy(); }
             const rect = outlineRect(view, whole, size);
             Object.assign(outline.style, {
                 left: `${rect.x}px`,
@@ -144,4 +164,13 @@ export function createMinimap(htmlDoc: Document, drawing: SVGSVGElement, corner:
         },
         setCorner,
     };
+}
+
+// Safari has no requestIdleCallback; a timer still keeps the build out of the gesture.
+function whenIdle(callback: () => void): void {
+    if (typeof requestIdleCallback === 'function') {
+        requestIdleCallback(() => callback());
+        return;
+    }
+    setTimeout(callback, 0);
 }
