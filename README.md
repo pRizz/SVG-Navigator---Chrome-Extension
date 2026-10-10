@@ -21,6 +21,7 @@ Go to a website with an SVG file. The extension begins working on the SVG graphi
 
 - Pan: click and drag or hold the space bar and drag the cursor to pan around the image
 - Zoom in infinitely, or back out: use the mouse scroll wheel
+- Zoom in 2× at a spot: double-click it (Shift + double-click zooms out)
 - Zoom: click and drag a zoom box of the desired area if enabled
 - Zoom out: tap alt key
 - Reset zoom: press Esc or 0

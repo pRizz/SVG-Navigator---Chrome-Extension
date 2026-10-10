@@ -5,7 +5,7 @@
 
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { BROWSERS, getViewBox, waitForViewBoxChange } from './harness.ts';
+import { BROWSERS, delay, getViewBox, waitForViewBoxChange } from './harness.ts';
 import { useExtensionSuite } from './suite.ts';
 
 for (const browserName of BROWSERS) {
@@ -73,6 +73,81 @@ for (const browserName of BROWSERS) {
             assert.ok(panned.x > original.x && panned.y > original.y, `expected a pan, got ${JSON.stringify(panned)}`);
             assert.equal(panned.width, original.width);
             assert.deepEqual(await waitForViewBoxChange(suite.page, panned), original);
+        });
+
+        /** The drawing's user-space point under client point (x, y), as the page itself computes it. */
+        async function svgPointAt(x: number, y: number): Promise<{ x: number, y: number }> {
+            return suite.page.evaluate((clientX: number, clientY: number) => {
+                const svg = document.querySelector('svg');
+                const maybeMatrix = svg?.getScreenCTM();
+                if (!svg || !maybeMatrix) { throw new Error('no rendered <svg>'); }
+                const point = new DOMPoint(clientX, clientY).matrixTransform(maybeMatrix.inverse());
+                return { x: point.x, y: point.y };
+            }, x, y);
+        }
+
+        test('double-clicking zooms in 2× and keeps the point under the cursor', async () => {
+            // Arrange
+            await suite.openSvg();
+            const before = await getViewBox(suite.page);
+            const pointBefore = await svgPointAt(200, 150);
+
+            // Act
+            await suite.page.mouse.click(200, 150, { count: 2 });
+
+            // Assert
+            const after = await waitForViewBoxChange(suite.page, before);
+            const pointAfter = await svgPointAt(200, 150);
+            assert.ok(Math.abs(after.width - before.width / 2) < 1e-6, `width ${after.width} should be ${before.width / 2}`);
+            assert.ok(Math.abs(pointAfter.x - pointBefore.x) < 1e-6 && Math.abs(pointAfter.y - pointBefore.y) < 1e-6,
+                `point moved from ${JSON.stringify(pointBefore)} to ${JSON.stringify(pointAfter)}`);
+        });
+
+        test('Shift + double-click zooms out 2×', async () => {
+            // Arrange
+            await suite.openSvg();
+            const before = await getViewBox(suite.page);
+
+            // Act
+            await suite.page.keyboard.down('Shift');
+            await suite.page.mouse.click(400, 300, { count: 2 });
+            await suite.page.keyboard.up('Shift');
+
+            // Assert
+            const after = await waitForViewBoxChange(suite.page, before);
+            assert.ok(Math.abs(after.width - before.width * 2) < 1e-6, `width ${after.width} should be ${before.width * 2}`);
+        });
+
+        test('double-clicking zooms in Zoom box mode too', async () => {
+            // Arrange
+            await suite.setSettings({ clickAndDragBehavior: 'zoomBox' });
+            await suite.openSvg();
+            const before = await getViewBox(suite.page);
+
+            // Act
+            await suite.page.mouse.click(400, 300, { count: 2 });
+
+            // Assert
+            const after = await waitForViewBoxChange(suite.page, before);
+            assert.ok(Math.abs(after.width - before.width / 2) < 1e-6, `width ${after.width} should be ${before.width / 2}`);
+        });
+
+        test('a double-click right after a drag does not zoom', async () => {
+            // Arrange: pan first
+            await suite.openSvg();
+            const original = await getViewBox(suite.page);
+            await suite.page.mouse.move(400, 300);
+            await suite.page.mouse.down();
+            await suite.page.mouse.move(300, 250, { steps: 5 });
+            await suite.page.mouse.up();
+            const panned = await waitForViewBoxChange(suite.page, original);
+
+            // Act
+            await suite.page.mouse.click(300, 250, { count: 2 });
+            await delay(300);
+
+            // Assert
+            assert.equal((await getViewBox(suite.page)).width, panned.width);
         });
 
         test('holding Space while moving the mouse pans without zooming', async () => {

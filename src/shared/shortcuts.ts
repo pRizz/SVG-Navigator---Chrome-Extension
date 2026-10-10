@@ -37,6 +37,7 @@ const DRAG_ROWS: Readonly<Record<DragContext, readonly ShortcutRow[]>> = {
 export function shortcutRows(drag: DragContext, isMac: boolean): ShortcutRow[] {
     return [
         { action: 'Zoom at the pointer', parts: [key('Scroll')] },
+        { action: 'Zoom in at a spot', parts: [key('Double-click'), ', or ', key('Shift'), ' + ', key('Double-click'), ' to zoom out'] },
         ...DRAG_ROWS[drag],
         {
             action: 'Move the view',

@@ -1,12 +1,13 @@
 /**
  * Mouse and wheel input on the drawing: drag to pan or to draw a zoom box, Space + move
- * to pan, and the wheel to zoom at the pointer. Owns the interaction state (at most one
+ * to pan, the wheel to zoom at the pointer, and double-click to zoom 2× there. Owns the interaction state (at most one
  * pan or zoom box at a time) and the zoom box's rectangle; `svgNavigator.ts` supplies
  * the view through `PointerDeps`.
  */
 
 import { SCROLL_SENSITIVITY_RANGE, type ClickAndDragBehavior } from '../../shared/settings';
 import type { InteractionKind, WheelSample } from '../hud/debugInfo';
+import { doubleClickZoomFactor, isDrag, shouldZoomOnDoubleClick } from './doubleClick';
 import {
     fitToAspectRatio,
     panViewBox,
@@ -67,6 +68,9 @@ export function attachPointerInput(deps: PointerDeps): PointerInput {
     const { svg } = deps;
     const zoomRectangle = insertZoomRectangle(svg);
     let interaction: Interaction = { kind: 'idle' };
+    // for telling a double-click from two quick drags
+    let maybePress: Point | null = null;
+    let maybeLastDragEndMs: number | null = null;
 
     const toSvgPoint = (evt: MouseEvent, element: SVGGraphicsElement): DOMPoint =>
         clientToSvgPoint(svg, evt.clientX, evt.clientY, element);
@@ -159,6 +163,28 @@ export function attachPointerInput(deps: PointerDeps): PointerInput {
         deps.showViewBox(zoomAroundPoint(deps.view(), toSvgPoint(evt, svg), zoomAmount));
     }
 
+    function rememberPress(evt: MouseEvent): void {
+        if(evt.button === 0) { maybePress = { x: evt.clientX, y: evt.clientY }; }
+    }
+
+    function noteDragEnd(evt: MouseEvent): void {
+        if(maybePress !== null && isDrag(maybePress, { x: evt.clientX, y: evt.clientY })) {
+            maybeLastDragEndMs = evt.timeStamp;
+        }
+        maybePress = null;
+    }
+
+    function doubleClickZoom(evt: MouseEvent): void {
+        if(evt.button !== 0 || interaction.kind !== 'idle') { return; }
+        if(!shouldZoomOnDoubleClick(evt.timeStamp, maybeLastDragEndMs)) { return; }
+        evt.preventDefault();
+        deps.showViewBox(zoomAroundPoint(deps.view(), toSvgPoint(evt, svg), doubleClickZoomFactor(evt.shiftKey)));
+    }
+
+    // registered before the drag handlers, so a press is seen before a pan or zoom box starts
+    svg.addEventListener('mousedown', rememberPress, false);
+    document.addEventListener('mouseup', noteDragEnd, false);
+    svg.addEventListener('dblclick', doubleClickZoom, false);
     document.addEventListener('mousemove', panMove, false); // Space and mouse panning
     if(deps.clickAndDragBehavior === 'zoomBox') {
         svg.addEventListener('mousedown', zoomBoxDown, false);

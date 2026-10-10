@@ -61,6 +61,10 @@ describe('shortcutRows', () => {
         assert.equal(keysFor(rows, 'Show these shortcuts'), '?');
     });
 
+    test('lists double-click zoom, with Shift to zoom out', () => {
+        assert.equal(keysFor(shortcutRows('pan', false), 'Zoom in at a spot'), 'Double-click, or Shift + Double-click to zoom out');
+    });
+
     test('marks keys and gestures as key caps, separate from connecting text', () => {
         // Act
         const maybeRow = shortcutRows('pan', false).find((row) => row.action === 'Reset view');
