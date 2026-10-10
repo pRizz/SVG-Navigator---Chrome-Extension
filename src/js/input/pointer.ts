@@ -1,6 +1,6 @@
 /**
  * Mouse and wheel input on the drawing: drag to pan or to draw a zoom box, Space + move
- * to pan, the wheel to zoom at the pointer, and double-click to zoom 2× there. Owns the interaction state (at most one
+ * to pan, the wheel or a trackpad pinch to zoom at the pointer, and double-click to zoom 2× there. Owns the interaction state (at most one
  * pan or zoom box at a time) and the zoom box's rectangle; `svgNavigator.ts` supplies
  * the view through `PointerDeps`.
  */
@@ -8,11 +8,11 @@
 import { SCROLL_SENSITIVITY_RANGE, type ClickAndDragBehavior } from '../../shared/settings';
 import type { InteractionKind, WheelSample } from '../hud/debugInfo';
 import { doubleClickZoomFactor, isDrag, shouldZoomOnDoubleClick } from './doubleClick';
+import { wheelZoomFactor } from './wheelZoom';
 import {
     fitToAspectRatio,
     panViewBox,
     rectFromCorners,
-    wheelZoomFactor,
     zoomAroundPoint,
     type Point,
     type ViewBox,
@@ -159,7 +159,7 @@ export function attachPointerInput(deps: PointerDeps): PointerInput {
         evt.preventDefault(); // the page itself must not scroll
 
         const { sensitivity, invert } = deps.wheelSettings();
-        const zoomAmount = wheelZoomFactor(evt.deltaY, { sensitivity, maxSensitivity: SCROLL_SENSITIVITY_RANGE.max, invert });
+        const zoomAmount = wheelZoomFactor(evt, { sensitivity, maxSensitivity: SCROLL_SENSITIVITY_RANGE.max, invert, pageHeight: innerHeight });
         deps.showViewBox(zoomAroundPoint(deps.view(), toSvgPoint(evt, svg), zoomAmount));
     }
 

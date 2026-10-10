@@ -10,12 +10,9 @@ import {
     nudgeViewBox,
     panViewBox,
     rectFromCorners,
-    wheelZoomFactor,
     zoomAroundCenter,
     zoomAroundPoint,
 } from '../../src/js/viewBox.ts';
-
-const FULL_SENSITIVITY = { sensitivity: 10, maxSensitivity: 10, invert: false };
 
 describe('maybeParseViewBox', () => {
     test('parses space-separated numbers', () => {
@@ -122,48 +119,6 @@ describe('zoomAroundCenter', () => {
 
         // Assert
         assert.deepEqual(zoomed, { x: -50, y: -25, width: 200, height: 100 });
-    });
-});
-
-describe('wheelZoomFactor', () => {
-    test('zooms in when scrolling up', () => {
-        // Act
-        const factor = wheelZoomFactor(-120, FULL_SENSITIVITY);
-
-        // Assert
-        assert.equal(factor, 1 / 2.01);
-    });
-
-    test('zooms out when scrolling down', () => {
-        // Act
-        const factor = wheelZoomFactor(120, FULL_SENSITIVITY);
-
-        // Assert
-        assert.equal(factor, 2.01);
-    });
-
-    test('reverses direction when inverted', () => {
-        // Act
-        const factor = wheelZoomFactor(-120, { ...FULL_SENSITIVITY, invert: true });
-
-        // Assert
-        assert.equal(factor, 2.01);
-    });
-
-    test('clamps deltas beyond one full wheel step', () => {
-        // Act
-        const factor = wheelZoomFactor(-100_000, FULL_SENSITIVITY);
-
-        // Assert
-        assert.equal(factor, wheelZoomFactor(-120, FULL_SENSITIVITY));
-    });
-
-    test('zooms less at lower sensitivity', () => {
-        // Act
-        const factor = wheelZoomFactor(-120, { ...FULL_SENSITIVITY, sensitivity: 5 });
-
-        // Assert
-        assert.equal(factor, 1 / 1.51);
     });
 });
 

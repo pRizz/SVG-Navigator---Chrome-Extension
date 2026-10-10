@@ -15,9 +15,6 @@ export interface Point {
     y: number;
 }
 
-/** `-deltaY * 10` at or beyond this magnitude counts as one full-strength wheel step. */
-const MAX_WHEEL_DELTA = 1200;
-
 /**
  * Parses an SVG `viewBox` attribute, whose four numbers may be separated by
  * whitespace and/or a comma. Returns `null` for anything a browser would not render
@@ -124,20 +121,6 @@ export function zoomAroundPoint(viewBox: ViewBox, point: Point, factor: number):
 export function zoomAroundCenter(viewBox: ViewBox, factor: number): ViewBox {
     const center = { x: viewBox.x + viewBox.width / 2, y: viewBox.y + viewBox.height / 2 };
     return zoomAroundPoint(viewBox, center, factor);
-}
-
-/**
- * Converts a wheel event's `deltaY` into a viewBox scale factor: below 1 zooms in
- * (scrolling up, unless `invert`), above 1 zooms out. `sensitivity` is relative to
- * `maxSensitivity`, and deltas beyond one full wheel step are clamped.
- */
-export function wheelZoomFactor(
-    deltaY: number,
-    { sensitivity, maxSensitivity, invert }: { sensitivity: number, maxSensitivity: number, invert: boolean },
-): number {
-    const wheelDelta = Math.min(1, Math.max(-1, (-deltaY * 10) / MAX_WHEEL_DELTA));
-    const scrollAmount = (wheelDelta * sensitivity * (invert ? -1 : 1)) / maxSensitivity;
-    return scrollAmount < 0 ? 1 + (-scrollAmount + 0.01) : 1 / (1 + (scrollAmount + 0.01));
 }
 
 /**

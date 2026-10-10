@@ -35,6 +35,28 @@ for (const browserName of BROWSERS) {
             assert.ok(after.width < before.width, `width ${after.width} should be < ${before.width}`);
         });
 
+        test('a trackpad pinch (Ctrl + wheel) zooms the drawing and is consumed, so the page does not zoom', async () => {
+            // Arrange
+            await suite.openSvg();
+            const before = await getViewBox(suite.page);
+            await suite.page.evaluate(() => {
+                window.addEventListener('wheel', (event) => {
+                    document.documentElement.dataset.lastWheelConsumed = String(event.defaultPrevented);
+                });
+            });
+            await suite.page.mouse.move(400, 300);
+
+            // Act
+            await suite.page.keyboard.down('Control');
+            await suite.page.mouse.wheel({ deltaY: -20 });
+            await suite.page.keyboard.up('Control');
+
+            // Assert
+            const after = await waitForViewBoxChange(suite.page, before);
+            assert.ok(after.width < before.width, `width ${after.width} should be < ${before.width}`);
+            assert.equal(await suite.page.evaluate(() => document.documentElement.dataset.lastWheelConsumed), 'true');
+        });
+
         test('dragging with the mouse pans without zooming', async () => {
             // Arrange
             await suite.openSvg();
