@@ -2,7 +2,7 @@
  * The content script's side of the popup's per-tab off switch (#55). The choice lives
  * in this tab's sessionStorage, so it survives the reload that applies it and stays
  * with this tab. Turning it off reloads to the untouched SVG; turning it on reloads
- * to the navigator.
+ * to the navigator. The HUD's Export menu can turn it off too.
  */
 
 import { isPageSwitchMessage, pageOffKey, type PageState } from '../shared/pageSwitch';
@@ -27,15 +27,25 @@ export function listenForPageSwitch(state: PageState): void {
             sendResponse(state);
             return false;
         }
-        const key = pageOffKey(location.href);
-        if (message.enabled) {
-            sessionStorage.removeItem(key);
-        } else {
-            sessionStorage.setItem(key, 'true');
-        }
+        storeEnabled(message.enabled);
         sendResponse({ ...state, enabled: message.enabled });
         // After the reply is on its way, so the popup hears back before the page unloads.
         setTimeout(() => location.reload(), 0);
         return false;
     });
+}
+
+/** The HUD's "Show the original SVG": turns the navigator off in this tab and reloads to the untouched SVG. */
+export function showOriginalSvg(): void {
+    storeEnabled(false);
+    location.reload();
+}
+
+function storeEnabled(enabled: boolean): void {
+    const key = pageOffKey(location.href);
+    if (enabled) {
+        sessionStorage.removeItem(key);
+    } else {
+        sessionStorage.setItem(key, 'true');
+    }
 }

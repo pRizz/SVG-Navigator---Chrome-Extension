@@ -9,6 +9,7 @@ export interface PillActions {
     reset: () => void;
     cycleBackground: () => void;
     toggleFullscreen: () => void;
+    toggleExport: () => void;
     toggleShortcuts: () => void;
 }
 
@@ -18,6 +19,9 @@ export interface Pill {
     setBackgroundTitle: (title: string) => void;
     setFullscreen: (isFullscreen: boolean) => void;
     setShortcutsExpanded: (expanded: boolean) => void;
+    setExportExpanded: (expanded: boolean) => void;
+    /** The export button, which keeps focus while a keyboard opens the menu. */
+    exportButton: HTMLButtonElement;
 }
 
 export function createPill(htmlDoc: Document, actions: PillActions, { fullscreenEnabled }: { fullscreenEnabled: boolean }): Pill {
@@ -47,6 +51,15 @@ export function createPill(htmlDoc: Document, actions: PillActions, { fullscreen
         title: 'Enter full screen (F)',
         onClick: actions.toggleFullscreen,
     });
+    const exportButton = iconButton(htmlDoc, 'download', {
+        className: 'utility export',
+        label: 'Export',
+        title: 'Export: PNG, SVG, or a link to this view',
+        onClick: actions.toggleExport,
+    });
+    exportButton.setAttribute('aria-haspopup', 'dialog');
+    exportButton.setAttribute('aria-controls', 'export');
+    exportButton.setAttribute('aria-expanded', 'false');
     const shortcuts = iconButton(htmlDoc, 'help', {
         className: 'utility shortcuts',
         label: 'Shortcuts',
@@ -65,6 +78,7 @@ export function createPill(htmlDoc: Document, actions: PillActions, { fullscreen
         background,
         // Inside an iframe that disallows it, full screen can't work, so don't offer it.
         ...(fullscreenEnabled ? [fullscreen] : []),
+        exportButton,
         shortcuts,
     );
 
@@ -89,5 +103,9 @@ export function createPill(htmlDoc: Document, actions: PillActions, { fullscreen
         setShortcutsExpanded: (expanded) => {
             shortcuts.setAttribute('aria-expanded', String(expanded));
         },
+        setExportExpanded: (expanded) => {
+            exportButton.setAttribute('aria-expanded', String(expanded));
+        },
+        exportButton,
     };
 }

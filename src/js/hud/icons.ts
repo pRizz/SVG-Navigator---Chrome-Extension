@@ -8,6 +8,7 @@ const PATHS = {
     background: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18zM12 3v18M12 8h7M12 12h9M12 16h7',
     maximize: 'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',
     minimize: 'M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5',
+    download: 'M12 4v11M7 10l5 5 5-5M5 20h14',
     help: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18zM9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17h.01',
     copy: 'M8 8h11v11H8zM5 16V5h11',
     check: 'M5 12l4 4 10-10',

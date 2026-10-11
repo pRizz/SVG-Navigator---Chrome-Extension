@@ -85,6 +85,10 @@ export function nudgeViewBox(viewBox: ViewBox, dx: number, dy: number): ViewBox 
     return { ...viewBox, x: viewBox.x + dx * viewBox.width, y: viewBox.y + dy * viewBox.height };
 }
 
+export function isSameViewBox(a: ViewBox, b: ViewBox): boolean {
+    return a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
+}
+
 export function formatViewBox({ x, y, width, height }: ViewBox): string {
     return `${x} ${y} ${width} ${height}`;
 }

@@ -4,7 +4,7 @@
  * also opens at that view. Pure; `svgNavigator.ts` reads and writes `location`.
  */
 
-import { maybeParseViewBox, type ViewBox } from './viewBox';
+import { isSameViewBox, maybeParseViewBox, type ViewBox } from './viewBox';
 
 const SVG_VIEW = /^#svgView\((.*)\)$/s;
 const VIEW_BOX_PARAMETER = /(?:^|;)\s*viewBox\(([^)]*)\)/;
@@ -40,6 +40,16 @@ export function formatSvgViewFragment(view: ViewBox): string {
  */
 export function ownsFragment(hash: string): boolean {
     return hash === '' || hash === '#' || hash.startsWith('#svgView(');
+}
+
+/**
+ * A link to `view` on the page at `href`: its fragment names the view, or is dropped at
+ * the original view. It replaces any other fragment, so the link opens what's on screen.
+ */
+export function viewLink(href: string, view: ViewBox, original: ViewBox): string {
+    const url = new URL(href);
+    url.hash = isSameViewBox(view, original) ? '' : formatSvgViewFragment(view);
+    return url.href;
 }
 
 // A fragment that isn't valid percent-encoding can't name a view.

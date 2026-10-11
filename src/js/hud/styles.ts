@@ -134,6 +134,29 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .popover dl { display: grid; grid-template-columns: auto auto; gap: 4px 16px; margin: 0; }
 .popover dd { margin: 0; color: var(--muted); text-align: right; }
 
+.export-menu { display: flex; flex-direction: column; min-width: 220px; padding: 10px 6px 6px; }
+.export-menu h2 { margin-left: 6px; }
+.export-menu button {
+    display: flex;
+    align-items: center;
+    padding: 6px;
+    border: 0;
+    border-radius: 6px;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+}
+.export-menu button:hover { background: var(--hover); }
+.export-menu button:active { background: var(--active); }
+.menu-label { margin: 4px 6px 2px; }
+.png-scales { display: flex; gap: 4px; padding: 0 6px 4px; }
+.png-scales button { flex: 1; flex-direction: column; gap: 1px; border: 1px solid var(--border); text-align: center; }
+.png-scale { font-weight: 600; }
+.png-size { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.menu-separator { width: 100%; margin: 4px 0; border: 0; border-top: 1px solid var(--border); }
+.export-status { margin: 4px 6px 2px; color: var(--muted); font-size: 12px; }
+.export-status:empty { display: none; }
+
 .debug, .debug-chip { position: fixed; top: calc(var(--edge) + env(safe-area-inset-top, 0px)); }
 :is(.debug, .debug-chip)[data-corner="top-left"] { left: calc(var(--edge) + env(safe-area-inset-left, 0px)); }
 :is(.debug, .debug-chip)[data-corner="top-right"] { right: calc(var(--edge) + env(safe-area-inset-right, 0px)); }

@@ -1,6 +1,6 @@
 /**
  * The heads-up display over a navigated SVG: a control pill pinned to a window edge or
- * corner, its shortcuts popover, and the per-tab background cycle, all inside one
+ * corner, its shortcuts and Export popovers, and the per-tab background cycle, all inside one
  * shadow root so page styles can't reach them and their styles can't reach the page.
  * `svgNavigator.ts` drives it through the returned `HudHandle`.
  */
@@ -12,6 +12,7 @@ import { mountDebugCard, type DebugCard } from './debugCard';
 import type { DebugInfo } from './debugInfo';
 import { backgroundButtonTitle, backgroundCss, drawingFilter, nextBackground, type BackgroundState } from './backgroundCycle';
 import { hudLayout } from './layout';
+import { createExportMenu, type ExportActions } from './exportMenu';
 import { createMinimap, type Minimap } from './minimap';
 import { createPill } from './pill';
 import { createShadowHost } from './shadowHost';
@@ -30,8 +31,11 @@ export interface HudActions {
     animateView: (next: ViewBox) => void;
 }
 
+type PopoverName = 'shortcuts' | 'export';
+
 export interface HudOptions {
     actions: HudActions;
+    exportActions: ExportActions;
     toolbarEnabled: boolean;
     position: ToolbarPosition;
     autoHide: boolean;
@@ -77,8 +81,10 @@ export function mountHud(htmlDoc: Document, options: HudOptions): HudHandle {
     let maybeDebugCard: DebugCard | null = null;
     let maybeMinimap: Minimap | null = null;
     let maybeLastView: { view: ViewBox, whole: ViewBox } | null = null;
+    // At most one popover is open at a time.
+    let maybeOpenPopover: PopoverName | null = null;
 
-    const popover = createShortcutsPopover(htmlDoc, shortcutRows(options.clickAndDragBehavior, navigator.userAgent.includes('Mac')));
+    const shortcutsPopover = createShortcutsPopover(htmlDoc, shortcutRows(options.clickAndDragBehavior, navigator.userAgent.includes('Mac')));
     const pill = createPill(htmlDoc, {
         ...options.actions,
         cycleBackground: () => {
@@ -86,11 +92,13 @@ export function mountHud(htmlDoc: Document, options: HudOptions): HudHandle {
             applyBackground();
         },
         toggleFullscreen,
-        toggleShortcuts: () => setShortcutsOpen(!popover.isOpen()),
+        toggleExport: () => togglePopover('export'),
+        toggleShortcuts: () => togglePopover('shortcuts'),
     }, { fullscreenEnabled: document.fullscreenEnabled });
+    const exportMenu = createExportMenu(htmlDoc, options.exportActions);
     const dock = htmlDoc.createElement('div');
     dock.className = 'dock';
-    dock.append(pill.element, popover.element);
+    dock.append(pill.element, shortcutsPopover.element, exportMenu.element);
 
     function applyBackground(): void {
         document.body.style.background = backgroundCss(background, savedBackground);
@@ -105,10 +113,28 @@ export function mountHud(htmlDoc: Document, options: HudOptions): HudHandle {
         });
     }
 
-    function setShortcutsOpen(open: boolean): void {
-        popover.setOpen(open);
-        pill.setShortcutsExpanded(open);
-        dispatch(open ? 'popoverOpen' : 'popoverClose');
+    function setOpenPopover(maybeNext: PopoverName | null): void {
+        const wasOpen = maybeOpenPopover !== null;
+        // A keyboard user inside a closing menu goes back to the button that opened it.
+        if (maybeNext !== 'export' && exportMenu.element.contains(root.activeElement)) {
+            pill.exportButton.focus();
+        }
+        maybeOpenPopover = maybeNext;
+        shortcutsPopover.setOpen(maybeNext === 'shortcuts');
+        pill.setShortcutsExpanded(maybeNext === 'shortcuts');
+        exportMenu.setOpen(maybeNext === 'export');
+        pill.setExportExpanded(maybeNext === 'export');
+        if (wasOpen !== (maybeNext !== null)) {
+            dispatch(maybeNext === null ? 'popoverClose' : 'popoverOpen');
+        }
+    }
+
+    function togglePopover(name: PopoverName): void {
+        setOpenPopover(maybeOpenPopover === name ? null : name);
+        // A mouse click blurs the button first, so only a keyboard user is still on it.
+        if (maybeOpenPopover === 'export' && root.activeElement === pill.exportButton) {
+            exportMenu.focusFirstItem();
+        }
     }
 
     function dispatch(event: VisibilityEvent): void {
@@ -153,7 +179,8 @@ export function mountHud(htmlDoc: Document, options: HudOptions): HudHandle {
         position = next;
         dock.dataset.position = next;
         pill.element.dataset.orientation = layout.orientation;
-        popover.element.dataset.direction = layout.popoverDirection;
+        shortcutsPopover.element.dataset.direction = layout.popoverDirection;
+        exportMenu.element.dataset.direction = layout.popoverDirection;
         maybeDebugCard?.setCorner(layout.debugCorner);
         maybeMinimap?.setCorner(layout.minimapCorner);
     }
@@ -163,9 +190,7 @@ export function mountHud(htmlDoc: Document, options: HudOptions): HudHandle {
             root.append(dock);
             return;
         }
-        if (popover.isOpen()) {
-            setShortcutsOpen(false);
-        }
+        setOpenPopover(null);
         dock.remove();
     }
 
@@ -180,13 +205,13 @@ export function mountHud(htmlDoc: Document, options: HudOptions): HudHandle {
     // a keyboard user is still on `?`, and moving a mouse user there would make the next
     // Space reopen the list instead of panning.
     document.addEventListener('keyup', (event) => {
-        if (event.key !== 'Escape' || !popover.isOpen()) { return; }
+        if (event.key !== 'Escape' || maybeOpenPopover === null) { return; }
         event.stopPropagation();
-        setShortcutsOpen(false);
+        setOpenPopover(null);
     }, { capture: true, signal });
     document.addEventListener('pointerdown', (event) => {
-        if (popover.isOpen() && !event.composedPath().includes(dock)) {
-            setShortcutsOpen(false);
+        if (maybeOpenPopover !== null && !event.composedPath().includes(dock)) {
+            setOpenPopover(null);
         }
     }, { capture: true, signal });
     document.addEventListener('fullscreenchange', () => pill.setFullscreen(document.fullscreenElement !== null), { signal });
@@ -251,7 +276,7 @@ export function mountHud(htmlDoc: Document, options: HudOptions): HudHandle {
         toggleFullscreen,
         toggleShortcuts: () => {
             if (!dock.isConnected) { return; }
-            setShortcutsOpen(!popover.isOpen());
+            togglePopover('shortcuts');
         },
         destroy: () => {
             listeners.abort();

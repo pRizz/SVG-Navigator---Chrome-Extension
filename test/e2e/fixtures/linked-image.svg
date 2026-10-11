@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="800" height="600" viewBox="0 0 800 600">
+    <!-- The left half is a linked raster; the right half is transparent around a circle. -->
+    <image xlink:href="red.png" x="0" y="0" width="400" height="600" preserveAspectRatio="none"/>
+    <circle cx="600" cy="300" r="100" fill="#36c"/>
+</svg>

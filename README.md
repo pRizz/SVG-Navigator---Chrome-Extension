@@ -32,12 +32,15 @@ Go to a website with an SVG file. The extension begins working on the SVG graphi
   are; click it to jump, or drag the outline to pan (turn it off in the settings)
 - Share a view: the address bar keeps the current view (`#svgView(viewBox(...))`), so reloading or
   sending the link opens that exact spot
+- Export: the download button saves the current view as a PNG (1×, 2×, or 4× its size on screen, with a
+  transparent background), downloads or copies the SVG as authored, or copies a link to the view
 - Keyboard: arrow keys pan (hold Shift for bigger steps), + and − zoom (also with Ctrl or ⌘), F
   toggles full screen, and ? lists every shortcut
-- On-screen controls: zoom out, the zoom level (click it to reset), zoom in, background, full screen, and a
-  shortcuts list; choose their corner or edge, or turn them off, in the settings
-- See the original SVG: on an SVG page, the popup's "This page" switch turns SVG Navigator off for that
-  page in that tab (it reloads untouched) until you turn it back on
+- On-screen controls: zoom out, the zoom level (click it to reset), zoom in, background, full screen,
+  export, and a shortcuts list; choose their corner or edge, or turn them off, in the settings
+- See the original SVG: on an SVG page, the popup's "This page" switch (or "Show the original SVG" in the
+  Export menu) turns SVG Navigator off for that page in that tab (it reloads untouched) until you turn it
+  back on from the popup
 - Background button: cycles a transparency checkerboard, a dark background, and an inverted drawing
   (black lines turn white, colors keep their hue) for dark-mode viewing, just for this tab
 

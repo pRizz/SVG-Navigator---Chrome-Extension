@@ -9,7 +9,7 @@
  */
 
 import { createServer } from 'node:http';
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import puppeteer, { type Browser, type ElementHandle, type EvaluateFunc, type Page } from 'puppeteer';
@@ -41,6 +41,7 @@ export const BROWSERS: string[] = (process.env.E2E_BROWSERS ?? 'chrome,firefox')
 const CONTENT_TYPES: Record<string, string> = {
     '.svg': 'image/svg+xml',
     '.html': 'text/html; charset=utf-8',
+    '.png': 'image/png',
 };
 
 // Paths served from another file, or with extra headers, to exercise edge cases.
@@ -86,11 +87,12 @@ function extensionDir(browserName: BrowserName): string {
 
 /**
  * Launches a headless browser with the unpacked extension installed.
- * `chromeArgs` are extra Chrome command-line switches.
+ * `chromeArgs` are extra Chrome command-line switches; downloads land in `maybeDownloadDir`.
  */
 export async function launchWithExtension(
     browserName: string,
     chromeArgs: string[] = [],
+    maybeDownloadDir?: string,
 ): Promise<{ browser: Browser, extensionOrigin: string }> {
     if (browserName !== 'chrome' && browserName !== 'firefox') {
         throw new Error(`Unsupported browser "${browserName}"; expected chrome or firefox`);
@@ -103,6 +105,7 @@ export async function launchWithExtension(
             enableExtensions: true,
             // GitHub's Ubuntu runners restrict the user namespaces Chrome's sandbox needs.
             args: [...(process.env.CI ? ['--no-sandbox'] : []), ...chromeArgs],
+            ...(maybeDownloadDir ? { downloadBehavior: { policy: 'allow', downloadPath: maybeDownloadDir } } : {}),
         });
         const extensionId = await browser.installExtension(dir);
         return { browser, extensionOrigin: `chrome-extension://${extensionId}` };
@@ -115,6 +118,15 @@ export async function launchWithExtension(
             args: ['--remote-allow-system-access'],
             extraPrefsFirefox: {
                 'extensions.webextensions.uuids': JSON.stringify({ [FIREFOX_EXTENSION_ID]: FIREFOX_EXTENSION_UUID }),
+                // Puppeteer's downloadBehavior is CDP-only; these prefs save downloads without asking.
+                ...(maybeDownloadDir ? {
+                    'browser.download.folderList': 2,
+                    'browser.download.dir': maybeDownloadDir,
+                    'browser.download.useDownloadDir': true,
+                    'browser.download.always_ask_before_handling_new_types': false,
+                    'browser.download.alwaysOpenPanel': false,
+                    'browser.download.start_downloads_in_tmp_dir': false,
+                } : {}),
             },
         });
         await browser.installExtension(dir);
@@ -335,6 +347,22 @@ export async function waitForHudAttribute(page: Page, selector: string, attribut
         attribute,
         expected,
     );
+}
+
+/** Waits for a finished download: the file exists and its size has stopped changing. */
+export async function waitForDownload(dir: string, fileName: string, timeoutMs = 10_000): Promise<Buffer> {
+    const filePath = path.join(dir, fileName);
+    const deadline = Date.now() + timeoutMs;
+    let previousSize = -1;
+    while (Date.now() < deadline) {
+        const maybeSize = await stat(filePath).then(({ size }) => size, () => null);
+        if (maybeSize !== null && maybeSize > 0 && maybeSize === previousSize) {
+            return readFile(filePath);
+        }
+        previousSize = maybeSize ?? -1;
+        await delay(100);
+    }
+    throw new Error(`No finished download ${fileName} in ${dir} after ${timeoutMs} ms`);
 }
 
 export function delay(ms: number): Promise<void> {

@@ -6,7 +6,8 @@
 
 import { after, afterEach, before, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Browser, Page } from 'puppeteer';
@@ -21,6 +22,7 @@ export class ExtensionSuite {
     #maybeBrowser: Browser | undefined;
     #maybeExtensionOrigin: string | undefined;
     #maybePage: Page | undefined;
+    #maybeDownloadDir: string | undefined;
 
     constructor(browserName: string) {
         this.browserName = browserName;
@@ -54,6 +56,12 @@ export class ExtensionSuite {
         return this.#maybeExtensionOrigin;
     }
 
+    /** Where the browser saves downloads; emptied before each test. */
+    downloadDir(): string {
+        assert.ok(this.#maybeDownloadDir, 'no download folder outside the suite');
+        return this.#maybeDownloadDir;
+    }
+
     async openSvg(fixturePath = '/simple.svg'): Promise<void> {
         await this.page.goto(`${this.fixtureOrigin()}${fixturePath}`);
         await waitForNavigator(this.page);
@@ -71,7 +79,8 @@ export class ExtensionSuite {
 
     async setUp(): Promise<void> {
         this.#maybeServer = await startFixtureServer();
-        const { browser, extensionOrigin } = await launchWithExtension(this.browserName);
+        this.#maybeDownloadDir = await mkdtemp(path.join(tmpdir(), 'svg-navigator-downloads-'));
+        const { browser, extensionOrigin } = await launchWithExtension(this.browserName, [], this.#maybeDownloadDir);
         this.#maybeBrowser = browser;
         this.#maybeExtensionOrigin = extensionOrigin;
     }
@@ -79,9 +88,13 @@ export class ExtensionSuite {
     async tearDown(): Promise<void> {
         await this.#maybeBrowser?.close();
         await this.#maybeServer?.close();
+        if (this.#maybeDownloadDir) { await rm(this.#maybeDownloadDir, { recursive: true, force: true }); }
     }
 
     async beforeTest(): Promise<void> {
+        // A file left by an earlier test would make the browser rename the next one.
+        await rm(this.downloadDir(), { recursive: true, force: true });
+        await mkdir(this.downloadDir(), { recursive: true });
         this.page = await this.launched().newPage();
     }
 

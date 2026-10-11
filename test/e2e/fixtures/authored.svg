@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 800 600" preserveAspectRatio="xMinYMin meet" style="width: 400px; height: 300px; border: 1px solid">
+    <!-- Every root attribute the navigator rewrites, so exports can show they're restored. -->
+    <circle cx="400" cy="300" r="150" fill="#36c"/>
+</svg>

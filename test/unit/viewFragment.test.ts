@@ -1,6 +1,6 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { formatSvgViewFragment, maybeParseSvgViewFragment, ownsFragment } from '../../src/js/viewFragment.ts';
+import { formatSvgViewFragment, maybeParseSvgViewFragment, ownsFragment, viewLink } from '../../src/js/viewFragment.ts';
 
 describe('maybeParseSvgViewFragment', () => {
     test('reads the viewBox from an svgView fragment', () => {
@@ -74,5 +74,27 @@ describe('ownsFragment', () => {
 
     test('leaves the SVG\'s own fragment identifiers alone', () => {
         assert.equal(ownsFragment('#layer1'), false);
+    });
+});
+
+describe('viewLink', () => {
+    const ORIGINAL = { x: 0, y: 0, width: 800, height: 600 };
+
+    test('links to the current view', () => {
+        assert.equal(
+            viewLink('https://example.com/map.svg', { x: 10, y: 20, width: 30, height: 40 }, ORIGINAL),
+            'https://example.com/map.svg#svgView(viewBox(10,20,30,40))',
+        );
+    });
+
+    test('links to the plain file at the original view', () => {
+        assert.equal(viewLink('https://example.com/map.svg#svgView(viewBox(1,2,3,4))', ORIGINAL, ORIGINAL), 'https://example.com/map.svg');
+    });
+
+    test('replaces the SVG\'s own fragment, so the link opens what is on screen', () => {
+        assert.equal(
+            viewLink('https://example.com/map.svg?v=1#layer1', { x: 1, y: 2, width: 3, height: 4 }, ORIGINAL),
+            'https://example.com/map.svg?v=1#svgView(viewBox(1,2,3,4))',
+        );
     });
 });

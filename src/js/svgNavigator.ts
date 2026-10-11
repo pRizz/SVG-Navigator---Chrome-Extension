@@ -41,8 +41,9 @@ import {
 import { mountHud, type HudHandle } from './hud/hud';
 import { keyAction, type KeyAction } from './input/keyActions';
 import { attachPointerInput, clientToSvgPoint, type PointerInput } from './input/pointer';
-import { formatSvgViewFragment, maybeParseSvgViewFragment, ownsFragment } from './viewFragment';
-import { listenForPageSwitch, readPageState } from './offSwitch';
+import { maybeParseSvgViewFragment, ownsFragment, viewLink } from './viewFragment';
+import { listenForPageSwitch, readPageState, showOriginalSvg } from './offSwitch';
+import { createExporter, readAuthoredRoot } from './export/exporter';
 import { createViewAnimator } from './viewAnimation';
 import { HUD_HOST_TAG } from './hud/shadowHost';
 import {
@@ -150,6 +151,7 @@ async function main(): Promise<void> {
     svgDocument = maybeSvgDocument;
     // Read before the code below strips sizes and inserts the zoom rectangle.
     const authored = readAuthoredFacts(svgDocument);
+    const authoredRoot = readAuthoredRoot(svgDocument);
 
     // @since 2.6
     // Remove of the SVG element `style` `width` and `height` in case
@@ -203,6 +205,15 @@ async function main(): Promise<void> {
     settings = await loadSettingsOrDefaults();
     hud = mountHud(htmlDoc, {
         actions: { zoomIn: () => zoomBy(0.8), zoomOut: () => zoomBy(1.25), reset: resetViewBox, showView: showViewBox, animateView: animateViewBox },
+        exportActions: {
+            ...createExporter({
+                drawing: svgDocument,
+                authoredRoot,
+                view: () => viewBox,
+                link: () => viewLink(location.href, viewBox, originalViewBox),
+            }),
+            maybeShowOriginal: pageState.canToggle ? showOriginalSvg : null,
+        },
         toolbarEnabled: settings.toolbarEnabled,
         position: settings.toolbarPosition,
         autoHide: settings.toolbarAutoHide,
@@ -430,14 +441,8 @@ function scheduleViewLinkUpdate(): void {
     if(!ownsFragment(location.hash)) { return; }
     clearTimeout(maybeViewLinkTimer);
     maybeViewLinkTimer = setTimeout(() => {
-        const url = new URL(location.href);
-        url.hash = isSameView(viewBox, originalViewBox) ? '' : formatSvgViewFragment(viewBox);
-        history.replaceState(history.state, '', url.href);
+        history.replaceState(history.state, '', viewLink(location.href, viewBox, originalViewBox));
     }, VIEW_LINK_DELAY_MS);
-}
-
-function isSameView(a: ViewBox, b: ViewBox): boolean {
-    return a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
 }
 
 function refreshHud(): void {
