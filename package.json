@@ -28,7 +28,8 @@
     "mandelbrot": "bun scripts/generateMandelbrot.ts",
     "mandelbrot:gallery": "bun scripts/generateMandelbrot.ts --gallery",
     "mandelbrot:gallery:hires": "bun scripts/generateMandelbrot.ts --gallery --resolution 10 && bun scripts/generateMandelbrot.ts --gallery --resolution 100",
-    "mandelbrot:gallery:curves": "bun scripts/generateMandelbrot.ts --gallery --style curves"
+    "mandelbrot:gallery:curves": "bun scripts/generateMandelbrot.ts --gallery --style curves",
+    "mandelbrot:gallery:curves:hires": "bun scripts/generateMandelbrot.ts --gallery --style curves --resolution 10 && bun scripts/generateMandelbrot.ts --gallery --style curves --resolution 100"
   },
   "repository": {
     "type": "git",

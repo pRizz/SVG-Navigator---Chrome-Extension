@@ -201,7 +201,9 @@ minute to open the largest, and Firefox about 20 seconds.
 
 `--style curves` draws the bands as smooth ribbons instead of pixels, so they stay smooth however
 far you zoom; `bun run mandelbrot:gallery:curves` renders every preset that way, to
-`<name>-curves.svg`. Marching squares traces each band's edges through the sampled escape times,
+`<name>-curves.svg`, and `bun run mandelbrot:gallery:curves:hires` at 10× and 100× (about five
+minutes, up to 13 GB of memory, and files up to 860 MB, which Chrome can't open in five
+minutes). Marching squares traces each band's edges through the sampled escape times,
 and each band becomes one filled path of quadratic curves. Right at the set's edge, where the
 escape time climbs too steeply for that, the climb is capped: `--curve-detail <n>` (default 4)
 allows `n` band edges between neighboring samples, so a higher value keeps more of the filaments
