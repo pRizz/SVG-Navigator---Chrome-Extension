@@ -1,15 +1,20 @@
 /**
- * Renders the Mandelbrot set as an SVG: a fun, heavy drawing to try SVG Navigator on.
+ * Renders the Mandelbrot set: a fun, heavy drawing to try SVG Navigator on.
  *
  * Each pixel of a `width`×`height` grid samples the complex plane, and its smoothed
- * escape time picks one of the palette's color bands. Horizontal runs of one band
- * merge into a rectangle, and every band becomes a single `<path>` of those
- * rectangles, so the element count stays at the band count however large the grid.
- * Points inside the set are the background and draw nothing.
+ * escape time picks one of the palette's color bands. In the `pixels` style,
+ * horizontal runs of one band merge into a rectangle, and every band becomes a
+ * single `<path>` of those rectangles, so the element count stays at the band count
+ * however large the grid. Points inside the set are the background and draw nothing.
+ * `mandelbrotCurves.ts` draws the `curves` style, and `mandelbrotSvg.ts` wraps either.
  */
+
+/** How the bands are drawn: pixel rectangles, or smooth traced ribbons. */
+export type MandelbrotStyle = 'pixels' | 'curves';
 
 /** Everything that decides what an image looks like. */
 export interface MandelbrotOptions {
+    readonly style: MandelbrotStyle;
     /** Horizontal samples, which is also the SVG's user-unit width. */
     readonly width: number;
     /** Vertical samples, which is also the SVG's user-unit height. */
@@ -30,15 +35,11 @@ export interface MandelbrotOptions {
     readonly cycle: number;
     /** Background color, which is also the color of the set itself. */
     readonly interiorColor: string;
-}
-
-/** A rendered image, with counts for logging. */
-export interface MandelbrotSvg {
-    readonly svg: string;
-    /** Bands that appear in the image, each one `<path>`. */
-    readonly pathCount: number;
-    /** Rectangles across all paths. */
-    readonly runCount: number;
+    /**
+     * For `curves`: the most band edges that may cross between neighboring samples.
+     * Higher keeps more of the filaments near the set and makes larger files.
+     */
+    readonly curveDetail: number;
 }
 
 /** Marks a pixel inside the set in a band raster. */
@@ -163,37 +164,13 @@ export function bandPaths(raster: Int16Array, width: number): Map<number, string
     return paths;
 }
 
-/** Renders the image described by `options`, with `title` as its accessible name. */
-export function renderMandelbrotSvg(options: MandelbrotOptions, title: string): MandelbrotSvg {
-    const { width, height } = options;
+/** The drawing for the `pixels` style: one `<path>` per band that appears. */
+export function pixelLayers(options: MandelbrotOptions): { paths: string[], rectangleCount: number } {
     const colors = bandColors(options.paletteStops, options.bands);
-    const paths = bandPaths(rasterizeBands(options), width);
-    const sortedBands = [...paths.keys()].sort((a, b) => a - b);
-    const pathElements = sortedBands.map((band) => `<path fill="${colors[band]}" d="${paths.get(band)?.join('') ?? ''}"/>`);
-    const runCount = sortedBands.reduce((total, band) => total + (paths.get(band)?.length ?? 0), 0);
-    const svg = [
-        `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" shape-rendering="crispEdges">`,
-        `<title>${escapeXml(title)}</title>`,
-        `<desc>${escapeXml(describe(options))}</desc>`,
-        `<rect width="${width}" height="${height}" fill="${options.interiorColor}"/>`,
-        ...pathElements,
-        '</svg>',
-        '',
-    ].join('\n');
-    return { svg, pathCount: pathElements.length, runCount };
-}
-
-/** A one-line record of the parameters, so an image says how to regenerate it. */
-export function describe(options: MandelbrotOptions): string {
-    return [
-        `Mandelbrot set centered on ${options.centerRe} + ${options.centerIm}i`,
-        `span ${options.span}`,
-        `${options.width}×${options.height} samples`,
-        `${options.maxIterations} max iterations`,
-        `${options.bands} bands cycling every ${options.cycle} iterations`,
-    ].join(', ');
-}
-
-function escapeXml(text: string): string {
-    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const pathsByBand = bandPaths(rasterizeBands(options), options.width);
+    const sortedBands = [...pathsByBand.keys()].sort((a, b) => a - b);
+    return {
+        paths: sortedBands.map((band) => `<path fill="${colors[band]}" d="${pathsByBand.get(band)?.join('') ?? ''}"/>`),
+        rectangleCount: sortedBands.reduce((total, band) => total + (pathsByBand.get(band)?.length ?? 0), 0),
+    };
 }

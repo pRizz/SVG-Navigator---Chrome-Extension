@@ -1,5 +1,5 @@
 import { parseArgs } from 'node:util';
-import type { MandelbrotOptions } from './mandelbrot.ts';
+import type { MandelbrotOptions, MandelbrotStyle } from './mandelbrot.ts';
 
 /** A named view of the plane. */
 interface Preset {
@@ -31,6 +31,11 @@ export const PALETTES = {
 
 export type PaletteName = keyof typeof PALETTES;
 
+const STYLES: Readonly<Record<MandelbrotStyle, string>> = {
+    pixels: 'a rectangle per pixel, merged along rows',
+    curves: 'smooth ribbons traced along each band\'s edges',
+};
+
 /** One image to write: its name (the default file name) and what it looks like. */
 export interface MandelbrotRender {
     readonly name: string;
@@ -44,12 +49,14 @@ export type MandelbrotCommand =
 
 const DEFAULTS = {
     preset: 'full',
+    style: 'pixels',
     width: 900,
     height: 600,
     palette: 'classic',
     bands: 64,
     cycle: 48,
     interior: '#000000',
+    curveDetail: 4,
 } as const;
 
 /** The most samples along either side, which keeps an image within reach of a browser. */
@@ -62,6 +69,11 @@ Writes a Mandelbrot set SVG (by default to generated/mandelbrot/<name>.svg).
 Options:
   --preset <name>         ${Object.keys(PRESETS).join(', ')} (default: ${DEFAULTS.preset})
   --gallery               render every preset, one file each
+  --style <name>          pixels or curves (default: ${DEFAULTS.style}); curves adds
+                          -curves to the file name
+  --curve-detail <n>      for curves, the most band edges between neighboring
+                          samples; higher keeps more filaments and makes larger
+                          files (default: ${DEFAULTS.curveDetail})
   --center=<re>,<im>      center of the view, e.g. --center=-0.75,0 (the = is
                           needed when the value starts with a minus sign)
   --span <number>         width of the view in the complex plane
@@ -77,6 +89,9 @@ Options:
   --output <path>         file to write
   --help                  show this help
 
+Styles:
+${Object.entries(STYLES).map(([name, description]) => `  ${name.padEnd(10)} ${description}`).join('\n')}
+
 Presets:
 ${Object.entries(PRESETS).map(([name, preset]) => `  ${name.padEnd(10)} ${preset.description}`).join('\n')}
 `;
@@ -90,6 +105,8 @@ export function parseMandelbrotArgs(args: readonly string[]): MandelbrotCommand 
         options: {
             preset: { type: 'string' },
             gallery: { type: 'boolean' },
+            style: { type: 'string' },
+            'curve-detail': { type: 'string' },
             center: { type: 'string' },
             span: { type: 'string' },
             iterations: { type: 'string' },
@@ -114,13 +131,16 @@ export function parseMandelbrotArgs(args: readonly string[]): MandelbrotCommand 
     const maybeCenter = values.center === undefined ? null : parseCenter(values.center);
     const isCustomView = maybeCenter !== null || values.span !== undefined;
     const resolution = parsePositiveNumber('--resolution', values.resolution ?? '1');
+    const style = parseName('--style', values.style ?? DEFAULTS.style, STYLES);
     const shared = {
+        style,
         width: scaledSide('--width', values.width ?? String(DEFAULTS.width), resolution),
         height: scaledSide('--height', values.height ?? String(DEFAULTS.height), resolution),
         paletteStops: PALETTES[parseName('--palette', values.palette ?? DEFAULTS.palette, PALETTES)],
         bands: parseInteger('--bands', values.bands ?? String(DEFAULTS.bands), 1, 4096),
         cycle: parsePositiveNumber('--cycle', values.cycle ?? String(DEFAULTS.cycle)),
         interiorColor: parseColor('--interior', values.interior ?? DEFAULTS.interior),
+        curveDetail: parsePositiveNumber('--curve-detail', values['curve-detail'] ?? String(DEFAULTS.curveDetail)),
     };
     const presetNames = values.gallery === true
         ? Object.keys(PRESETS) as PresetName[]
@@ -131,7 +151,7 @@ export function parseMandelbrotArgs(args: readonly string[]): MandelbrotCommand 
         // A changed view is no longer the preset's picture, so it must not overwrite the preset's file.
         const viewName = isCustomView && values.gallery !== true && values.preset === undefined ? 'custom' : presetName;
         return {
-            name: resolution === 1 ? viewName : `${viewName}-${resolution}x`,
+            name: [viewName, style === 'curves' ? '-curves' : '', resolution === 1 ? '' : `-${resolution}x`].join(''),
             maybeOutputPath: values.output ?? null,
             options: {
                 ...shared,

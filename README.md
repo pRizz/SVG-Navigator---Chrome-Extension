@@ -197,7 +197,16 @@ rectangle in one `<path>` per color band, so a larger grid adds detail (and file
 adding elements. `--resolution <n>` multiplies the sample count by `n` (each side by √n) and
 names the file `<name>-<n>x.svg`; `bun run mandelbrot:gallery:hires` renders every preset at 10×
 and 100×. At 100× the files run from 37 MB (`full`) to 320 MB (`spiral`): Chrome takes about a
-minute to open the largest, and Firefox about 20 seconds. The generator lives in `scripts/mandelbrot.ts` and `scripts/mandelbrotOptions.ts`.
+minute to open the largest, and Firefox about 20 seconds.
+
+`--style curves` draws the bands as smooth ribbons instead of pixels, so they stay smooth however
+far you zoom; `bun run mandelbrot:gallery:curves` renders every preset that way, to
+`<name>-curves.svg`. Marching squares traces each band's edges through the sampled escape times,
+and each band becomes one filled path of quadratic curves. Right at the set's edge, where the
+escape time climbs too steeply for that, the climb is capped: `--curve-detail <n>` (default 4)
+allows `n` band edges between neighboring samples, so a higher value keeps more of the filaments
+and makes a larger file. The generator lives in `scripts/mandelbrot.ts` (pixels),
+`scripts/mandelbrotCurves.ts` (curves), `scripts/mandelbrotSvg.ts`, and `scripts/mandelbrotOptions.ts`.
 
 ### Hot reload
 

@@ -6,12 +6,13 @@ import {
     bandPaths,
     maybeEscapeTime,
     rasterizeBands,
-    renderMandelbrotSvg,
     type MandelbrotOptions,
 } from '../../scripts/mandelbrot.ts';
+import { renderMandelbrotSvg } from '../../scripts/mandelbrotSvg.ts';
 import { PALETTES, PRESETS, parseMandelbrotArgs, type MandelbrotRender } from '../../scripts/mandelbrotOptions.ts';
 
 const SMALL_OPTIONS: MandelbrotOptions = {
+    style: 'pixels',
     width: 30,
     height: 20,
     centerRe: -0.75,
@@ -22,6 +23,7 @@ const SMALL_OPTIONS: MandelbrotOptions = {
     bands: 8,
     cycle: 16,
     interiorColor: '#000000',
+    curveDetail: 4,
 };
 
 function onlyRender(args: string[]): MandelbrotRender {
@@ -212,6 +214,14 @@ describe('parseMandelbrotArgs', () => {
 
     test('rejects a resolution that makes a side too large', () => {
         assert.throws(() => parseMandelbrotArgs(['--resolution', '1000']), /--width 900 at --resolution 1000 gives 28460 samples/);
+    });
+
+    test('names a curves render so it keeps the pixels file intact', () => {
+        assert.equal(onlyRender(['--preset', 'spiral', '--style', 'curves', '--resolution', '10']).name, 'spiral-curves-10x');
+    });
+
+    test('rejects an unknown style', () => {
+        assert.throws(() => parseMandelbrotArgs(['--style', 'dots']), /--style must be one of pixels, curves/);
     });
 
     test('rejects an unknown preset', () => {

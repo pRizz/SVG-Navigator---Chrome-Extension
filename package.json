@@ -27,7 +27,8 @@
     "screenshots:app-store": "bun run build:dev && bun scripts/appStoreScreenshots.ts",
     "mandelbrot": "bun scripts/generateMandelbrot.ts",
     "mandelbrot:gallery": "bun scripts/generateMandelbrot.ts --gallery",
-    "mandelbrot:gallery:hires": "bun scripts/generateMandelbrot.ts --gallery --resolution 10 && bun scripts/generateMandelbrot.ts --gallery --resolution 100"
+    "mandelbrot:gallery:hires": "bun scripts/generateMandelbrot.ts --gallery --resolution 10 && bun scripts/generateMandelbrot.ts --gallery --resolution 100",
+    "mandelbrot:gallery:curves": "bun scripts/generateMandelbrot.ts --gallery --style curves"
   },
   "repository": {
     "type": "git",
