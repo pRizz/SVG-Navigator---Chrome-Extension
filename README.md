@@ -175,6 +175,27 @@ input is fixed, so a rerun on the same Mac produces byte-identical files and `gi
 only shows screenshots whose content really changed. Edit the scenes in
 `scripts/appStoreScreenshots.ts` and the frame in `scripts/appStoreScreenshotFrame.html`.
 
+### Mandelbrot test SVGs
+
+For a heavy, endlessly zoomable drawing to try the extension on, generate the Mandelbrot set:
+
+```bash
+bun run mandelbrot:gallery
+```
+
+This writes one SVG per preset (`full`, `seahorse`, `elephant`, `spiral`, `minibrot`) to the
+gitignored `generated/mandelbrot/` and prints each file's `file://` URL to open in the browser.
+`bun run mandelbrot` renders a single image and takes options for the view, detail, and colors:
+
+```bash
+bun run mandelbrot --preset seahorse --width 1800 --height 1200 --palette fire
+```
+
+`bun run mandelbrot --help` lists them all; a center with a negative part needs the `=` form,
+as in `--center=-0.75,0.1`. Each pixel of the `--width`×`--height` grid becomes part of a
+rectangle in one `<path>` per color band, so a larger grid adds detail (and file size) without
+adding elements. The generator lives in `scripts/mandelbrot.ts` and `scripts/mandelbrotOptions.ts`.
+
 ### Hot reload
 
 For development with hot-reload:
