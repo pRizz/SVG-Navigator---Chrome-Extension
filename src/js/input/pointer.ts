@@ -1,7 +1,8 @@
 /**
  * Mouse and wheel input on the drawing: drag to pan or to draw a zoom box, Space + move
  * to pan (gliding on after a quick release), the wheel or a trackpad pinch to zoom at the
- * pointer, and double-click to zoom 2× there. Owns the interaction state (at most one
+ * pointer, and double-click to zoom 2× there. With selectable text on, a press on text is
+ * left to the browser, which selects it. Owns the interaction state (at most one
  * pan or zoom box at a time) and the zoom box's rectangle; `svgNavigator.ts` supplies
  * the view through `PointerDeps`.
  */
@@ -10,6 +11,7 @@ import { SCROLL_SENSITIVITY_RANGE, type ClickAndDragBehavior } from '../../share
 import type { InteractionKind, WheelSample } from '../hud/debugInfo';
 import { doubleClickZoomFactor, isDrag, shouldZoomOnDoubleClick } from './doubleClick';
 import { GLIDE_MS, glideDistance, releaseVelocity, type PointerSample } from './momentum';
+import { isOnText } from './textSelection';
 import { wheelZoomFactor } from './wheelZoom';
 import {
     fitToAspectRatio,
@@ -42,6 +44,8 @@ export interface PointerDeps {
     /** The root `<svg>`, which receives the mouse and wheel events. */
     svg: SVGSVGElement;
     clickAndDragBehavior: ClickAndDragBehavior;
+    /** Read on every press, so the setting applies live. */
+    isTextSelectable: () => boolean;
     /** The view on screen, which drags and the wheel work from. */
     view: () => ViewBox;
     /** The view a discrete step builds on: the target of a step still easing in, if any. */
@@ -92,6 +96,9 @@ export function attachPointerInput(deps: PointerDeps): PointerInput {
 
     const toSvgPoint = (evt: MouseEvent, element: SVGGraphicsElement): DOMPoint =>
         clientToSvgPoint(svg, evt.clientX, evt.clientY, element);
+
+    // The browser selects text from this press, so the navigator stays out of the way.
+    const selectsText = (evt: MouseEvent): boolean => deps.isTextSelectable() && isOnText(evt.target);
 
     function setInteraction(next: Interaction): void {
         interaction = next;
@@ -150,7 +157,7 @@ export function attachPointerInput(deps: PointerDeps): PointerInput {
 
     function zoomBoxDown(evt: MouseEvent): void {
         // only a plain click (no ctrl or shift) outside a pan starts a zoom box
-        if(isPanning() || evt.ctrlKey || evt.shiftKey) { return; }
+        if(isPanning() || evt.ctrlKey || evt.shiftKey || selectsText(evt)) { return; }
 
         const start = toSvgPoint(evt, zoomRectangle);
         setInteraction({ kind: 'zoomBox', start });
@@ -217,7 +224,7 @@ export function attachPointerInput(deps: PointerDeps): PointerInput {
     }
 
     function doubleClickZoom(evt: MouseEvent): void {
-        if(evt.button !== 0 || interaction.kind !== 'idle') { return; }
+        if(evt.button !== 0 || interaction.kind !== 'idle' || selectsText(evt)) { return; }
         if(!shouldZoomOnDoubleClick(evt.timeStamp, maybeLastDragEndMs)) { return; }
         evt.preventDefault();
         deps.animateViewBox(zoomAroundPoint(deps.stepView(), toSvgPoint(evt, svg), doubleClickZoomFactor(evt.shiftKey)));
@@ -233,7 +240,9 @@ export function attachPointerInput(deps: PointerDeps): PointerInput {
         svg.addEventListener('mousemove', zoomBoxMove, false);
         svg.addEventListener('mouseup', zoomBoxUp, false);
     } else {
-        svg.addEventListener('mousedown', () => panBegin('mouse'), false);
+        svg.addEventListener('mousedown', (evt) => {
+            if(!selectsText(evt)) { panBegin('mouse'); }
+        }, false);
         document.addEventListener('mouseup', () => panEnd('mouse'), false);
     }
     svg.addEventListener('wheel', wheelZoom, { passive: false });

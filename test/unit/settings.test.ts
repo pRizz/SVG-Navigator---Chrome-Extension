@@ -76,3 +76,13 @@ describe('minimapEnabled', () => {
         assert.equal(parseSetting('minimapEnabled', 'off'), true);
     });
 });
+
+describe('selectableText', () => {
+    test('is off by default, so dragging on text pans', () => {
+        assert.equal(parseSettings({}).selectableText, false);
+    });
+
+    test('falls back to the default for a value that is not a boolean', () => {
+        assert.equal(parseSetting('selectableText', 'yes'), false);
+    });
+});

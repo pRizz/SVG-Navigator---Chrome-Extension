@@ -19,6 +19,8 @@ export interface Settings {
     clickAndDragBehavior: ClickAndDragBehavior;
     scrollSensitivity: number;
     invertScroll: boolean;
+    /** A drag or double-click that starts on text selects it instead of panning or zooming (#32). */
+    selectableText: boolean;
     toolbarAutoHide: boolean;
     toolbarEnabled: boolean;
     toolbarPosition: ToolbarPosition;
@@ -35,6 +37,7 @@ export const DEFAULT_SETTINGS: Readonly<Settings> = {
     clickAndDragBehavior: 'pan',
     scrollSensitivity: 7,
     invertScroll: false,
+    selectableText: false,
     toolbarAutoHide: true,
     toolbarEnabled: true,
     toolbarPosition: 'bottom-right',
@@ -52,6 +55,7 @@ const VALIDATORS: { [K in SettingKey]: (value: unknown) => value is Settings[K] 
     clickAndDragBehavior: (value): value is ClickAndDragBehavior => value === 'pan' || value === 'zoomBox',
     scrollSensitivity: (value): value is number => typeof value === 'number' && Number.isFinite(value),
     invertScroll: isBoolean,
+    selectableText: isBoolean,
     toolbarAutoHide: isBoolean,
     toolbarEnabled: isBoolean,
     minimapEnabled: isBoolean,

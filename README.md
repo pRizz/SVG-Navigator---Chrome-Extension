@@ -34,6 +34,8 @@ Go to a website with an SVG file. The extension begins working on the SVG graphi
   sending the link opens that exact spot
 - Export: the download button saves the current view as a PNG (1×, 2×, or 4× its size on screen, with a
   transparent background), downloads or copies the SVG as authored, or copies a link to the view
+- Select text: turn on "Selectable text" in the settings, then drag or double-click on text to select it
+  and copy it as usual; dragging anywhere else still pans, and Space + drag pans even over text
 - Keyboard: arrow keys pan (hold Shift for bigger steps), + and − zoom (also with Ctrl or ⌘), F
   toggles full screen, and ? lists every shortcut
 - On-screen controls: zoom out, the zoom level (click it to reset), zoom in, background, full screen,

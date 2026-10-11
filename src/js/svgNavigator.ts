@@ -41,11 +41,12 @@ import {
 import { mountHud, type HudHandle } from './hud/hud';
 import { keyAction, type KeyAction } from './input/keyActions';
 import { attachPointerInput, clientToSvgPoint, type PointerInput } from './input/pointer';
+import { isOnText, SELECTABLE_TEXT_ATTRIBUTE, SELECTABLE_TEXT_CSS } from './input/textSelection';
 import { maybeParseSvgViewFragment, ownsFragment, viewLink } from './viewFragment';
 import { listenForPageSwitch, readPageState, showOriginalSvg } from './offSwitch';
 import { createExporter, readAuthoredRoot } from './export/exporter';
 import { createViewAnimator } from './viewAnimation';
-import { HUD_HOST_TAG } from './hud/shadowHost';
+import { adoptStyles, HUD_HOST_TAG } from './hud/shadowHost';
 import {
     describeBrowser,
     type DebugInfo,
@@ -272,6 +273,9 @@ function applySetting(key: SettingKey): void {
     case 'minimapEnabled':
         hud.setMinimapEnabled(settings.minimapEnabled);
         break;
+    case 'selectableText':
+        showSelectableText();
+        break;
     case 'toolbarAutoHide':
         hud.setAutoHide(settings.toolbarAutoHide);
         break;
@@ -292,6 +296,7 @@ function addEventListeners(): void {
     pointer = attachPointerInput({
         svg: svgDocument,
         clickAndDragBehavior: settings.clickAndDragBehavior,
+        isTextSelectable: () => settings.selectableText,
         view: () => viewBox,
         stepView,
         showViewBox,
@@ -381,10 +386,16 @@ function getWidth(): number {
 }
 
 
-// to prevent selection of text; prevent text Ibar cursor when dragging
+// Dragging pans, so nothing is selected; with selectable text on, selections may start on text (#32).
 function disableSelection(): void {
-    document.onselectstart = function () {return false;};
+    document.onselectstart = (evt) => settings.selectableText && isOnText(evt.target);
     document.body.style.cursor = 'default';
+    adoptStyles(htmlDoc, document, SELECTABLE_TEXT_CSS);
+    showSelectableText();
+}
+
+function showSelectableText(): void {
+    document.documentElement.toggleAttribute(SELECTABLE_TEXT_ATTRIBUTE, settings.selectableText);
 }
 
 // Direct view changes (the wheel, a drag, a link) take over from any step still easing in.
