@@ -197,6 +197,23 @@ describe('parseMandelbrotArgs', () => {
         assert.throws(() => parseMandelbrotArgs(['--gallery', '--output', 'x.svg']), /--gallery/);
     });
 
+    test('multiplies the sample count by --resolution, scaling each side by its square root', () => {
+        // Act
+        const render = onlyRender(['--width', '300', '--height', '200', '--resolution', '100']);
+
+        // Assert
+        assert.equal(render.options.width, 3000);
+        assert.equal(render.options.height, 2000);
+    });
+
+    test('names a higher-resolution render after its resolution', () => {
+        assert.equal(onlyRender(['--preset', 'spiral', '--resolution', '10']).name, 'spiral-10x');
+    });
+
+    test('rejects a resolution that makes a side too large', () => {
+        assert.throws(() => parseMandelbrotArgs(['--resolution', '1000']), /--width 900 at --resolution 1000 gives 28460 samples/);
+    });
+
     test('rejects an unknown preset', () => {
         assert.throws(() => parseMandelbrotArgs(['--preset', 'nope']), /--preset must be one of/);
     });

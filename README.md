@@ -194,7 +194,10 @@ bun run mandelbrot --preset seahorse --width 1800 --height 1200 --palette fire
 `bun run mandelbrot --help` lists them all; a center with a negative part needs the `=` form,
 as in `--center=-0.75,0.1`. Each pixel of the `--width`×`--height` grid becomes part of a
 rectangle in one `<path>` per color band, so a larger grid adds detail (and file size) without
-adding elements. The generator lives in `scripts/mandelbrot.ts` and `scripts/mandelbrotOptions.ts`.
+adding elements. `--resolution <n>` multiplies the sample count by `n` (each side by √n) and
+names the file `<name>-<n>x.svg`; `bun run mandelbrot:gallery:hires` renders every preset at 10×
+and 100×. At 100× the files run from 37 MB (`full`) to 320 MB (`spiral`): Chrome takes about a
+minute to open the largest, and Firefox about 20 seconds. The generator lives in `scripts/mandelbrot.ts` and `scripts/mandelbrotOptions.ts`.
 
 ### Hot reload
 

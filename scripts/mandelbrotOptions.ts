@@ -52,6 +52,9 @@ const DEFAULTS = {
     interior: '#000000',
 } as const;
 
+/** The most samples along either side, which keeps an image within reach of a browser. */
+const MAX_SIDE = 20000;
+
 export const USAGE = `Usage: bun run mandelbrot [options]
 
 Writes a Mandelbrot set SVG (by default to generated/mandelbrot/<name>.svg).
@@ -65,6 +68,8 @@ Options:
   --iterations <n>        max iterations before a point counts as inside
   --width <n>             horizontal samples (default: ${DEFAULTS.width})
   --height <n>            vertical samples (default: ${DEFAULTS.height})
+  --resolution <n>        multiply the sample count by n (each side by √n), and
+                          add -<n>x to the file name, e.g. --resolution 10
   --palette <name>        ${Object.keys(PALETTES).join(', ')} (default: ${DEFAULTS.palette})
   --bands <n>             distinct colors (default: ${DEFAULTS.bands})
   --cycle <n>             escape iterations per trip around the palette (default: ${DEFAULTS.cycle})
@@ -90,6 +95,7 @@ export function parseMandelbrotArgs(args: readonly string[]): MandelbrotCommand 
             iterations: { type: 'string' },
             width: { type: 'string' },
             height: { type: 'string' },
+            resolution: { type: 'string' },
             palette: { type: 'string' },
             bands: { type: 'string' },
             cycle: { type: 'string' },
@@ -107,9 +113,10 @@ export function parseMandelbrotArgs(args: readonly string[]): MandelbrotCommand 
 
     const maybeCenter = values.center === undefined ? null : parseCenter(values.center);
     const isCustomView = maybeCenter !== null || values.span !== undefined;
+    const resolution = parsePositiveNumber('--resolution', values.resolution ?? '1');
     const shared = {
-        width: parseInteger('--width', values.width ?? String(DEFAULTS.width), 1, 20000),
-        height: parseInteger('--height', values.height ?? String(DEFAULTS.height), 1, 20000),
+        width: scaledSide('--width', values.width ?? String(DEFAULTS.width), resolution),
+        height: scaledSide('--height', values.height ?? String(DEFAULTS.height), resolution),
         paletteStops: PALETTES[parseName('--palette', values.palette ?? DEFAULTS.palette, PALETTES)],
         bands: parseInteger('--bands', values.bands ?? String(DEFAULTS.bands), 1, 4096),
         cycle: parsePositiveNumber('--cycle', values.cycle ?? String(DEFAULTS.cycle)),
@@ -121,9 +128,10 @@ export function parseMandelbrotArgs(args: readonly string[]): MandelbrotCommand 
 
     const renders = presetNames.map((presetName): MandelbrotRender => {
         const preset: Preset = PRESETS[presetName];
+        // A changed view is no longer the preset's picture, so it must not overwrite the preset's file.
+        const viewName = isCustomView && values.gallery !== true && values.preset === undefined ? 'custom' : presetName;
         return {
-            // A changed view is no longer the preset's picture, so it must not overwrite the preset's file.
-            name: isCustomView && values.gallery !== true && values.preset === undefined ? 'custom' : presetName,
+            name: resolution === 1 ? viewName : `${viewName}-${resolution}x`,
             maybeOutputPath: values.output ?? null,
             options: {
                 ...shared,
@@ -137,6 +145,15 @@ export function parseMandelbrotArgs(args: readonly string[]): MandelbrotCommand 
         };
     });
     return { kind: 'render', renders };
+}
+
+/** A side's sample count, from its flag, scaled so the image has `resolution` times the samples. */
+function scaledSide(flag: string, text: string, resolution: number): number {
+    const side = Math.round(parseInteger(flag, text, 1, MAX_SIDE) * Math.sqrt(resolution));
+    if (side < 1 || side > MAX_SIDE) {
+        throw new Error(`${flag} ${text} at --resolution ${resolution} gives ${side} samples; the limit is 1 to ${MAX_SIDE}`);
+    }
+    return side;
 }
 
 function parseCenter(text: string): { re: number, im: number } {
