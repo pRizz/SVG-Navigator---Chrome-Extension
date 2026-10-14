@@ -19,8 +19,8 @@ This audit trail is managed upstream by `bright-builds-rules`. If the managed au
 - Auto-update reason: `trusted repo owner pRizz`
 - Checks CI: `enabled`
 - Checks CI reason: `GitHub-backed repository`
-- Last operation: `install`
-- Last updated (UTC): `2026-10-07T17:41:52Z`
+- Last operation: `update`
+- Last updated (UTC): `2026-10-14T18:13:28Z`
 
 ## Managed files
 

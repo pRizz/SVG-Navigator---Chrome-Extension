@@ -13,7 +13,6 @@
 
 <!-- bright-builds-rules-readme-badges:end -->
 
-
 **Infinite zoom and panning for the SVG files you open in your browser.** Scroll into any
 detail, drag to pan, and keep going: [SVG](https://www.w3.org/TR/SVG2/) is vector graphics, so it
 stays sharp however far you zoom, and SVG Navigator has no zoom limit. Only the browser's numeric
