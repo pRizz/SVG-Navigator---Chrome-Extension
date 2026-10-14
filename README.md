@@ -13,320 +13,156 @@
 
 <!-- bright-builds-rules-readme-badges:end -->
 
-SVG Navigator is a browser extension that adds infinite zoom and panning to existing SVG files on the web.
 
-## Usage
+**Infinite zoom and panning for the SVG files you open in your browser.** Scroll into any
+detail, drag to pan, and keep going: [SVG](https://www.w3.org/TR/SVG2/) is vector graphics, so it
+stays sharp however far you zoom, and SVG Navigator has no zoom limit. Only the browser's numeric
+precision stops it, many millions of times in.
 
-Go to a website with an SVG file. The extension begins working on the SVG graphic and you may:
+<p align="center">
+  <img src="store/app-store/screenshots/01-infinite-zoom.png" width="820"
+       alt="A world map SVG zoomed to 254% with SVG Navigator's minimap in the bottom-left corner and its zoom controls in the bottom-right">
+</p>
 
-- Pan: click and drag or hold the space bar and drag the cursor to pan around the image; let go
-  mid-motion and the view glides on and slows to a stop (click to stop it sooner)
-- Zoom in infinitely, or back out: use the mouse scroll wheel
-- Zoom in 2× at a spot: double-click it (Shift + double-click zooms out)
-- Zoom: click and drag a zoom box of the desired area if enabled
-- Zoom out: tap alt key
-- Reset zoom: press Esc or 0
-- Steps from the buttons, keys, double-clicks, and zoom boxes ease smoothly into place (instantly with the
-  OS's reduced motion setting); the wheel, pinch, and dragging stay direct
-- Minimap: while part of the drawing is out of view, an overview in the bottom corner outlines where you
-  are; click it to jump, or drag the outline to pan (turn it off in the settings)
-- Share a view: the address bar keeps the current view (`#svgView(viewBox(...))`), so reloading or
-  sending the link opens that exact spot
-- Export: the download button saves the current view as a PNG (1×, 2×, or 4× its size on screen, with a
-  transparent background), downloads or copies the SVG as authored, or copies a link to the view
-- Select text: turn on "Selectable text" in the settings, then drag or double-click on text to select it
-  and copy it as usual; dragging anywhere else still pans, and Space + drag pans even over text
-- Keyboard: arrow keys pan (hold Shift for bigger steps), + and − zoom (also with Ctrl or ⌘), F
-  toggles full screen, and ? lists every shortcut
-- On-screen controls: zoom out, the zoom level (click it to reset), zoom in, background, full screen,
-  export, and a shortcuts list; choose their corner or edge, or turn them off, in the settings
-- See the original SVG: on an SVG page, the popup's "This page" switch (or "Show the original SVG" in the
-  Export menu) turns SVG Navigator off for that page in that tab (it reloads untouched) until you turn it
-  back on from the popup
-- Background button: cycles a transparency checkerboard, a dark background, and an inverted drawing
-  (black lines turn white, colors keep their hue) for dark-mode viewing, just for this tab
+<p align="center">
+  <a href="https://chromewebstore.google.com/detail/svg-navigator/pefngfjmidahdaahgehodmfodhhhofkl"><strong>Get it for Chrome</strong></a>
+  &nbsp;·&nbsp;
+  <a href="https://addons.mozilla.org/en-US/firefox/addon/svg-navigator/"><strong>Get it for Firefox</strong></a>
+  &nbsp;·&nbsp;
+  <a href="#install">Safari on macOS</a>
+</p>
 
-SVGs are vector graphics, so they stay sharp however far you zoom in. SVG Navigator has no zoom
-limit; only the browser's numeric precision stops it, many millions of times in.
+## Features
 
-## Browser notes
+- **Infinite zoom** with the mouse wheel, trackpad, or pinch, centered on the pointer.
+- **Smooth motion.** Let go of a quick pan and the view glides to a stop; button, key, and
+  double-click steps ease into place (instantly with the OS's reduced-motion setting).
+- **Zoom box.** Drag a box around exactly the area you want to see.
+- **Minimap.** While part of the drawing is out of view, an overview outlines where you are;
+  click it to jump, or drag the outline to pan.
+- **Shareable views.** The address bar keeps the current view (`#svgView(viewBox(…))`), so
+  reloading or sending the link opens that exact spot.
+- **Export** the current view as a PNG (1×, 2×, or 4×, transparent background), download or copy
+  the SVG as authored, or copy a link to the view.
+- **Dark-mode friendly.** The background button cycles a transparency checkerboard, a dark
+  background, and an inverted drawing (black lines turn white, colors keep their hue).
+- **Selectable text**, when you turn it on: drag or double-click text to select and copy it,
+  while dragging anywhere else still pans.
+- **Works wherever SVGs are served**, including URLs without a `.svg` extension (GitHub, PlantUML),
+  and leaves ordinary web pages alone.
+- **See the original** any time: the popup's "This page" switch turns SVG Navigator off for that
+  page in that tab until you turn it back on.
 
-- Chrome: to view local files, check "Allow access to file URLs" in SVG Navigator's extension settings.
-- Safari: allow SVG Navigator on every website (click its toolbar icon and choose "Always Allow on Every
-  Website") so it can run on the SVG files you open. Safari doesn't run extensions on file URLs.
+## Install
 
-## Try it on these SVGs
+- **Chrome:** [Chrome Web Store](https://chromewebstore.google.com/detail/svg-navigator/pefngfjmidahdaahgehodmfodhhhofkl).
+  To view local files, turn on "Allow access to file URLs" in SVG Navigator's extension details.
+- **Firefox:** [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/svg-navigator/).
+- **Safari on macOS:** coming to the Mac App Store; until then, [build the app](docs/development.md#safari-app).
+  Click SVG Navigator's toolbar icon and choose "Always Allow on Every Website" so it can run on
+  the SVGs you open. Safari doesn't run extensions on `file://` URLs.
 
-- [Vector vs Raster](https://upload.wikimedia.org/wikipedia/commons/6/6b/Bitmap_VS_SVG.svg)
+## Controls
+
+Press <kbd>?</kbd> on any SVG to see these in the page.
+
+| Action              | Mouse and keyboard                                                                          |
+| ------------------- | ------------------------------------------------------------------------------------------- |
+| Zoom at the pointer | <kbd>Scroll</kbd> or pinch                                                                  |
+| Zoom in at a spot   | <kbd>Double-click</kbd> (<kbd>Shift</kbd> + <kbd>Double-click</kbd> zooms out)              |
+| Pan                 | <kbd>Drag</kbd>, or hold <kbd>Space</kbd> and move                                          |
+| Zoom to an area     | <kbd>Drag</kbd> a box, in zoom box mode                                                     |
+| Move the view       | <kbd>←</kbd> <kbd>↑</kbd> <kbd>→</kbd> <kbd>↓</kbd>, with <kbd>Shift</kbd> for bigger steps |
+| Zoom in / out       | <kbd>+</kbd> / <kbd>−</kbd>, also with <kbd>Ctrl</kbd> or <kbd>⌘</kbd>                      |
+| Zoom out            | Tap <kbd>Alt</kbd> (<kbd>Option</kbd> on macOS)                                             |
+| Reset view          | <kbd>Esc</kbd> or <kbd>0</kbd>                                                              |
+| Full screen         | <kbd>F</kbd>                                                                                |
+
+The on-screen controls do the same: zoom out, the zoom level (click it to reset), zoom in,
+background, full screen, export, and the shortcuts list.
+
+## Settings
+
+Click SVG Navigator's toolbar button to:
+
+- choose whether click-and-drag pans or draws a zoom box;
+- adjust scroll sensitivity, or invert the scroll direction;
+- turn on selectable text;
+- show, auto-hide, reposition, or turn off the on-screen controls;
+- turn the minimap off;
+- pick a background color for transparent SVGs.
+
+## Try it
+
+Open any of these with SVG Navigator installed:
+
 - [World Map](https://upload.wikimedia.org/wikipedia/commons/1/17/World.svg)
 - [Map of the United States of America](https://upload.wikimedia.org/wikipedia/commons/d/dc/USA_orthographic.svg)
+- [Vector vs Raster](https://upload.wikimedia.org/wikipedia/commons/6/6b/Bitmap_VS_SVG.svg)
 - [Constellation Orion](https://upload.wikimedia.org/wikipedia/commons/f/ff/Orion_IAU.svg)
+- [Earth Color Trace](https://upload.wikimedia.org/wikipedia/commons/4/4e/Earth_Color_Trace.svg)
+- [Simple Mandelbrot](https://upload.wikimedia.org/wikipedia/commons/3/3c/Mandelbrot_Components.svg)
+- [PlantUML diagram](https://img.plantuml.biz/plantuml/svg/SoWkIImgAStDuNBAJrBGjLDmpCbCJbMmKiX8pSd9vt98pKi1IW80)
+  (no `.svg` extension needed)
+
+<details>
+<summary>More SVGs</summary>
+
 - [Bertrand's Chords](https://upload.wikimedia.org/wikipedia/commons/9/91/Bertrand3-chords.svg)
 - [P and N type Silicon](https://upload.wikimedia.org/wikipedia/commons/2/20/CellStructure-SiCrystal-eng-vect.svg)
 - [Diagram of Zeta Potential and Slipping Plane](https://upload.wikimedia.org/wikipedia/commons/6/62/Diagram_of_zeta_potential_and_slipping_plane.svg)
-- [Earth Color Trace](https://upload.wikimedia.org/wikipedia/commons/4/4e/Earth_Color_Trace.svg)
 - [Magnetic Moment](https://upload.wikimedia.org/wikipedia/commons/4/4c/Magnetic_moment.svg)
-- [Simple Mandelbrot](https://upload.wikimedia.org/wikipedia/commons/3/3c/Mandelbrot_Components.svg)
 - [Animated Digital Clock](http://www.bogotobogo.com/svg_source/SVGDigitalClock.svg)
 
-Pages without an `.svg` extension work too (e.g. GitHub and PlantUML):
+</details>
 
-- [PlantUML diagram](https://img.plantuml.biz/plantuml/svg/SoWkIImgAStDuNBAJrBGjLDmpCbCJbMmKiX8pSd9vt98pKi1IW80)
+For something truly endless, generate a Mandelbrot set SVG locally with
+`bun run mandelbrot:gallery` (see [Mandelbrot test SVGs](docs/development.md#mandelbrot-test-svgs)).
 
-## Links
+## Privacy
 
-- [Chrome Web Store](https://chromewebstore.google.com/detail/svg-navigator/pefngfjmidahdaahgehodmfodhhhofkl)
-- [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/svg-navigator/)
-- [GitHub repository](https://github.com/pRizz/SVG-Navigator---Chrome-Extension)
-- [SVG 1.1 Second Edition specification](https://www.w3.org/TR/SVG11/)
-
-## Acknowledgements
-
-Concept originally created by Asad Akram, Ryan Oblenida aka Mr. O, and Peter Ryszkiewicz at the Illinois Institute of Technology.
-Adapted as a Google Chrome extension by Peter Ryszkiewicz. Work was inspired by Kevin Lindsey at [kevlindev.com](http://www.kevlindev.com/index.htm).
-Illustrations by Cara Stemo.
+SVG Navigator collects no data and makes no network requests; it works entirely on your device.
+See the [privacy policy](PRIVACY.md).
 
 ## Development
 
-### Requirements
-
-- Operating System: Windows, macOS, or Linux
-- [Bun](https://bun.sh) 1.4 or later (package manager and runtime; Node.js is not needed)
-
-### Installation
-
-1. Install Bun (see [bun.sh](https://bun.sh) for other options):
-
-   ```bash
-   curl -fsSL https://bun.sh/install | bash
-   ```
-
-1. Clone the repository:
-
-   ```bash
-   git clone https://github.com/pRizz/SVG-Navigator---Chrome-Extension.git
-   cd SVG-Navigator---Chrome-Extension
-   ```
-
-1. Install dependencies:
-
-   ```bash
-   bun install
-   ```
-
-   This also downloads the Chrome and Firefox builds used by the UI tests. To only build the
-   extension, skip that download with `PUPPETEER_SKIP_DOWNLOAD=true bun install`.
-
-### Building
-
-Build the extension:
+SVG Navigator is written in TypeScript and built with [Bun](https://bun.sh) 1.4 or later.
 
 ```bash
+bun install          # dependencies, plus the browsers the UI tests drive
+bun run build:dev    # unpacked Chrome and Firefox builds in .build/
+bun run start:chrome # build, watch, and reload in Chrome
+bun run verify       # type check, lint, unit tests, Bright Builds checks
+bun run test:e2e     # UI tests in headless Chrome and Firefox
+```
+
+More in the guides:
+
+- [Development](docs/development.md): setup, builds, hot reload, checks, UI tests, source layout,
+  the Safari app, and test SVGs
+- [Releasing](docs/releasing.md): cutting a release, the store publishing workflow, and its
+  credentials
+- [Release checklist](docs/release-checklist.md): the manual browser pass before tagging
+- [Contributing](CONTRIBUTING.md): contribution expectations
+
+### Build from source
+
+```bash
+PUPPETEER_SKIP_DOWNLOAD=true bun install
 bun run build:all
 ```
 
-The built extensions will be available in:
+The unpacked extensions land in `dist/chrome`, `dist/firefox`, and `dist/safari`, and the
+packaged ones in `packages/`. To build only Firefox, run `bun run build:firefox` (output in
+`dist/firefox`).
 
-- Chrome: `dist/chrome/`
-- Firefox: `dist/firefox/`
-- Safari: `dist/safari/`
+## Acknowledgements
 
-The packaged extensions will be available in:
+Concept originally created by Asad Akram, Ryan Oblenida aka Mr. O, and Peter Ryszkiewicz at the
+Illinois Institute of Technology. Adapted as a Google Chrome extension by Peter Ryszkiewicz. Work
+was inspired by Kevin Lindsey at [kevlindev.com](http://www.kevlindev.com/index.htm).
+Illustrations by Cara Stemo.
 
-- Chrome: `packages/svg-navigator...chrome.zip`
-- Firefox: `packages/svg-navigator...firefox.xpi`
-- Safari: `packages/svg-navigator...safari.zip`
+## License
 
-### Safari app
-
-Safari extensions ship inside a macOS app. Its Xcode project is in `safari/` and needs Xcode and
-an Apple Developer account signed in under Xcode → Settings → Accounts.
-
-```bash
-bun run build:safari-app
-```
-
-This builds `dist/safari` and then the app. The Xcode project's "Web Extension" group references
-the top-level entries of `dist/safari` rather than copies of them, so a new top-level file or
-folder in `src/` has to be added to that group (a unit test checks this). The app's version
-comes from `src/manifest.json` through `safari/Version.xcconfig`, which every build generates.
-To build from Xcode instead, run `bun run build:safari` first.
-
-To try it in Safari, copy the built `.build/safari-app/Build/Products/Release/SVG Navigator.app`
-to `~/Applications`, open it once, then enable SVG Navigator in Safari → Settings → Extensions.
-Keep the project's development team signing: an ad-hoc signed build didn't show up in Safari's
-extension list, even with "Allow unsigned extensions" on.
-
-### App Store listing
-
-`store/app-store/listing.md` holds the Mac App Store text (description, keywords, review
-notes, privacy answers); a unit test checks it against App Store Connect's length limits.
-The privacy policy is [PRIVACY.md](PRIVACY.md).
-
-The screenshots in `store/app-store/screenshots/` are generated:
-
-```bash
-bun run screenshots:app-store
-```
-
-This drives the built extension in Puppeteer's Chrome with real mouse input on
-`examples/` SVGs and frames each capture in a Safari-style window at 2880×1800. Every
-input is fixed, so a rerun on the same Mac produces byte-identical files and `git status`
-only shows screenshots whose content really changed. Edit the scenes in
-`scripts/appStoreScreenshots.ts` and the frame in `scripts/appStoreScreenshotFrame.html`.
-
-### Mandelbrot test SVGs
-
-For a heavy, endlessly zoomable drawing to try the extension on, generate the Mandelbrot set:
-
-```bash
-bun run mandelbrot:gallery
-```
-
-This writes one SVG per preset (`full`, `seahorse`, `elephant`, `spiral`, `minibrot`) to the
-gitignored `generated/mandelbrot/` and prints each file's `file://` URL to open in the browser.
-`bun run mandelbrot` renders a single image and takes options for the view, detail, and colors:
-
-```bash
-bun run mandelbrot --preset seahorse --width 1800 --height 1200 --palette fire
-```
-
-`bun run mandelbrot --help` lists them all; a center with a negative part needs the `=` form,
-as in `--center=-0.75,0.1`. Each pixel of the `--width`×`--height` grid becomes part of a
-rectangle in one `<path>` per color band, so a larger grid adds detail (and file size) without
-adding elements. `--resolution <n>` multiplies the sample count by `n` (each side by √n) and
-names the file `<name>-<n>x.svg`; `bun run mandelbrot:gallery:hires` renders every preset at 10×
-and 100×. At 100× the files run from 37 MB (`full`) to 320 MB (`spiral`): Chrome takes about a
-minute to open the largest, and Firefox about 20 seconds.
-
-`--style curves` draws the bands as smooth ribbons instead of pixels, so they stay smooth however
-far you zoom; `bun run mandelbrot:gallery:curves` renders every preset that way, to
-`<name>-curves.svg`, and `bun run mandelbrot:gallery:curves:hires` at 10× and 100× (about five
-minutes, up to 13 GB of memory, and files up to 860 MB, which Chrome can't open in five
-minutes). Marching squares traces each band's edges through the sampled escape times,
-and each band becomes one filled path of quadratic curves. Right at the set's edge, where the
-escape time climbs too steeply for that, the climb is capped: `--curve-detail <n>` (default 4)
-allows `n` band edges between neighboring samples, so a higher value keeps more of the filaments
-and makes a larger file. The generator lives in `scripts/mandelbrot.ts` (pixels),
-`scripts/mandelbrotCurves.ts` (curves), `scripts/mandelbrotSvg.ts`, and `scripts/mandelbrotOptions.ts`.
-
-### Hot reload
-
-For development with hot-reload:
-
-- Chrome:
-
-  ```bash
-  bun run start:chrome
-  ```
-
-- Firefox:
-
-  ```bash
-  bun run start:firefox
-  ```
-
-- Safari:
-
-  ```bash
-  bun run start:safari
-  ```
-
-These commands will build the extension and start a development server that watches for changes.
-For Firefox, `web-ext run` loads the bundled build in `.build/firefox`; run `bun run build:dev` after
-editing `src/` and Firefox reloads the extension automatically. `start:firefox` needs Node.js on
-`PATH` as well as Bun: `scripts/runFirefox.ts` runs web-ext on Node, because under Bun it can't
-connect to Firefox.
-
-### Source layout
-
-The extension is written in TypeScript:
-
-- `src/js/svgNavigator.ts`: the content script that adds infinite zoom and panning to SVG documents
-- `src/js/viewBox.ts`: the pure viewBox geometry (parsing, fitting, zooming) the content script uses, unit tested
-- `src/js/hud/`: the on-screen controls and debug card, in a shadow root on `<svg-navigator-hud>`; the pure
-  parts (`layout`, `zoomLabel`, `visibility`, `backgroundCycle`, `debugInfo`, `shortcuts`) are unit tested
-- `src/options/`: the toolbar popup with the settings (`index.html`, `options.ts`, `options.css`)
-- `src/shared/settings.ts`: the settings, their defaults, and their storage in `chrome.storage.sync`
-- `src/shared/provenance.ts`: the version, commit, and build time shown in the popup footer; `bun run prebuild`
-  generates them into `src/js/buildInfo.ts`, linking the build time to its CI run when built in GitHub Actions
-
-`webextension-toolbox` compiles each `.ts` file in `src/` to a `.js` file of the same name.
-Bun runs everything else directly, TypeScript included: the scripts in `scripts/`, the tests
-(`bun test`, which runs the `node:test` suites), and the build tools themselves, because
-`bunfig.toml` makes `bun run` use Bun even for tools whose shebang asks for Node.
-
-### Type checking and linting
-
-```bash
-bun run verify
-```
-
-`bun run verify` runs everything CI checks except the build and UI tests: the type check, ESLint, the unit
-tests, and the Bright Builds checks (`bun scripts/bright-builds-check.ts all`). Each also runs on its own
-(`bun run typecheck`, `bun run lint`, `bun run test:unit`).
-
-`bun run typecheck` checks the extension (`tsconfig.json`) and the scripts and tests
-(`tsconfig.node.json`). The extension build also reports type errors, but its exit code stays 0,
-so run `bun run typecheck` to catch them.
-
-### UI tests
-
-End-to-end tests load the built extension into headless Chrome and Firefox (via
-[Puppeteer](https://pptr.dev)) and drive it with real mouse and keyboard input. `bun install`
-downloads both test browsers.
-
-```bash
-bun run test:e2e
-```
-
-- Run one browser only: `E2E_BROWSERS=firefox bun run test:e2e`
-- Test a specific unpacked build, e.g. a release package before uploading it:
-  `E2E_CHROME_EXT=path/to/unzipped-chrome E2E_FIREFOX_EXT=path/to/unzipped-xpi bun test test/e2e`
-  (versions up to 2.11 predate the readiness marker the tests wait for, so they always time out)
-- Screenshots of failing tests are saved to `test-results/e2e-screenshots/`
-
-CI runs these tests on every push and pull request.
-
-### Releasing
-
-Releases are published by the [Release workflow](.github/workflows/release.yml). Before tagging, go
-through the [release checklist](docs/release-checklist.md).
-
-1. Bump `version` in `src/manifest.json` (both stores reject a version that isn't higher
-   than the published one) and push to `master`.
-
-1. Tag the commit and push the tag:
-
-   ```bash
-   git tag v2.12 && git push origin v2.12
-   ```
-
-The workflow checks that the tag matches the manifest version, builds the release files, runs
-the type check, lint, unit, and UI tests against the exact files it will upload, then submits them to the
-Chrome Web Store and Firefox Add-ons. Both stores review a submission before users get it.
-Running the workflow manually (Actions → Release → Run workflow) is a dry run that builds and
-tests the release files and checks the Chrome Web Store credentials (read-only), without
-publishing.
-
-#### One-time credential setup
-
-Add these as repository secrets (Settings → Secrets and variables → Actions) or as secrets of
-the `release` environment, which the publish jobs use:
-
-| Secret                    | Where it comes from                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CWS_SERVICE_ACCOUNT_KEY` | In [Google Cloud Console](https://console.cloud.google.com): enable the *Chrome Web Store API*, [create a service account](https://console.cloud.google.com/iam-admin/serviceaccounts) (no roles needed), and create a JSON key for it. Paste the whole JSON file. Then add the service account's email under **Account** in the [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole) (one service account per publisher). |
-| `CWS_PUBLISHER_ID`        | Developer Dashboard → **Publisher** → **Settings**.                                                                                                                                                                                                                                                                                                                                                                                                         |
-| `AMO_JWT_ISSUER`          | [AMO API keys page](https://addons.mozilla.org/developers/addon/api/key/): the *JWT issuer*.                                                                                                                                                                                                                                                                                                                                                                |
-| `AMO_JWT_SECRET`          | Same page: the *JWT secret*.                                                                                                                                                                                                                                                                                                                                                                                                                                |
-
-With the [GitHub CLI](https://cli.github.com), for example:
-
-```bash
-gh secret set CWS_SERVICE_ACCOUNT_KEY < path/to/service-account-key.json
-```
-
-Firefox requires source code for bundled add-ons, so the workflow uploads `bun run zip:source`'s
-archive with each version. Reviewers can rebuild with
-`PUPPETEER_SKIP_DOWNLOAD=true bun install && bun run build:firefox` (output in `dist/firefox`).
+[BSD 2-Clause](LICENSE.txt)

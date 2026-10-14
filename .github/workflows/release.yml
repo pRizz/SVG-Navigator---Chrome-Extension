@@ -9,7 +9,7 @@ name: Release
 # the release files and checks the store credentials (read-only), but publishes
 # nothing.
 #
-# Required secrets (see README "Releasing"): CWS_SERVICE_ACCOUNT_KEY,
+# Required secrets (see docs/releasing.md): CWS_SERVICE_ACCOUNT_KEY,
 # CWS_PUBLISHER_ID, AMO_JWT_ISSUER, AMO_JWT_SECRET.
 
 on:
