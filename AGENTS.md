@@ -13,7 +13,7 @@
 - The HUD (`src/js/hud/`) lives in an open shadow root on `<svg-navigator-hud>`; E2E tests reach inside with the `hudElement` helpers in `test/e2e/harness.ts`, not `page.$`.
 - `bun run start:firefox` runs web-ext on Node via `scripts/runFirefox.ts`: under Bun, web-ext's first refused connection to Firefox's debugger port escapes its retry loop and aborts. Inside Bun scripts, `node` is Bun's shim (`run.bun` in `bunfig.toml`).
 - `tsconfig.node.json` uses bundler resolution because unit tests import extension modules whose relative imports omit file extensions.
-- `bun run screenshots:app-store` regenerates `store/app-store/screenshots/` deterministically; an unrelated change should leave them byte-identical.
+- `bun run screenshots:app-store` regenerates `store/app-store/screenshots/` and `bun run screenshots:readme` regenerates `docs/images/readme-hero.png`, both deterministically; an unrelated change should leave them byte-identical.
 - Releases: push a tag of `v` plus the exact `src/manifest.json` version (e.g. `v3.0.0`). See `docs/releasing.md`.
 - `scripts/bright-builds-check.ts` is managed upstream and excluded from the type check and ESLint; do not edit it.
 

@@ -10,7 +10,7 @@ generator. Releasing has its own guide, [releasing.md](releasing.md).
 - [UI tests](#ui-tests)
 - [Source layout](#source-layout)
 - [Safari app](#safari-app)
-- [App Store listing](#app-store-listing)
+- [Store listings and images](#store-listings-and-images)
 - [Mandelbrot test SVGs](#mandelbrot-test-svgs)
 
 ## Setup
@@ -112,7 +112,7 @@ The extension is written in TypeScript:
 | `src/shared/settings.ts`   | The settings, their defaults, and their storage in `chrome.storage.sync`                                                                                    |
 | `src/shared/shortcuts.ts`  | The shortcut list shown in the HUD's `?` popover and the popup                                                                                              |
 | `src/shared/provenance.ts` | The version, commit, and build time shown in the popup footer; `bun run prebuild` generates them into `src/js/buildInfo.ts`, linking CI builds to their run |
-| `scripts/`                 | Build helpers, the App Store screenshot generator, and the Mandelbrot generator                                                                             |
+| `scripts/`                 | Build helpers, the App Store and README image generators, and the Mandelbrot generator                                                                      |
 | `test/unit/`, `test/e2e/`  | Unit tests and Puppeteer UI tests                                                                                                                           |
 | `safari/`                  | The Xcode project for the Safari app                                                                                                                        |
 
@@ -143,7 +143,7 @@ to `~/Applications`, open it once, then enable SVG Navigator in Safari → Setti
 > Keep the project's development team signing: an ad-hoc signed build doesn't show up in
 > Safari's extension list, even with "Allow unsigned extensions" on.
 
-## App Store listing
+## Store listings and images
 
 [`store/app-store/listing.md`](../store/app-store/listing.md) holds the Mac App Store text
 (description, keywords, review notes, privacy answers); a unit test checks it against App Store
@@ -161,6 +161,16 @@ and frames each capture in a Safari-style window at 2880×1800. Every input is f
 on the same Mac produces byte-identical files and `git status` only shows screenshots whose
 content really changed. Edit the scenes in `scripts/appStoreScreenshots.ts` and the frame in
 `scripts/appStoreScreenshotFrame.html`.
+
+The README's main image, `docs/images/readme-hero.png`, comes from the same pipeline in a
+browser-neutral window, so it doesn't favor one browser:
+
+```bash
+bun run screenshots:readme
+```
+
+Edit it in `scripts/readmeHero.ts` and `scripts/readmeHeroFrame.html`; the capture steps both
+generators share are in `scripts/screenshotCapture.ts`.
 
 ## Mandelbrot test SVGs
 

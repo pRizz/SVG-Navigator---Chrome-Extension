@@ -20,8 +20,8 @@ stays sharp however far you zoom, and SVG Navigator has no zoom limit. Only the 
 precision stops it, many millions of times in.
 
 <p align="center">
-  <img src="store/app-store/screenshots/01-infinite-zoom.png" width="820"
-       alt="A world map SVG zoomed to 254% with SVG Navigator's minimap in the bottom-left corner and its zoom controls in the bottom-right">
+  <img src="docs/images/readme-hero.png" width="820"
+       alt="A world map SVG in a browser, zoomed to 254%, with SVG Navigator's minimap in the bottom-left corner and its zoom controls in the bottom-right">
 </p>
 
 <p align="center">
