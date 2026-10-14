@@ -165,4 +165,4 @@ Illustrations by Cara Stemo.
 
 ## License
 
-[BSD 2-Clause](LICENSE.txt)
+[MIT](LICENSE.txt)
