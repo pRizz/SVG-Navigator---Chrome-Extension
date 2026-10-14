@@ -20,8 +20,11 @@ stays sharp however far you zoom, and SVG Navigator has no zoom limit. Only the 
 precision stops it, many millions of times in.
 
 <p align="center">
-  <img src="docs/images/readme-hero.png" width="820"
-       alt="A world map SVG in a browser, zoomed to 254%, with SVG Navigator's minimap in the bottom-left corner and its zoom controls in the bottom-right">
+  <picture>
+    <source media="(prefers-reduced-motion: reduce)" srcset="docs/images/readme-hero.png">
+    <img src="docs/images/readme-demo.webp" width="820"
+         alt="SVG Navigator in a browser: scrolling zooms a world map into Europe, a drag pans to the Aegean, more scrolling zooms into its islands, and Esc shows the whole map again">
+  </picture>
 </p>
 
 <p align="center">

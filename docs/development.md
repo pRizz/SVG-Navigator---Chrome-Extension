@@ -162,14 +162,20 @@ on the same Mac produces byte-identical files and `git status` only shows screen
 content really changed. Edit the scenes in `scripts/appStoreScreenshots.ts` and the frame in
 `scripts/appStoreScreenshotFrame.html`.
 
-The README's main image, `docs/images/readme-hero.png`, comes from the same pipeline in a
-browser-neutral window, so it doesn't favor one browser:
+The README's looping demo, `docs/images/readme-demo.webp`, and its still fallback for
+reduced motion, `docs/images/readme-hero.png`, come from the same pipeline in a
+browser-neutral window, so they don't favor one browser:
 
 ```bash
 bun run screenshots:readme
 ```
 
-Edit it in `scripts/readmeHero.ts` and `scripts/readmeHeroFrame.html`; the capture steps both
+The demo is recorded frame by frame: each frame sends one small wheel or pointer step,
+waits for the page to paint, and captures it, so reruns produce the same file. It needs
+[ffmpeg](https://ffmpeg.org) with libwebp on `PATH` (`brew install ffmpeg`) and takes a
+few minutes; the frames stay in `.build/readme-animation/` for inspection. Edit the
+storyboard in `scripts/readmeAnimation.ts`, the still in `scripts/readmeHero.ts`, and
+their shared frame in `scripts/readmeHeroFrame.html`; the capture steps all the
 generators share are in `scripts/screenshotCapture.ts`.
 
 ## Mandelbrot test SVGs

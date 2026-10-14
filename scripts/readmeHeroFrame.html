@@ -25,9 +25,15 @@
         }
         /* The 38px icon at 2x, so it is never resampled. */
         .extension { width: 19px; height: 19px; }
+        .stage { position: relative; }
         .page { display: block; width: {{viewportWidth}}px; height: {{viewportHeight}}px; }
+        /* The animation's pointer, placed by scripts/readmeAnimation.ts; the tip is at the element's origin. */
+        .cursor { position: absolute; left: 0; top: 0; width: 28px; height: 28px; pointer-events: none; }
+        .cursor svg { display: block; overflow: visible; }
+        .cursor .press { opacity: 0; }
+        .cursor.pressed .press { opacity: 1; }
     </style></head><body>
-        <!-- Filled in by scripts/readmeHero.ts: a caption and a browser-neutral window around a captured page. -->
+        <!-- Filled in by scripts/readmeHero.ts and scripts/readmeAnimation.ts: a caption and a browser-neutral window around a captured page. -->
         <h1>{{title}}</h1>
         <p class="subtitle">{{subtitle}}</p>
         <div class="window">
@@ -38,6 +44,12 @@
                 <div class="address">{{displayedHost}}</div>
                 <img class="extension" src="{{toolbarIcon}}">
             </div>
-            <img class="page" src="{{page}}">
+            <div class="stage">
+                <img class="page" src="{{page}}">
+                <div class="cursor" hidden><svg viewBox="0 0 28 28" width="28" height="28">
+                    <circle class="press" cx="0" cy="0" r="16" fill="rgba(37,99,235,0.22)" stroke="rgba(37,99,235,0.55)" stroke-width="1.5"/>
+                    <path d="M1 1v19.5l5.2-4.9 3.4 7.9 3.6-1.5-3.4-7.8h7.2z" fill="#111" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
+                </svg></div>
+            </div>
         </div>
     </body></html>

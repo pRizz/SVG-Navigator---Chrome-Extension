@@ -10,7 +10,7 @@
  */
 
 import { fileURLToPath } from 'node:url';
-import type { Browser, Page } from 'puppeteer';
+import puppeteer, { type Browser, type Page } from 'puppeteer';
 import type { Settings } from '../src/shared/settings.ts';
 import {
     evaluateInExtension,
@@ -78,10 +78,19 @@ export async function withCaptureContext(fn: (context: CaptureContext) => Promis
 }
 
 /**
+ * Starts a second Chrome, without the extension, for composing frames while the
+ * extension's page stays open: a page in a background tab gets no input, animation
+ * frames, or timely timers, so each page needs a browser of its own.
+ */
+export async function launchComposer(): Promise<Browser> {
+    return puppeteer.launch({ headless: true, pipe: true, args: DETERMINISTIC_RENDERING_ARGS });
+}
+
+/**
  * The minimap builds its copy of the drawing once the view rests, so a screenshot taken
  * straight after zooming could catch it either way; wait until it's hidden or built.
  */
-async function waitForMinimapToSettle(page: Page): Promise<void> {
+export async function waitForMinimapToSettle(page: Page): Promise<void> {
     await page.waitForFunction(() => {
         const maybeMinimap = document.querySelector('svg-navigator-hud')?.shadowRoot?.querySelector('.minimap');
         return !maybeMinimap || maybeMinimap.hasAttribute('hidden') || maybeMinimap.querySelector('.minimap-frame') !== null;
