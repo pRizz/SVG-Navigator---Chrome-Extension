@@ -189,7 +189,7 @@ stage_managed_paths() {
 		AGENTS.md \
 		AGENTS.bright-builds.md \
 		CONTRIBUTING.md \
-		README.md \
+		':(icase)README.md' \
 		bright-builds-rules.audit.md \
 		coding-and-architecture-requirements.audit.md \
 		.github/pull_request_template.md \
@@ -233,7 +233,7 @@ restore_audit_if_only_runtime_changed() {
 		AGENTS.md \
 		AGENTS.bright-builds.md \
 		CONTRIBUTING.md \
-		README.md \
+		':(icase)README.md' \
 		.github/pull_request_template.md \
 		.github/workflows/bright-builds-checks.yml \
 		scripts/bright-builds-check.ts \
